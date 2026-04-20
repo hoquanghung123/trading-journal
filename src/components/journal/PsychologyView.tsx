@@ -9,13 +9,14 @@ import {
   MOOD_OPTIONS,
   PRE_EMOTIONS,
   POST_EMOTIONS,
-  toLocalDateStr,
+  toNyDateStr,
+  todayNyDateStr,
   type PsychologyLog,
 } from "@/lib/psychology";
 import { toast } from "sonner";
 
 export function PsychologyView() {
-  const [date, setDate] = useState<string>(() => toLocalDateStr(new Date()));
+  const [date, setDate] = useState<string>(() => todayNyDateStr());
   const [trades, setTrades] = useState<Trade[]>([]);
   const [logs, setLogs] = useState<PsychologyLog[]>([]);
   const [selectedTradeId, setSelectedTradeId] = useState<string>("");
@@ -40,9 +41,10 @@ export function PsychologyView() {
     return () => { alive = false; };
   }, []);
 
-  // Trades placed on the selected date (memoized — no infinite loops)
+  // Trades placed on the selected date — compared in **New York** timezone
+  // because users enter entry_time in NY local time.
   const tradesForDate = useMemo(
-    () => trades.filter((t) => toLocalDateStr(new Date(t.entryTime)) === date),
+    () => trades.filter((t) => toNyDateStr(t.entryTime) === date),
     [trades, date],
   );
 
