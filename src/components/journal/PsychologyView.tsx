@@ -14,6 +14,7 @@ import {
   type PsychologyLog,
 } from "@/lib/psychology";
 import { PsychologyCalendar } from "./PsychologyCalendar";
+import { PsychologyDayTimeline } from "./PsychologyDayTimeline";
 import { toast } from "sonner";
 
 export function PsychologyView() {
