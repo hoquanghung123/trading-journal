@@ -23,22 +23,31 @@ export function PsychologyView() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Initial load — fetch trades + logs once
+  // Initial load + refresh helpers
+  const reload = async () => {
+    try {
+      const [t, l] = await Promise.all([fetchTrades(), fetchPsychologyLogs()]);
+      setTrades(t);
+      setLogs(l);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to load psychology data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [t, l] = await Promise.all([fetchTrades(), fetchPsychologyLogs()]);
-        if (!alive) return;
-        setTrades(t);
-        setLogs(l);
-      } catch (e: any) {
-        toast.error(e.message ?? "Failed to load psychology data");
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
+    reload();
+    // Refetch whenever the user navigates back to Psychology
+    const offNav = onPageChange((p) => { if (p === "psychology") reload(); });
+    // Refetch when tab regains focus (covers logging a trade in another tab)
+    const onFocus = () => reload();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      offNav();
+      window.removeEventListener("focus", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Trades placed on the selected date (memoized — no infinite loops)
