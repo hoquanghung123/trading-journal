@@ -183,7 +183,7 @@ export function PsychologyView() {
           {/* Left column */}
           <div className="col-span-12 lg:col-span-8 space-y-4">
             {/* Morning Check-in */}
-            <Section title="MORNING CHECK-IN">
+            <Section title="MORNING CHECK-IN" action={<SaveButton sectionKey="daily" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                 <div>
                   <Label>START OF DAY MOOD</Label>
@@ -240,7 +240,7 @@ export function PsychologyView() {
             </Section>
 
             {/* Trade Discipline & Emotions */}
-            <Section title="TRADE DISCIPLINE & EMOTIONS">
+            <Section title="TRADE DISCIPLINE & EMOTIONS" action={<SaveButton sectionKey="trade" disabled={!tradeLog || !selectedTradeId} />}>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <Label className="!mb-0">TRADE</Label>
                 <select
@@ -385,13 +385,24 @@ export function PsychologyView() {
 
 /* ---------------- Sub components ---------------- */
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <section
       className="rounded-lg border border-terminal-border p-5"
       style={{ background: "#0D1117" }}
     >
-      <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#48C0D8] mb-4">{title}</h2>
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#48C0D8]">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
