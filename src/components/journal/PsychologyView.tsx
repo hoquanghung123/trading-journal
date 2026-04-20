@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, CalendarDays, Save, Loader2 } from "lucide-react";
+import { Brain, CalendarDays, Save, Loader2, Check } from "lucide-react";
 import { fetchTrades, type Trade } from "@/lib/trades";
 import {
   fetchPsychologyLogs,
@@ -91,6 +91,57 @@ export function PsychologyView() {
   const updateTrade = (patch: Partial<PsychologyLog>) => {
     if (!tradeLog) return;
     persist({ ...tradeLog, ...patch });
+  };
+
+  // "Saved ✓" feedback per section
+  const [savedFlash, setSavedFlash] = useState<Record<string, number>>({});
+  const flashSaved = (key: string) => {
+    setSavedFlash((p) => ({ ...p, [key]: Date.now() }));
+    setTimeout(() => {
+      setSavedFlash((p) => {
+        const copy = { ...p };
+        if (Date.now() - (copy[key] ?? 0) >= 1900) delete copy[key];
+        return copy;
+      });
+    }, 2000);
+  };
+
+  // Force any focused textarea/input to commit (triggers onBlur), then persist.
+  const saveSection = async (which: "daily" | "trade") => {
+    const el = document.activeElement as HTMLElement | null;
+    if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) el.blur();
+    // Wait one tick so onBlur-driven setState lands before we persist
+    await new Promise((r) => setTimeout(r, 0));
+    if (which === "daily") {
+      await persist({ ...dailyLog });
+      flashSaved("daily");
+    } else if (tradeLog) {
+      await persist({ ...tradeLog });
+      flashSaved("trade");
+    }
+  };
+
+  const SaveButton = ({ sectionKey, disabled }: { sectionKey: "daily" | "trade"; disabled?: boolean }) => {
+    const justSaved = !!savedFlash[sectionKey];
+    return (
+      <button
+        onClick={() => saveSection(sectionKey)}
+        disabled={disabled || saving}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold tracking-[0.2em] border transition ${
+          justSaved
+            ? "border-emerald-500/60 text-emerald-400 bg-emerald-500/10"
+            : "border-[#48C0D8]/60 text-[#48C0D8] hover:bg-[#48C0D8]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+        }`}
+      >
+        {saving ? (
+          <><Loader2 className="w-3 h-3 animate-spin" /> SAVING…</>
+        ) : justSaved ? (
+          <><Check className="w-3 h-3" /> SAVED</>
+        ) : (
+          <><Save className="w-3 h-3" /> SAVE</>
+        )}
+      </button>
+    );
   };
 
   if (loading) {
