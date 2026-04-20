@@ -246,8 +246,16 @@ export function TradeLog() {
                       </td>
                     )}
 
-                    <td className="p-3 text-xs text-muted-foreground truncate max-w-[300px]">
-                      {t.notes ?? ""}
+                    <td className="p-3 text-xs text-muted-foreground max-w-[300px]" onClick={(e) => e.stopPropagation()}>
+                      <div className="truncate">{t.notes ?? ""}</div>
+                      {psych[t.id] && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          <PsychologyBadges
+                            log={psych[t.id]}
+                            onClick={() => navigateToPage("psychology")}
+                          />
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
