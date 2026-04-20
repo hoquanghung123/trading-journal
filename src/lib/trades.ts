@@ -33,6 +33,9 @@ type Row = {
   max_rr: number;
   before_img: string | null;
   after_img: string | null;
+  h1_img: string | null;
+  m15_img: string | null;
+  m5_img: string | null;
   bias_entry_id: string | null;
   notes: string | null;
 };
