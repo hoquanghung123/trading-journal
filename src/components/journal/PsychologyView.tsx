@@ -24,6 +24,7 @@ export function PsychologyView() {
   const [selectedTradeId, setSelectedTradeId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [timelineDate, setTimelineDate] = useState<string | null>(null);
 
   // Initial load — fetch trades + logs once
   useEffect(() => {
