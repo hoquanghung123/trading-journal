@@ -9,9 +9,14 @@ import {
   upsertTrade,
   type Trade,
 } from "@/lib/trades";
+import {
+  fetchPsychologyForTrades,
+  type PsychologyLog,
+} from "@/lib/psychology";
 import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 import { TradeModal } from "./TradeModal";
 import { TradeImageThumb } from "./TradeImageThumb";
+import { PsychologyBadges } from "./PsychologyBadges";
 import { toast } from "sonner";
 import {
   DropdownMenu,
