@@ -167,9 +167,15 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                 {d.getDate()}
               </div>
 
-              {/* Trade count (top-right) */}
+              {/* Trade count (top-right) — color by net PnL */}
               {s && s.tradeCount > 0 && (
-                <span className="absolute top-1 right-1 text-[8px] font-bold text-muted-foreground bg-white/[0.04] px-1 rounded leading-tight">
+                <span
+                  className={`absolute top-1 right-1 text-[8px] font-bold px-1 rounded leading-tight ${
+                    s.netPnl < 0
+                      ? "text-red-400 bg-red-500/15"
+                      : "text-green-400 bg-green-500/15"
+                  }`}
+                >
                   {s.tradeCount}
                 </span>
               )}
