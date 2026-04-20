@@ -119,6 +119,21 @@ export async function fetchPsychologyForTrade(tradeId: string): Promise<Psycholo
   return data ? fromRow(data as Row) : null;
 }
 
+export async function fetchPsychologyForTrades(
+  tradeIds: string[],
+): Promise<Record<string, PsychologyLog>> {
+  if (tradeIds.length === 0) return {};
+  const { data, error } = await tbl()
+    .select("*")
+    .in("trade_id", tradeIds);
+  if (error) throw error;
+  const out: Record<string, PsychologyLog> = {};
+  for (const r of (data as Row[]) ?? []) {
+    if (r.trade_id) out[r.trade_id] = fromRow(r);
+  }
+  return out;
+}
+
 export async function upsertPsychologyLog(log: PsychologyLog): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
