@@ -9,14 +9,9 @@ import {
   upsertTrade,
   type Trade,
 } from "@/lib/trades";
-import {
-  fetchPsychologyForTrades,
-  type PsychologyLog,
-} from "@/lib/psychology";
 import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 import { TradeModal } from "./TradeModal";
 import { TradeImageThumb } from "./TradeImageThumb";
-import { PsychologyBadges } from "./PsychologyBadges";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -37,7 +32,6 @@ const COL_LABELS: Record<ColKey, string> = {
 
 export function TradeLog() {
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [psych, setPsych] = useState<Record<string, PsychologyLog>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
@@ -56,10 +50,7 @@ export function TradeLog() {
   const reload = async () => {
     setLoading(true);
     try {
-      const ts = await fetchTrades();
-      setTrades(ts);
-      const map = await fetchPsychologyForTrades(ts.map((t) => t.id));
-      setPsych(map);
+      setTrades(await fetchTrades());
     } catch (e: any) {
       toast.error(e.message ?? "Failed to load");
     } finally {
@@ -246,16 +237,8 @@ export function TradeLog() {
                       </td>
                     )}
 
-                    <td className="p-3 text-xs text-muted-foreground max-w-[300px]" onClick={(e) => e.stopPropagation()}>
-                      <div className="truncate">{t.notes ?? ""}</div>
-                      {psych[t.id] && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          <PsychologyBadges
-                            log={psych[t.id]}
-                            onClick={() => navigateToPage("psychology")}
-                          />
-                        </div>
-                      )}
+                    <td className="p-3 text-xs text-muted-foreground truncate max-w-[300px]">
+                      {t.notes ?? ""}
                     </td>
                   </tr>
                 );

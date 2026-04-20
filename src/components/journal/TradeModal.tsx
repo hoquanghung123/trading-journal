@@ -5,14 +5,8 @@ import { Label } from "@/components/ui/label";
 import { computeOutcome, outcomeStyle, type Trade } from "@/lib/trades";
 import { useSymbols } from "@/lib/symbols";
 import { fetchEntries, type DayEntry, ddmm } from "@/lib/journal";
-import {
-  fetchPsychologyForTrade,
-  type PsychologyLog,
-} from "@/lib/psychology";
-import { navigateToPage } from "@/lib/nav-bus";
 import { PasteSlot } from "./PasteSlot";
-import { PsychologyBadges } from "./PsychologyBadges";
-import { Trash2, Save, Brain, ArrowRight } from "lucide-react";
+import { Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -28,22 +22,16 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [focused, setFocused] = useState<"before" | "after" | null>(null);
   const [busy, setBusy] = useState(false);
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
-  const [psych, setPsych] = useState<PsychologyLog | null>(null);
   const { data: symbols = [] } = useSymbols();
   const SYMBOLS = symbols.map((s) => s.name);
 
   useEffect(() => { setT(trade); }, [trade]);
 
-  // Load journal entries + psychology log when modal opens
+  // Load all journal entries once when modal opens
   useEffect(() => {
     if (!open) return;
     fetchEntries().then(setBiasEntries).catch(() => {});
-    if (trade?.id) {
-      fetchPsychologyForTrade(trade.id).then(setPsych).catch(() => setPsych(null));
-    } else {
-      setPsych(null);
-    }
-  }, [open, trade?.id]);
+  }, [open]);
 
   const filteredBias = useMemo(
     () => biasEntries
@@ -251,45 +239,6 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               className="w-full rounded-md bg-black/40 border border-terminal-border p-2 text-sm"
             />
           </Field>
-
-          {/* Psychology evaluation (read-only summary; edit on Psychology page) */}
-          <div className="rounded-md border border-terminal-border bg-black/30 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Brain className="w-3.5 h-3.5 text-[#48C0D8]" />
-                <span className="text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
-                  Psychology
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => { onClose(); navigateToPage("psychology"); }}
-                className="flex items-center gap-1 text-[10px] tracking-widest text-[#48C0D8] hover:underline"
-              >
-                {psych ? "EDIT" : "ADD"} <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-            {psych ? (
-              <div className="space-y-2">
-                <PsychologyBadges log={psych} size="md" />
-                {(psych.entryRationale || psych.exitAssessment || psych.mistakes) && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-muted-foreground">
-                    {psych.entryRationale && (
-                      <Snippet label="Entry rationale" value={psych.entryRationale} />
-                    )}
-                    {psych.exitAssessment && (
-                      <Snippet label="Exit assessment" value={psych.exitAssessment} />
-                    )}
-                    {psych.mistakes && <Snippet label="Mistakes" value={psych.mistakes} />}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-[11px] text-muted-foreground tracking-wide">
-                // No psychology evaluation yet for this trade
-              </p>
-            )}
-          </div>
         </div>
 
         {/* Sticky Footer */}
@@ -321,15 +270,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1">
       <Label className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">{label}</Label>
       {children}
-    </div>
-  );
-}
-
-function Snippet({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded border border-terminal-border/60 bg-black/40 p-2">
-      <div className="text-[9px] tracking-widest uppercase text-muted-foreground mb-0.5">{label}</div>
-      <div className="text-foreground line-clamp-3">{value}</div>
     </div>
   );
 }
