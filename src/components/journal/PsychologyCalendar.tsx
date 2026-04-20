@@ -220,8 +220,12 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
           TRADE EVALUATION
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold bg-white/[0.04] px-1 rounded">N</span>
-          TRADES LOGGED
+          <span className="text-[9px] font-bold bg-green-500/15 text-green-400 px-1 rounded">N</span>
+          WIN / BE
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold bg-red-500/15 text-red-400 px-1 rounded">N</span>
+          LOSS
         </div>
       </div>
     </section>
