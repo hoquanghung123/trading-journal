@@ -56,11 +56,50 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
 
-  // datetime-local value
-  const dt = new Date(t.entryTime);
-  const dtLocal = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  // datetime-local value — interpreted as New York time (market time),
+  // independent of the user's browser timezone.
+  const NY_PARTS = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const dtLocal = (() => {
+    const parts = NY_PARTS.formatToParts(new Date(t.entryTime)).reduce<Record<string, string>>(
+      (acc, p) => {
+        if (p.type !== "literal") acc[p.type] = p.value;
+        return acc;
+      },
+      {},
+    );
+    // hour can be "24" in en-US 2-digit hour12:false at midnight — normalize.
+    const hh = parts.hour === "24" ? "00" : parts.hour;
+    return `${parts.year}-${parts.month}-${parts.day}T${hh}:${parts.minute}`;
+  })();
+
+  // Convert "YYYY-MM-DDTHH:mm" interpreted as NY local time → UTC ISO string.
+  const nyLocalToIso = (local: string): string => {
+    const [datePart, timePart] = local.split("T");
+    const [y, m, d] = datePart.split("-").map(Number);
+    const [hh, mm] = timePart.split(":").map(Number);
+    // Start with a UTC guess, then measure NY offset at that instant and adjust.
+    const utcGuess = Date.UTC(y, m - 1, d, hh, mm);
+    const tzParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      timeZoneName: "shortOffset",
+      hour: "2-digit",
+      hour12: false,
+    }).formatToParts(new Date(utcGuess));
+    const tzName = tzParts.find((p) => p.type === "timeZoneName")?.value ?? "GMT-5";
+    const match = tzName.match(/GMT([+-]?\d+)(?::(\d+))?/);
+    const offHours = match ? parseInt(match[1], 10) : -5;
+    const offMins = match && match[2] ? parseInt(match[2], 10) : 0;
+    const offsetMs = (offHours * 60 + Math.sign(offHours) * offMins) * 60_000;
+    return new Date(utcGuess - offsetMs).toISOString();
+  };
 
   const save = async () => {
     setBusy(true);
