@@ -45,9 +45,9 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
 
   // Index logs / trades by NY date string for O(1) lookup
   const stats = useMemo(() => {
-    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number; mood?: string }>();
+    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number; netPnl: number; mood?: string }>();
     for (const l of logs) {
-      const cur = map.get(l.date) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0 };
+      const cur = map.get(l.date) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0, netPnl: 0 };
       if (l.tradeId === null) {
         cur.hasDaily = true;
         if (l.morningMood) cur.mood = l.morningMood;
@@ -56,8 +56,9 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
     }
     for (const t of trades) {
       const k = toNyDateStr(t.entryTime);
-      const cur = map.get(k) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0 };
+      const cur = map.get(k) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0, netPnl: 0 };
       cur.tradeCount += 1;
+      cur.netPnl += Number(t.netPnl) || 0;
       map.set(k, cur);
     }
     return map;
@@ -166,9 +167,15 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                 {d.getDate()}
               </div>
 
-              {/* Trade count (top-right) */}
+              {/* Trade count (top-right) — color by net PnL */}
               {s && s.tradeCount > 0 && (
-                <span className="absolute top-1 right-1 text-[8px] font-bold text-muted-foreground bg-white/[0.04] px-1 rounded leading-tight">
+                <span
+                  className={`absolute top-1 right-1 text-[8px] font-bold px-1 rounded leading-tight ${
+                    s.netPnl < 0
+                      ? "text-red-400 bg-red-500/15"
+                      : "text-green-400 bg-green-500/15"
+                  }`}
+                >
                   {s.tradeCount}
                 </span>
               )}
@@ -213,8 +220,12 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
           TRADE EVALUATION
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold bg-white/[0.04] px-1 rounded">N</span>
-          TRADES LOGGED
+          <span className="text-[9px] font-bold bg-green-500/15 text-green-400 px-1 rounded">N</span>
+          WIN / BE
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold bg-red-500/15 text-red-400 px-1 rounded">N</span>
+          LOSS
         </div>
       </div>
     </section>
