@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, CalendarDays, Save, Loader2 } from "lucide-react";
+import { Brain, CalendarDays, Save, Loader2, Check } from "lucide-react";
 import { fetchTrades, type Trade } from "@/lib/trades";
 import {
   fetchPsychologyLogs,
@@ -93,6 +93,57 @@ export function PsychologyView() {
     persist({ ...tradeLog, ...patch });
   };
 
+  // "Saved ✓" feedback per section
+  const [savedFlash, setSavedFlash] = useState<Record<string, number>>({});
+  const flashSaved = (key: string) => {
+    setSavedFlash((p) => ({ ...p, [key]: Date.now() }));
+    setTimeout(() => {
+      setSavedFlash((p) => {
+        const copy = { ...p };
+        if (Date.now() - (copy[key] ?? 0) >= 1900) delete copy[key];
+        return copy;
+      });
+    }, 2000);
+  };
+
+  // Force any focused textarea/input to commit (triggers onBlur), then persist.
+  const saveSection = async (which: "daily" | "trade") => {
+    const el = document.activeElement as HTMLElement | null;
+    if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT")) el.blur();
+    // Wait one tick so onBlur-driven setState lands before we persist
+    await new Promise((r) => setTimeout(r, 0));
+    if (which === "daily") {
+      await persist({ ...dailyLog });
+      flashSaved("daily");
+    } else if (tradeLog) {
+      await persist({ ...tradeLog });
+      flashSaved("trade");
+    }
+  };
+
+  const SaveButton = ({ sectionKey, disabled }: { sectionKey: "daily" | "trade"; disabled?: boolean }) => {
+    const justSaved = !!savedFlash[sectionKey];
+    return (
+      <button
+        onClick={() => saveSection(sectionKey)}
+        disabled={disabled || saving}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold tracking-[0.2em] border transition ${
+          justSaved
+            ? "border-emerald-500/60 text-emerald-400 bg-emerald-500/10"
+            : "border-[#48C0D8]/60 text-[#48C0D8] hover:bg-[#48C0D8]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+        }`}
+      >
+        {saving ? (
+          <><Loader2 className="w-3 h-3 animate-spin" /> SAVING…</>
+        ) : justSaved ? (
+          <><Check className="w-3 h-3" /> SAVED</>
+        ) : (
+          <><Save className="w-3 h-3" /> SAVE</>
+        )}
+      </button>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#05080A" }}>
@@ -132,7 +183,7 @@ export function PsychologyView() {
           {/* Left column */}
           <div className="col-span-12 lg:col-span-8 space-y-4">
             {/* Morning Check-in */}
-            <Section title="MORNING CHECK-IN">
+            <Section title="MORNING CHECK-IN" action={<SaveButton sectionKey="daily" />}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                 <div>
                   <Label>START OF DAY MOOD</Label>
@@ -189,7 +240,7 @@ export function PsychologyView() {
             </Section>
 
             {/* Trade Discipline & Emotions */}
-            <Section title="TRADE DISCIPLINE & EMOTIONS">
+            <Section title="TRADE DISCIPLINE & EMOTIONS" action={<SaveButton sectionKey="trade" disabled={!tradeLog || !selectedTradeId} />}>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <Label className="!mb-0">TRADE</Label>
                 <select
@@ -334,13 +385,24 @@ export function PsychologyView() {
 
 /* ---------------- Sub components ---------------- */
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <section
       className="rounded-lg border border-terminal-border p-5"
       style={{ background: "#0D1117" }}
     >
-      <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#48C0D8] mb-4">{title}</h2>
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#48C0D8]">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
