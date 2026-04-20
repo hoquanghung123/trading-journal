@@ -143,7 +143,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
           {/* Row 1: Entry Time + Symbol */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Entry time">
+            <Field label="Entry time (NY)">
               <Input
                 type="datetime-local"
                 value={dtLocal}
