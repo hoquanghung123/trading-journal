@@ -251,6 +251,45 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               className="w-full rounded-md bg-black/40 border border-terminal-border p-2 text-sm"
             />
           </Field>
+
+          {/* Psychology evaluation (read-only summary; edit on Psychology page) */}
+          <div className="rounded-md border border-terminal-border bg-black/30 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Brain className="w-3.5 h-3.5 text-[#48C0D8]" />
+                <span className="text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+                  Psychology
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { onClose(); navigateToPage("psychology"); }}
+                className="flex items-center gap-1 text-[10px] tracking-widest text-[#48C0D8] hover:underline"
+              >
+                {psych ? "EDIT" : "ADD"} <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+            {psych ? (
+              <div className="space-y-2">
+                <PsychologyBadges log={psych} size="md" />
+                {(psych.entryRationale || psych.exitAssessment || psych.mistakes) && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] text-muted-foreground">
+                    {psych.entryRationale && (
+                      <Snippet label="Entry rationale" value={psych.entryRationale} />
+                    )}
+                    {psych.exitAssessment && (
+                      <Snippet label="Exit assessment" value={psych.exitAssessment} />
+                    )}
+                    {psych.mistakes && <Snippet label="Mistakes" value={psych.mistakes} />}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground tracking-wide">
+                // No psychology evaluation yet for this trade
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Sticky Footer */}
