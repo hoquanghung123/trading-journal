@@ -85,13 +85,13 @@ export async function fetchTrades(): Promise<Trade[]> {
     .select("*")
     .order("entry_time", { ascending: false });
   if (error) throw error;
-  return (data as Row[]).map(fromRow);
+  return (data as unknown as Row[]).map(fromRow);
 }
 
 export async function upsertTrade(t: Trade): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
-  const { error } = await supabase.from("trades").upsert(toRow(t, u.user.id));
+  const { error } = await supabase.from("trades").upsert(toRow(t, u.user.id) as never);
   if (error) throw error;
 }
 
