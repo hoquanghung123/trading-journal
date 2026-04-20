@@ -101,3 +101,26 @@ export function toLocalDateStr(d: Date): string {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yy}-${mm}-${dd}`;
 }
+
+/**
+ * Trades are entered in New York local time. Given a trade's ISO `entry_time`
+ * (UTC), return the YYYY-MM-DD string of that timestamp **as observed in NY**.
+ * This handles DST automatically via Intl.
+ */
+const NY_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+export function toNyDateStr(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  // en-CA outputs YYYY-MM-DD natively
+  return NY_DATE_FMT.format(date);
+}
+
+/** Today's date in NY timezone, YYYY-MM-DD */
+export function todayNyDateStr(): string {
+  return toNyDateStr(new Date());
+}
