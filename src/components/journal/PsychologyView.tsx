@@ -203,7 +203,7 @@ export function PsychologyView() {
                   </option>
                   {tradesForDate.map((t, i) => (
                     <option key={t.id} value={t.id}>
-                      #{String(i + 1).padStart(2, "0")} • {t.symbol} • {t.side.toUpperCase()} • {new Date(t.entryTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      #{String(i + 1).padStart(2, "0")} • {t.symbol} • {t.side.toUpperCase()} • {new Date(t.entryTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false })} NY
                     </option>
                   ))}
                 </select>
