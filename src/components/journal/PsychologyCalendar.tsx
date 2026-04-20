@@ -173,6 +173,15 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                 </span>
               )}
 
+              {/* Mood emoji (center) */}
+              {s?.mood && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-lg leading-none drop-shadow-[0_0_4px_rgba(72,192,216,0.4)]">
+                    {s.mood}
+                  </span>
+                </div>
+              )}
+
               {/* Indicators (bottom) */}
               <div className="absolute bottom-1 left-1 right-1 flex items-center gap-1">
                 {s?.hasDaily && (
