@@ -1,11 +1,10 @@
-// Psychology Journal storage — backed by Supabase `psychology_logs` table.
+// Psychology Journal storage layer.
+// Stores both daily check-ins (trade_id = null) and per-trade evaluations
+// (trade_id = <trade>) under the same per-(user,date) day record concept.
 //
-// One daily-only record per (user, date) when trade_id IS NULL.
-// One record per (user, trade) when trade_id IS NOT NULL.
-//
-// NOTE: `psychology_logs` is created via migration; until the generated
-// `Database` types are refreshed we cast the table call to `any`.
-import { supabase } from "@/integrations/supabase/client";
+// Backed by localStorage for now so the feature works immediately without a
+// schema migration. Public API matches what an eventual Supabase-backed
+// `psychology_logs` table would expose, so swapping the impl is a one-file change.
 
 export interface PsychologyLog {
   id: string;
@@ -13,130 +12,65 @@ export interface PsychologyLog {
   tradeId: string | null;
 
   // Daily check-in (only meaningful when tradeId === null)
-  morningMood?: string;
-  energyLevel?: number; // 1-5
+  morningMood?: string;          // emoji or label
+  energyLevel?: number;          // 1-5
   morningNotes?: string;
   nonTradingFactors?: string;
   endDaySummary?: string;
   dailyNarrative?: string;
 
   // Per-trade evaluation (only meaningful when tradeId !== null)
-  preTradeEmotion?: string;
+  preTradeEmotion?: string;      // single tag
   entryRationale?: string;
   postTradeEmotion?: string;
   exitAssessment?: string;
-  disciplineScore?: number; // 1-10
+  disciplineScore?: number;      // 1-10
   emotionNotes?: string;
   mistakes?: string;
 
   updatedAt: string;
 }
 
-type Row = {
-  id: string;
-  date: string;
-  trade_id: string | null;
-  morning_mood: string | null;
-  energy_level: number | null;
-  morning_notes: string | null;
-  non_trading_factors: string | null;
-  daily_narrative: string | null;
-  end_day_summary: string | null;
-  pre_trade_emotion: string | null;
-  entry_rationale: string | null;
-  post_trade_emotion: string | null;
-  exit_assessment: string | null;
-  discipline_score: number | null;
-  emotion_notes: string | null;
-  mistakes: string | null;
-  updated_at: string;
-};
+const KEY = "chartmate-psychology-logs-v1";
 
-const fromRow = (r: Row): PsychologyLog => ({
-  id: r.id,
-  date: r.date,
-  tradeId: r.trade_id,
-  morningMood: r.morning_mood ?? undefined,
-  energyLevel: r.energy_level ?? undefined,
-  morningNotes: r.morning_notes ?? undefined,
-  nonTradingFactors: r.non_trading_factors ?? undefined,
-  dailyNarrative: r.daily_narrative ?? undefined,
-  endDaySummary: r.end_day_summary ?? undefined,
-  preTradeEmotion: r.pre_trade_emotion ?? undefined,
-  entryRationale: r.entry_rationale ?? undefined,
-  postTradeEmotion: r.post_trade_emotion ?? undefined,
-  exitAssessment: r.exit_assessment ?? undefined,
-  disciplineScore: r.discipline_score ?? undefined,
-  emotionNotes: r.emotion_notes ?? undefined,
-  mistakes: r.mistakes ?? undefined,
-  updatedAt: r.updated_at,
-});
+function readAll(): PsychologyLog[] {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
 
-const toRow = (log: PsychologyLog, userId: string) => ({
-  id: log.id,
-  user_id: userId,
-  date: log.date,
-  trade_id: log.tradeId,
-  morning_mood: log.morningMood ?? null,
-  energy_level: log.energyLevel ?? null,
-  morning_notes: log.morningNotes ?? null,
-  non_trading_factors: log.nonTradingFactors ?? null,
-  daily_narrative: log.dailyNarrative ?? null,
-  end_day_summary: log.endDaySummary ?? null,
-  pre_trade_emotion: log.preTradeEmotion ?? null,
-  entry_rationale: log.entryRationale ?? null,
-  post_trade_emotion: log.postTradeEmotion ?? null,
-  exit_assessment: log.exitAssessment ?? null,
-  discipline_score: log.disciplineScore ?? null,
-  emotion_notes: log.emotionNotes ?? null,
-  mistakes: log.mistakes ?? null,
-});
-
-// Cast helper — table is created via migration, types regenerate after.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tbl = () => (supabase as any).from("psychology_logs");
+function writeAll(rows: PsychologyLog[]) {
+  localStorage.setItem(KEY, JSON.stringify(rows));
+}
 
 export async function fetchPsychologyLogs(): Promise<PsychologyLog[]> {
-  const { data, error } = await tbl()
-    .select("*")
-    .order("date", { ascending: false });
-  if (error) throw error;
-  return (data as Row[]).map(fromRow);
+  return readAll();
 }
 
 export async function fetchPsychologyForDate(date: string): Promise<PsychologyLog[]> {
-  const { data, error } = await tbl().select("*").eq("date", date);
-  if (error) throw error;
-  return (data as Row[]).map(fromRow);
+  return readAll().filter((r) => r.date === date);
 }
 
 export async function fetchPsychologyForTrade(tradeId: string): Promise<PsychologyLog | null> {
-  const { data, error } = await tbl()
-    .select("*")
-    .eq("trade_id", tradeId)
-    .maybeSingle();
-  if (error) throw error;
-  return data ? fromRow(data as Row) : null;
+  return readAll().find((r) => r.tradeId === tradeId) ?? null;
 }
 
 export async function upsertPsychologyLog(log: PsychologyLog): Promise<void> {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u.user) throw new Error("Not authenticated");
-
-  // Use the natural-key conflict target so daily records and per-trade records
-  // each get a deterministic row regardless of the local id we generated.
-  const conflictTarget = log.tradeId
-    ? "user_id,trade_id"
-    : "user_id,date";
-
-  const { error } = await tbl()
-    .upsert(toRow(log, u.user.id), { onConflict: conflictTarget });
-  if (error) throw error;
+  const rows = readAll();
+  const idx = rows.findIndex((r) => r.id === log.id);
+  const stamped = { ...log, updatedAt: new Date().toISOString() };
+  if (idx >= 0) rows[idx] = stamped;
+  else rows.push(stamped);
+  writeAll(rows);
 }
 
 export async function deletePsychologyLog(id: string): Promise<void> {
-  const { error } = await tbl().delete().eq("id", id);
-  if (error) throw error;
+  writeAll(readAll().filter((r) => r.id !== id));
 }
 
 export function newDailyLog(date: string): PsychologyLog {
