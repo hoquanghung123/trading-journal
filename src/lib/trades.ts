@@ -14,6 +14,9 @@ export interface Trade {
   maxRr: number;
   beforeImg?: string;
   afterImg?: string;
+  h1Img?: string;
+  m15Img?: string;
+  m5Img?: string;
   biasEntryId?: string;
   notes?: string;
 }
@@ -30,6 +33,9 @@ type Row = {
   max_rr: number;
   before_img: string | null;
   after_img: string | null;
+  h1_img: string | null;
+  m15_img: string | null;
+  m5_img: string | null;
   bias_entry_id: string | null;
   notes: string | null;
 };
@@ -46,6 +52,9 @@ const fromRow = (r: Row): Trade => ({
   maxRr: Number(r.max_rr),
   beforeImg: r.before_img ?? undefined,
   afterImg: r.after_img ?? undefined,
+  h1Img: r.h1_img ?? undefined,
+  m15Img: r.m15_img ?? undefined,
+  m5Img: r.m5_img ?? undefined,
   biasEntryId: r.bias_entry_id ?? undefined,
   notes: r.notes ?? undefined,
 });
@@ -63,6 +72,9 @@ const toRow = (t: Trade, userId: string) => ({
   max_rr: t.maxRr,
   before_img: t.beforeImg ?? null,
   after_img: t.afterImg ?? null,
+  h1_img: t.h1Img ?? null,
+  m15_img: t.m15Img ?? null,
+  m5_img: t.m5Img ?? null,
   bias_entry_id: t.biasEntryId ?? null,
   notes: t.notes ?? null,
 });
@@ -73,13 +85,13 @@ export async function fetchTrades(): Promise<Trade[]> {
     .select("*")
     .order("entry_time", { ascending: false });
   if (error) throw error;
-  return (data as Row[]).map(fromRow);
+  return (data as unknown as Row[]).map(fromRow);
 }
 
 export async function upsertTrade(t: Trade): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
-  const { error } = await supabase.from("trades").upsert(toRow(t, u.user.id));
+  const { error } = await supabase.from("trades").upsert(toRow(t, u.user.id) as never);
   if (error) throw error;
 }
 

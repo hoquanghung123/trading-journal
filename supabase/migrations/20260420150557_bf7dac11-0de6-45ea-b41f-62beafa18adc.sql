@@ -1,0 +1,4 @@
+ALTER TABLE public.trades
+  ADD COLUMN IF NOT EXISTS h1_img text,
+  ADD COLUMN IF NOT EXISTS m15_img text,
+  ADD COLUMN IF NOT EXISTS m5_img text;

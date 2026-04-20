@@ -19,7 +19,7 @@ interface Props {
 
 export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [t, setT] = useState<Trade | null>(trade);
-  const [focused, setFocused] = useState<"before" | "after" | null>(null);
+  const [focused, setFocused] = useState<"before" | "after" | "h1" | "m15" | "m5" | null>(null);
   const [busy, setBusy] = useState(false);
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
   const { data: symbols = [] } = useSymbols();
@@ -211,7 +211,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
             </Field>
           </div>
 
-          {/* Images */}
+          {/* Images: Before / After */}
           <div className="grid grid-cols-2 gap-3">
             <PasteSlot
               label="BEFORE"
@@ -227,6 +227,34 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               onChange={(p) => update({ afterImg: p })}
               focused={focused === "after"}
               onFocus={() => setFocused("after")}
+              className="h-32"
+            />
+          </div>
+
+          {/* Images: H1 / M15 / M5 */}
+          <div className="grid grid-cols-3 gap-3">
+            <PasteSlot
+              label="H1"
+              image={t.h1Img}
+              onChange={(p) => update({ h1Img: p })}
+              focused={focused === "h1"}
+              onFocus={() => setFocused("h1")}
+              className="h-32"
+            />
+            <PasteSlot
+              label="M15"
+              image={t.m15Img}
+              onChange={(p) => update({ m15Img: p })}
+              focused={focused === "m15"}
+              onFocus={() => setFocused("m15")}
+              className="h-32"
+            />
+            <PasteSlot
+              label="M5"
+              image={t.m5Img}
+              onChange={(p) => update({ m5Img: p })}
+              focused={focused === "m5"}
+              onFocus={() => setFocused("m5")}
               className="h-32"
             />
           </div>
