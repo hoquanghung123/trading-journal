@@ -184,59 +184,34 @@ export function PsychologyView() {
           <div className="col-span-12 lg:col-span-8 space-y-4">
             {/* Morning Check-in */}
             <Section title="MORNING CHECK-IN" action={<SaveButton sectionKey="daily" />}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                <div>
-                  <Label>START OF DAY MOOD</Label>
-                  <div className="flex gap-2 flex-wrap">
-                    {MOOD_OPTIONS.map((m) => {
-                      const active = dailyLog.morningMood === m;
-                      return (
-                        <button
-                          key={m}
-                          onClick={() => updateDaily({ morningMood: active ? undefined : m })}
-                          className={`text-2xl p-1.5 rounded-md border transition ${
-                            active
-                              ? "bg-neon-cyan/15 border-neon-cyan/60 shadow-[0_0_12px_oklch(0.85_0.18_200/0.35)]"
-                              : "border-terminal-border opacity-50 hover:opacity-100"
-                          }`}
-                        >
-                          {m}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <Label>ENERGY LEVEL ({dailyLog.energyLevel ?? 3}/5)</Label>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    value={dailyLog.energyLevel ?? 3}
-                    onChange={(e) => updateDaily({ energyLevel: Number(e.target.value) })}
-                    className="w-full accent-[#48C0D8]"
-                  />
-                  <div className="flex justify-between text-[10px] text-muted-foreground font-mono mt-1">
-                    <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
-                  </div>
+              <div className="mb-4">
+                <Label>START OF DAY MOOD</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {MOOD_OPTIONS.map((m) => {
+                    const active = dailyLog.morningMood === m;
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => updateDaily({ morningMood: active ? undefined : m })}
+                        className={`text-2xl p-1.5 rounded-md border transition ${
+                          active
+                            ? "bg-neon-cyan/15 border-neon-cyan/60 shadow-[0_0_12px_oklch(0.85_0.18_200/0.35)]"
+                            : "border-terminal-border opacity-50 hover:opacity-100"
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Field
-                  label="CHECK-IN NOTE"
-                  value={dailyLog.morningNotes ?? ""}
-                  placeholder="How do you feel? (Tired, motivated, stressed...)"
-                  onCommit={(v) => updateDaily({ morningNotes: v })}
-                />
-                <Field
-                  label="NON-TRADING FACTORS"
-                  value={dailyLog.nonTradingFactors ?? ""}
-                  placeholder="Sleep quality, work load, personal life..."
-                  onCommit={(v) => updateDaily({ nonTradingFactors: v })}
-                />
-              </div>
+              <Field
+                label="CHECK-IN NOTE"
+                value={dailyLog.morningNotes ?? ""}
+                placeholder="How do you feel? (Tired, motivated, stressed...)"
+                onCommit={(v) => updateDaily({ morningNotes: v })}
+              />
             </Section>
 
             {/* Trade Discipline & Emotions */}
@@ -324,24 +299,6 @@ export function PsychologyView() {
               )}
             </Section>
 
-            {/* Daily Narrative + End of Day */}
-            <Section title="DAILY NARRATIVE">
-              <Field
-                value={dailyLog.dailyNarrative ?? ""}
-                placeholder="Tell the story of your trading day…"
-                rows={4}
-                onCommit={(v) => updateDaily({ dailyNarrative: v })}
-              />
-            </Section>
-
-            <Section title="END OF DAY">
-              <Field
-                value={dailyLog.endDaySummary ?? ""}
-                placeholder="Wins, losses, lessons, what to repeat tomorrow…"
-                rows={4}
-                onCommit={(v) => updateDaily({ endDaySummary: v })}
-              />
-            </Section>
           </div>
 
           {/* Right column */}
