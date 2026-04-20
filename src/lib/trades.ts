@@ -14,6 +14,9 @@ export interface Trade {
   maxRr: number;
   beforeImg?: string;
   afterImg?: string;
+  h1Img?: string;
+  m15Img?: string;
+  m5Img?: string;
   biasEntryId?: string;
   notes?: string;
 }
