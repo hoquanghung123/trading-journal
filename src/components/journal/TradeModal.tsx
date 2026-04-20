@@ -5,8 +5,14 @@ import { Label } from "@/components/ui/label";
 import { computeOutcome, outcomeStyle, type Trade } from "@/lib/trades";
 import { useSymbols } from "@/lib/symbols";
 import { fetchEntries, type DayEntry, ddmm } from "@/lib/journal";
+import {
+  fetchPsychologyForTrade,
+  type PsychologyLog,
+} from "@/lib/psychology";
+import { navigateToPage } from "@/lib/nav-bus";
 import { PasteSlot } from "./PasteSlot";
-import { Trash2, Save } from "lucide-react";
+import { PsychologyBadges } from "./PsychologyBadges";
+import { Trash2, Save, Brain, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -22,16 +28,22 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [focused, setFocused] = useState<"before" | "after" | null>(null);
   const [busy, setBusy] = useState(false);
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
+  const [psych, setPsych] = useState<PsychologyLog | null>(null);
   const { data: symbols = [] } = useSymbols();
   const SYMBOLS = symbols.map((s) => s.name);
 
   useEffect(() => { setT(trade); }, [trade]);
 
-  // Load all journal entries once when modal opens
+  // Load journal entries + psychology log when modal opens
   useEffect(() => {
     if (!open) return;
     fetchEntries().then(setBiasEntries).catch(() => {});
-  }, [open]);
+    if (trade?.id) {
+      fetchPsychologyForTrade(trade.id).then(setPsych).catch(() => setPsych(null));
+    } else {
+      setPsych(null);
+    }
+  }, [open, trade?.id]);
 
   const filteredBias = useMemo(
     () => biasEntries
