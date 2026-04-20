@@ -13,7 +13,7 @@ export function focusBiasEntry(entryId: string) {
 }
 
 // Page navigation bus
-export type PageId = "dashboard" | "bias" | "trades";
+export type PageId = "dashboard" | "bias" | "trades" | "psychology";
 type PageListener = (p: PageId) => void;
 const pageListeners = new Set<PageListener>();
 

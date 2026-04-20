@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Crosshair, FileText, LogOut, Terminal as TerminalIcon, Construction, Settings } from "lucide-react";
+import { LayoutDashboard, Crosshair, FileText, LogOut, Terminal as TerminalIcon, Construction, Settings, Brain } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGate } from "./AuthGate";
 import { JournalView } from "./JournalView";
 import { TradeLog } from "./TradeLog";
+import { PsychologyView } from "./PsychologyView";
 import { ManageAssetsModal } from "./ManageAssetsModal";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
 
-type Page = "dashboard" | "bias" | "trades";
+type Page = "dashboard" | "bias" | "trades" | "psychology";
 
 const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "bias", label: "Bias Expect", icon: Crosshair },
   { id: "trades", label: "Trade Log", icon: FileText },
+  { id: "psychology", label: "Psychology", icon: Brain },
 ];
 
 const queryClient = new QueryClient({
@@ -85,6 +87,7 @@ function Shell() {
         {page === "bias" && <JournalView />}
         {page === "dashboard" && <UnderConstruction title="DASHBOARD" />}
         {page === "trades" && <TradeLog />}
+        {page === "psychology" && <PsychologyView />}
       </div>
 
       <ManageAssetsModal open={assetsOpen} onClose={() => setAssetsOpen(false)} />
