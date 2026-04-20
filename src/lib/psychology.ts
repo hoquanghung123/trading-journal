@@ -102,7 +102,7 @@ async function migrateLocalStorageOnce(userId: string): Promise<void> {
         exit_assessment: r.exitAssessment ?? null,
       }));
     if (rows.length) {
-      const { error } = await (supabase.from(TABLE) as any).upsert(rows, {
+      const { error } = await (supabase as any).from(TABLE).upsert(rows, {
         onConflict: "id",
       });
       if (error) {
@@ -131,7 +131,7 @@ async function ensureMigrated(): Promise<string | null> {
 
 export async function fetchPsychologyLogs(): Promise<PsychologyLog[]> {
   await ensureMigrated();
-  const { data, error } = await (supabase.from(TABLE) as any)
+  const { data, error } = await (supabase as any).from(TABLE)
     .select("*")
     .order("date", { ascending: false });
   if (error) throw error;
@@ -140,7 +140,7 @@ export async function fetchPsychologyLogs(): Promise<PsychologyLog[]> {
 
 export async function fetchPsychologyForDate(date: string): Promise<PsychologyLog[]> {
   await ensureMigrated();
-  const { data, error } = await (supabase.from(TABLE) as any)
+  const { data, error } = await (supabase as any).from(TABLE)
     .select("*")
     .eq("date", date);
   if (error) throw error;
@@ -149,7 +149,7 @@ export async function fetchPsychologyForDate(date: string): Promise<PsychologyLo
 
 export async function fetchPsychologyForTrade(tradeId: string): Promise<PsychologyLog | null> {
   await ensureMigrated();
-  const { data, error } = await (supabase.from(TABLE) as any)
+  const { data, error } = await (supabase as any).from(TABLE)
     .select("*")
     .eq("trade_id", tradeId)
     .maybeSingle();
@@ -160,14 +160,14 @@ export async function fetchPsychologyForTrade(tradeId: string): Promise<Psycholo
 export async function upsertPsychologyLog(log: PsychologyLog): Promise<void> {
   const userId = await ensureMigrated();
   if (!userId) throw new Error("Not authenticated");
-  const { error } = await (supabase.from(TABLE) as any).upsert(toRow(log, userId), {
+  const { error } = await (supabase as any).from(TABLE).upsert(toRow(log, userId), {
     onConflict: "id",
   });
   if (error) throw error;
 }
 
 export async function deletePsychologyLog(id: string): Promise<void> {
-  const { error } = await (supabase.from(TABLE) as any).delete().eq("id", id);
+  const { error } = await (supabase as any).from(TABLE).delete().eq("id", id);
   if (error) throw error;
 }
 
