@@ -52,6 +52,9 @@ const fromRow = (r: Row): Trade => ({
   maxRr: Number(r.max_rr),
   beforeImg: r.before_img ?? undefined,
   afterImg: r.after_img ?? undefined,
+  h1Img: r.h1_img ?? undefined,
+  m15Img: r.m15_img ?? undefined,
+  m5Img: r.m5_img ?? undefined,
   biasEntryId: r.bias_entry_id ?? undefined,
   notes: r.notes ?? undefined,
 });
@@ -69,6 +72,9 @@ const toRow = (t: Trade, userId: string) => ({
   max_rr: t.maxRr,
   before_img: t.beforeImg ?? null,
   after_img: t.afterImg ?? null,
+  h1_img: t.h1Img ?? null,
+  m15_img: t.m15Img ?? null,
+  m5_img: t.m5Img ?? null,
   bias_entry_id: t.biasEntryId ?? null,
   notes: t.notes ?? null,
 });
