@@ -147,7 +147,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               <Input
                 type="datetime-local"
                 value={dtLocal}
-                onChange={(e) => update({ entryTime: new Date(e.target.value).toISOString() })}
+                onChange={(e) => update({ entryTime: nyLocalToIso(e.target.value) })}
                 className="h-8 bg-black/40 border-terminal-border"
               />
             </Field>
