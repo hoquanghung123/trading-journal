@@ -263,32 +263,6 @@ export function PsychologyView() {
                     onCommit={(v) => updateTrade({ exitAssessment: v })}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <Label>DISCIPLINE SCORE ({tradeLog.disciplineScore ?? 5}/10)</Label>
-                      <input
-                        type="range"
-                        min={1}
-                        max={10}
-                        value={tradeLog.disciplineScore ?? 5}
-                        onChange={(e) => updateTrade({ disciplineScore: Number(e.target.value) })}
-                        className="w-full accent-[#48C0D8]"
-                      />
-                    </div>
-                    <Field
-                      label="MISTAKES"
-                      value={tradeLog.mistakes ?? ""}
-                      placeholder="What did you do wrong?"
-                      onCommit={(v) => updateTrade({ mistakes: v })}
-                    />
-                  </div>
-
-                  <Field
-                    label="EMOTION NOTES"
-                    value={tradeLog.emotionNotes ?? ""}
-                    placeholder="Free-form emotion log for this trade"
-                    onCommit={(v) => updateTrade({ emotionNotes: v })}
-                  />
                 </div>
               ) : (
                 <div className="text-center py-8 text-xs text-muted-foreground tracking-widest">

@@ -20,9 +20,6 @@ export interface PsychologyLog {
   entryRationale?: string;
   postTradeEmotion?: string;
   exitAssessment?: string;
-  disciplineScore?: number;      // 1-10
-  emotionNotes?: string;
-  mistakes?: string;
 
   updatedAt: string;
 }
