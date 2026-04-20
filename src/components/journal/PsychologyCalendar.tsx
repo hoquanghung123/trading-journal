@@ -45,11 +45,13 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
 
   // Index logs / trades by NY date string for O(1) lookup
   const stats = useMemo(() => {
-    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number }>();
+    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number; mood?: string }>();
     for (const l of logs) {
       const cur = map.get(l.date) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0 };
-      if (l.tradeId === null) cur.hasDaily = true;
-      else cur.tradeLogCount += 1;
+      if (l.tradeId === null) {
+        cur.hasDaily = true;
+        if (l.morningMood) cur.mood = l.morningMood;
+      } else cur.tradeLogCount += 1;
       map.set(l.date, cur);
     }
     for (const t of trades) {
@@ -169,6 +171,15 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                 <span className="absolute top-1 right-1 text-[8px] font-bold text-muted-foreground bg-white/[0.04] px-1 rounded leading-tight">
                   {s.tradeCount}
                 </span>
+              )}
+
+              {/* Mood emoji (center) */}
+              {s?.mood && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-lg leading-none drop-shadow-[0_0_4px_rgba(72,192,216,0.4)]">
+                    {s.mood}
+                  </span>
+                </div>
               )}
 
               {/* Indicators (bottom) */}

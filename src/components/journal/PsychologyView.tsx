@@ -14,6 +14,7 @@ import {
   type PsychologyLog,
 } from "@/lib/psychology";
 import { PsychologyCalendar } from "./PsychologyCalendar";
+import { PsychologyDayTimeline } from "./PsychologyDayTimeline";
 import { toast } from "sonner";
 
 export function PsychologyView() {
@@ -23,6 +24,7 @@ export function PsychologyView() {
   const [selectedTradeId, setSelectedTradeId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [timelineDate, setTimelineDate] = useState<string | null>(null);
 
   // Initial load — fetch trades + logs once
   useEffect(() => {
@@ -315,11 +317,24 @@ export function PsychologyView() {
         <div className="mt-4">
           <PsychologyCalendar
             selectedDate={date}
-            onSelectDate={setDate}
+            onSelectDate={(d) => {
+              setDate(d);
+              setTimelineDate(d);
+            }}
             logs={logs}
             trades={trades}
           />
         </div>
+
+        {/* Day Timeline Modal */}
+        {timelineDate && (
+          <PsychologyDayTimeline
+            date={timelineDate}
+            logs={logs}
+            trades={trades}
+            onClose={() => setTimelineDate(null)}
+          />
+        )}
       </div>
     </div>
   );
