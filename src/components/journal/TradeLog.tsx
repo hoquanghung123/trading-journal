@@ -37,6 +37,7 @@ const COL_LABELS: Record<ColKey, string> = {
 
 export function TradeLog() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [psych, setPsych] = useState<Record<string, PsychologyLog>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
@@ -55,7 +56,10 @@ export function TradeLog() {
   const reload = async () => {
     setLoading(true);
     try {
-      setTrades(await fetchTrades());
+      const ts = await fetchTrades();
+      setTrades(ts);
+      const map = await fetchPsychologyForTrades(ts.map((t) => t.id));
+      setPsych(map);
     } catch (e: any) {
       toast.error(e.message ?? "Failed to load");
     } finally {
