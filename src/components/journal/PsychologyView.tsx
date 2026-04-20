@@ -12,6 +12,7 @@ import {
   toLocalDateStr,
   type PsychologyLog,
 } from "@/lib/psychology";
+import { onPageChange } from "@/lib/nav-bus";
 import { toast } from "sonner";
 
 export function PsychologyView() {
