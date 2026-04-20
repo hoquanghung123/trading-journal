@@ -41,6 +41,9 @@ type Row = {
 };
 
 const TABLE = "psychology_logs";
+// `psychology_logs` isn't in the generated Database types yet, so we work
+// against an untyped client to avoid TS2769 "never" errors.
+const db = supabase as any;
 
 const fromRow = (r: Row): PsychologyLog => ({
   id: r.id,
