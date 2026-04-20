@@ -13,11 +13,7 @@ export interface PsychologyLog {
 
   // Daily check-in (only meaningful when tradeId === null)
   morningMood?: string;          // emoji or label
-  energyLevel?: number;          // 1-5
   morningNotes?: string;
-  nonTradingFactors?: string;
-  endDaySummary?: string;
-  dailyNarrative?: string;
 
   // Per-trade evaluation (only meaningful when tradeId !== null)
   preTradeEmotion?: string;      // single tag
