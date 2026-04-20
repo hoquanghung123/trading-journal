@@ -7,7 +7,7 @@ import { JournalView } from "./JournalView";
 import { TradeLog } from "./TradeLog";
 import { PsychologyView } from "./PsychologyView";
 import { ManageAssetsModal } from "./ManageAssetsModal";
-import { onPageChange, type PageId } from "@/lib/nav-bus";
+import { onPageChange, navigateToPage, type PageId } from "@/lib/nav-bus";
 
 type Page = "dashboard" | "bias" | "trades" | "psychology";
 
