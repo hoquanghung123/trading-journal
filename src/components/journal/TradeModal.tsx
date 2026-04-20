@@ -324,3 +324,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+function Snippet({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-terminal-border/60 bg-black/40 p-2">
+      <div className="text-[9px] tracking-widest uppercase text-muted-foreground mb-0.5">{label}</div>
+      <div className="text-foreground line-clamp-3">{value}</div>
+    </div>
+  );
+}
