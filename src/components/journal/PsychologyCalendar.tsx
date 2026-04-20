@@ -45,11 +45,13 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
 
   // Index logs / trades by NY date string for O(1) lookup
   const stats = useMemo(() => {
-    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number }>();
+    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number; mood?: string }>();
     for (const l of logs) {
       const cur = map.get(l.date) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0 };
-      if (l.tradeId === null) cur.hasDaily = true;
-      else cur.tradeLogCount += 1;
+      if (l.tradeId === null) {
+        cur.hasDaily = true;
+        if (l.morningMood) cur.mood = l.morningMood;
+      } else cur.tradeLogCount += 1;
       map.set(l.date, cur);
     }
     for (const t of trades) {
