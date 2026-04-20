@@ -7,7 +7,7 @@ import { JournalView } from "./JournalView";
 import { TradeLog } from "./TradeLog";
 import { PsychologyView } from "./PsychologyView";
 import { ManageAssetsModal } from "./ManageAssetsModal";
-import { onPageChange, type PageId } from "@/lib/nav-bus";
+import { onPageChange, navigateToPage, type PageId } from "@/lib/nav-bus";
 
 type Page = "dashboard" | "bias" | "trades" | "psychology";
 
@@ -52,7 +52,7 @@ function Shell() {
             return (
               <button
                 key={item.id}
-                onClick={() => setPage(item.id)}
+                onClick={() => navigateToPage(item.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-bold tracking-[0.18em] border transition-all ${
                   active
                     ? "bg-neon-cyan/15 text-neon-cyan border-neon-cyan/50 text-glow-cyan shadow-[0_0_18px_oklch(0.85_0.18_200/0.25)]"
