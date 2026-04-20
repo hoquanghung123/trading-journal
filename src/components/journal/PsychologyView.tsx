@@ -13,6 +13,7 @@ import {
   todayNyDateStr,
   type PsychologyLog,
 } from "@/lib/psychology";
+import { PsychologyCalendar } from "./PsychologyCalendar";
 import { toast } from "sonner";
 
 export function PsychologyView() {
@@ -308,6 +309,16 @@ export function PsychologyView() {
               </div>
             </Section>
           </div>
+        </div>
+
+        {/* Psychology History Calendar */}
+        <div className="mt-4">
+          <PsychologyCalendar
+            selectedDate={date}
+            onSelectDate={setDate}
+            logs={logs}
+            trades={trades}
+          />
         </div>
       </div>
     </div>
