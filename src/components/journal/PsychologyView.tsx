@@ -317,11 +317,24 @@ export function PsychologyView() {
         <div className="mt-4">
           <PsychologyCalendar
             selectedDate={date}
-            onSelectDate={setDate}
+            onSelectDate={(d) => {
+              setDate(d);
+              setTimelineDate(d);
+            }}
             logs={logs}
             trades={trades}
           />
         </div>
+
+        {/* Day Timeline Modal */}
+        {timelineDate && (
+          <PsychologyDayTimeline
+            date={timelineDate}
+            logs={logs}
+            trades={trades}
+            onClose={() => setTimelineDate(null)}
+          />
+        )}
       </div>
     </div>
   );
