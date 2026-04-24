@@ -61,7 +61,7 @@ export function DashboardPage() {
   const stats = useMemo(() => {
     const activeTrades = filteredTrades;
     const total = activeTrades.length;
-    if (total === 0) return { total: 0, winRate: 0, totalPnl: 0, sqn: 0, roc: 0, discipline: 0 };
+    if (total === 0) return { total: 0, winRate: 0, totalPnl: 0, sqn: 0, totalR: 0, totalMaxR: 0, discipline: 0, disciplined: 0 };
 
     const wins = activeTrades.filter((t) => t.netPnl > 0);
     const winRate = (wins.length / total) * 100;
@@ -88,12 +88,17 @@ export function DashboardPage() {
     const disciplined = activeTrades.filter(t => t.complianceCheck).length;
     const discipline = (disciplined / total) * 100;
 
+    // R Calculations
+    const totalR = activeTrades.reduce((acc, t) => acc + (t.actualRr || 0), 0);
+    const totalMaxR = activeTrades.reduce((acc, t) => acc + (t.maxRr || 0), 0);
+
     return {
       total,
       winRate,
       totalPnl,
       sqn,
-      roc,
+      totalR,
+      totalMaxR,
       discipline,
       disciplined,
     };
@@ -183,9 +188,15 @@ export function DashboardPage() {
               </h4>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Return on Capital</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">R Achieved</p>
               <h4 className="text-2xl font-black text-emerald-500">
-                {isMonthOnly ? `${stats.roc.toFixed(2)}%` : "--"}
+                {stats.totalR.toFixed(1)}R
+              </h4>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Max RR Reached</p>
+              <h4 className="text-2xl font-black text-amber-500">
+                {stats.totalMaxR.toFixed(1)}R
               </h4>
             </div>
             <div>
