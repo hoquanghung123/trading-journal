@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { format } from "date-fns";
 import type { PsychologyLog } from "@/lib/psychology";
-import { toNyDateStr, todayNyDateStr } from "@/lib/psychology";
+import { todayNyDateStr } from "@/lib/psychology";
 import type { Trade } from "@/lib/trades";
 
 interface Props {
-  selectedDate: string;          // YYYY-MM-DD (NY)
+  selectedDate: string; // YYYY-MM-DD (NY)
   onSelectDate: (date: string) => void;
   logs: PsychologyLog[];
   trades: Trade[];
@@ -45,9 +46,23 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
 
   // Index logs / trades by NY date string for O(1) lookup
   const stats = useMemo(() => {
-    const map = new Map<string, { hasDaily: boolean; tradeLogCount: number; tradeCount: number; netPnl: number; mood?: string }>();
+    const map = new Map<
+      string,
+      {
+        hasDaily: boolean;
+        tradeLogCount: number;
+        tradeCount: number;
+        netPnl: number;
+        mood?: string;
+      }
+    >();
     for (const l of logs) {
-      const cur = map.get(l.date) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0, netPnl: 0 };
+      const cur = map.get(l.date) ?? {
+        hasDaily: false,
+        tradeLogCount: 0,
+        tradeCount: 0,
+        netPnl: 0,
+      };
       if (l.tradeId === null) {
         cur.hasDaily = true;
         if (l.morningMood) cur.mood = l.morningMood;
@@ -55,7 +70,7 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
       map.set(l.date, cur);
     }
     for (const t of trades) {
-      const k = toNyDateStr(t.entryTime);
+      const k = format(new Date(t.entryTime), "yyyy-MM-dd");
       const cur = map.get(k) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0, netPnl: 0 };
       cur.tradeCount += 1;
       cur.netPnl += Number(t.netPnl) || 0;
@@ -75,157 +90,148 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
     onSelectDate(today);
   };
 
+  // Group days into weeks of 7
+  const rows = useMemo(() => {
+    const res: Date[][] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      res.push(days.slice(i, i + 7));
+    }
+    return res;
+  }, [days]);
+
   return (
-    <section
-      className="rounded-lg border border-terminal-border p-5"
-      style={{ background: "#0B0E11" }}
-    >
+    <section className="bg-white rounded-[40px] border border-border shadow-sm overflow-hidden animate-in fade-in duration-500 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="w-4 h-4 text-[#48C0D8]" />
-          <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#48C0D8]">
-            PSYCHOLOGY HISTORY CALENDAR
-          </h2>
+      <div className="flex items-center justify-between px-8 py-6 border-b border-border bg-white flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <CalendarDays className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black tracking-tight text-foreground">
+              Psychology History
+            </h2>
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1">
+              Daily Check-ins & Performance
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goPrev}
-            className="p-1.5 rounded border border-terminal-border hover:border-[#48C0D8]/60 hover:text-[#48C0D8] text-muted-foreground transition"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          <div className="px-3 py-1 text-[11px] font-mono tracking-widest text-foreground min-w-[140px] text-center uppercase">
-            {monthLabel}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-muted/30 rounded-2xl p-1.5 gap-1 border border-border/50">
+            <button
+              onClick={goPrev}
+              className="p-2 rounded-xl hover:bg-white hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div className="px-6 py-1 text-sm font-black text-foreground min-w-[160px] text-center uppercase tracking-widest">
+              {monthLabel}
+            </div>
+            <button
+              onClick={goNext}
+              className="p-2 rounded-xl hover:bg-white hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={goNext}
-            className="p-1.5 rounded border border-terminal-border hover:border-[#48C0D8]/60 hover:text-[#48C0D8] text-muted-foreground transition"
-            aria-label="Next month"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
           <button
             onClick={goToday}
-            className="ml-2 px-2.5 py-1 rounded text-[10px] font-bold tracking-[0.2em] border border-[#48C0D8]/40 text-[#48C0D8] hover:bg-[#48C0D8]/10 transition"
+            className="px-6 py-3 rounded-2xl text-xs font-black tracking-widest bg-white border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all active:scale-95 uppercase shadow-sm"
           >
-            TODAY
+            Today
           </button>
         </div>
       </div>
 
-      {/* Weekday header */}
-      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-        {WEEKDAYS.map((w) => (
-          <div
-            key={w}
-            className="text-[9px] font-bold tracking-[0.25em] text-muted-foreground text-center py-1"
-          >
-            {w}
-          </div>
-        ))}
-      </div>
+      {/* Grid Container */}
+      <div className="flex-1 flex flex-col">
+        {/* Days of week */}
+        <div className="grid grid-cols-7 border-b border-border bg-muted/10">
+          {WEEKDAYS.map((w) => (
+            <div key={w} className="py-4 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+              {w}
+            </div>
+          ))}
+        </div>
 
-      {/* Day grid */}
-      <div className="grid grid-cols-7 gap-1.5">
-        {days.map((d) => {
-          const k = ymd(d);
-          const inMonth = d.getMonth() === anchor.getMonth();
-          const isToday = k === today;
-          const isSelected = k === selectedDate;
-          const s = stats.get(k);
+        {/* Days Grid */}
+        <div className="flex-1 flex flex-col divide-y divide-border">
+          {rows.map((row, i) => (
+            <div key={i} className="flex-1 grid grid-cols-7 divide-x divide-border min-h-[120px]">
+              {row.map((d) => {
+                const k = ymd(d);
+                const inMonth = d.getMonth() === anchor.getMonth();
+                const isSelected = k === selectedDate;
+                const isToday = k === today;
+                const s = stats.get(k);
+                
+                return (
+                  <div
+                    key={k}
+                    onClick={() => onSelectDate(k)}
+                    className={`relative p-4 flex flex-col justify-between cursor-pointer transition-all duration-300 group
+                      ${inMonth ? "bg-white hover:bg-muted/30" : "bg-muted/5"}
+                      ${isSelected ? "ring-4 ring-inset ring-primary/40 z-10" : ""}
+                      ${isToday && !isSelected ? "ring-2 ring-inset ring-primary/20" : ""}
+                      ${!inMonth ? "opacity-20" : ""}
+                    `}
+                  >
+                    {/* Day number */}
+                    <div className="flex justify-between items-start">
+                      <span className={`text-sm font-black ${inMonth ? "text-foreground group-hover:text-primary" : "text-muted-foreground/30"}`}>
+                        {d.getDate()}
+                      </span>
+                      {s && s.tradeCount > 0 && (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
+                           {s.tradeCount}T
+                        </span>
+                      )}
+                    </div>
 
-          return (
-            <button
-              key={k}
-              onClick={() => onSelectDate(k)}
-              className={[
-                "relative aspect-square rounded-md border text-left p-1.5 transition group",
-                "hover:border-[#48C0D8]/60 hover:bg-[#48C0D8]/5",
-                isSelected
-                  ? "border-[#48C0D8] bg-[#48C0D8]/10 shadow-[0_0_12px_oklch(0.85_0.18_200/0.35)]"
-                  : isToday
-                    ? "border-[#48C0D8]/40"
-                    : "border-[#1E262F]",
-                inMonth ? "" : "opacity-30",
-              ].join(" ")}
-            >
-              {/* Day number */}
-              <div
-                className={`text-[11px] font-mono ${
-                  isSelected
-                    ? "text-[#48C0D8] font-bold"
-                    : isToday
-                      ? "text-[#48C0D8]"
-                      : inMonth
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                }`}
-              >
-                {d.getDate()}
-              </div>
+                    {/* Mood / Center Content */}
+                    <div className="flex-1 flex items-center justify-center py-2">
+                       {s?.mood && (
+                         <span className="text-2xl drop-shadow-sm transition-transform duration-300 group-hover:scale-125">
+                           {s.mood}
+                         </span>
+                       )}
+                    </div>
 
-              {/* Trade count (top-right) — color by net PnL */}
-              {s && s.tradeCount > 0 && (
-                <span
-                  className={`absolute top-1 right-1 text-[8px] font-bold px-1 rounded leading-tight ${
-                    s.netPnl < 0
-                      ? "text-red-400 bg-red-500/15"
-                      : "text-green-400 bg-green-500/15"
-                  }`}
-                >
-                  {s.tradeCount}
-                </span>
-              )}
-
-              {/* Mood emoji (center) */}
-              {s?.mood && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-lg leading-none drop-shadow-[0_0_4px_rgba(72,192,216,0.4)]">
-                    {s.mood}
-                  </span>
-                </div>
-              )}
-
-              {/* Indicators (bottom) */}
-              <div className="absolute bottom-1 left-1 right-1 flex items-center gap-1">
-                {s?.hasDaily && (
-                  <span
-                    title="Daily check-in"
-                    className="w-1.5 h-1.5 rounded-full bg-[#48C0D8] shadow-[0_0_6px_oklch(0.85_0.18_200/0.7)]"
-                  />
-                )}
-                {s && s.tradeLogCount > 0 && (
-                  <span
-                    title={`${s.tradeLogCount} trade evaluation(s)`}
-                    className="w-1.5 h-1.5 rounded-full bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.7)]"
-                  />
-                )}
-              </div>
-            </button>
-          );
-        })}
+                    {/* Bottom Stats */}
+                    <div className="flex flex-col items-center">
+                       {s && s.tradeCount > 0 && (
+                         <span className={`text-[11px] font-black ${s.netPnl >= 0 ? "text-primary" : "text-destructive"}`}>
+                           {s.netPnl >= 0 ? "+" : ""}${Math.abs(s.netPnl).toFixed(0)}
+                         </span>
+                       )}
+                       {/* Indicators */}
+                       <div className="flex items-center gap-1.5 mt-1.5">
+                          {s?.hasDaily && (
+                            <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-primary" />
+                          )}
+                          {s && s.tradeLogCount > 0 && (
+                            <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-amber-500" />
+                          )}
+                       </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 pt-3 border-t border-terminal-border flex-wrap text-[10px] font-mono tracking-widest text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#48C0D8]" />
-          DAILY CHECK-IN
+      <div className="px-8 py-6 border-t border-border bg-white flex items-center gap-8 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-primary" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Daily Check-in</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-          TRADE EVALUATION
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold bg-green-500/15 text-green-400 px-1 rounded">N</span>
-          WIN / BE
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] font-bold bg-red-500/15 text-red-400 px-1 rounded">N</span>
-          LOSS
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-amber-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trade Evaluation</span>
         </div>
       </div>
     </section>

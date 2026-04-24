@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Trash2, Save } from "lucide-react";
+import { X, Trash2, Save, Plus } from "lucide-react";
 import type { Bias, DayEntry, Session } from "@/lib/journal";
 import { biasStyle, biasLabel, weekdayOf } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
@@ -31,101 +31,158 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
     setDraft((d) => ({ ...d, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="glass-strong rounded-xl w-full max-w-3xl max-h-[92vh] overflow-y-auto scrollbar-terminal" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-terminal-border">
-          <div className="flex items-center gap-3">
-            <span className="text-neon-cyan font-bold tracking-widest text-sm text-glow-cyan">
-              {weekdayOf(draft.date)} · {draft.date}
-            </span>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white sm:rounded-[32px] w-full max-w-3xl h-full sm:h-auto max-h-[100vh] sm:max-h-[94vh] overflow-y-auto shadow-2xl border border-white/20 animate-in fade-in zoom-in-95 duration-300 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-6 border-b border-border/50 sticky top-0 bg-white/80 backdrop-blur-md z-20">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Plus className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black tracking-tight text-foreground">
+                Edit Trading Day
+              </h2>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                {weekdayOf(draft.date)} · {draft.date}
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:text-neon-cyan"><X className="w-5 h-5" /></button>
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center transition-all text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
-        <div className="p-5 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="space-y-1">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Date</span>
-              <input type="date" value={draft.date} onChange={(e) => update("date", e.target.value)}
-                className="w-full bg-terminal-bg border border-terminal-border rounded px-2 py-1.5 text-sm focus:neon-focus outline-none" />
-            </label>
-            <label className="space-y-1">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Asset</span>
-              <select value={draft.asset} onChange={(e) => update("asset", e.target.value)}
-                className="w-full bg-terminal-bg border border-terminal-border rounded px-2 py-1.5 text-sm outline-none">
-                {ASSETS.map((a) => <option key={a} value={a}>{a}</option>)}
+        <div className="p-8 space-y-10">
+          {/* Metadata */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label>Target Date</Label>
+              <input
+                type="date"
+                value={draft.date}
+                onChange={(e) => update("date", e.target.value)}
+                className="w-full bg-muted/30 border border-border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Trading Asset</Label>
+              <select
+                value={draft.asset}
+                onChange={(e) => update("asset", e.target.value)}
+                className="w-full bg-muted/30 border border-border rounded-xl px-4 py-3 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all appearance-none"
+              >
+                {ASSETS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
               </select>
-            </label>
+            </div>
           </div>
 
-          {/* Weekly */}
-          <Section title="WEEKLY">
-            <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div className="space-y-10">
+            {/* Weekly */}
+            <Section title="Weekly Outlook">
+              <div className="grid grid-cols-[1fr_120px] gap-4">
+                <PasteSlot
+                  label="Weekly Chart"
+                  image={draft.weeklyImg}
+                  onChange={(u) => update("weeklyImg", u)}
+                  focused={focusKey === "weekly"}
+                  onFocus={() => setFocusKey("weekly")}
+                  className="h-48"
+                />
+                <BiasPicker value={draft.weeklyBias} onChange={(v) => update("weeklyBias", v)} />
+              </div>
+            </Section>
+
+            {/* Daily */}
+            <Section title="Daily Direction">
+              <div className="grid grid-cols-[1fr_120px] gap-4">
+                <PasteSlot
+                  label="Daily Chart"
+                  image={draft.dailyImg}
+                  onChange={(u) => update("dailyImg", u)}
+                  focused={focusKey === "daily"}
+                  onFocus={() => setFocusKey("daily")}
+                  className="h-48"
+                />
+                <BiasPicker value={draft.dailyBias} onChange={(v) => update("dailyBias", v)} />
+              </div>
+            </Section>
+
+            {/* 4H Sessions */}
+            <Section title="H4 Structure & Sessions">
+              <div className="flex gap-3 mb-4">
+                {(["ASIA", "LDN", "NY"] as Session[]).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setSession(s);
+                      setFocusKey(`h4-${s}`);
+                    }}
+                    className={`px-5 py-2 rounded-xl text-xs font-black tracking-widest border-2 transition-all ${session === s ? "bg-primary text-white border-primary shadow-lg scale-105" : "bg-white border-border text-muted-foreground hover:border-primary/30"}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
               <PasteSlot
-                label="Weekly Chart"
-                image={draft.weeklyImg}
-                onChange={(u) => update("weeklyImg", u)}
-                focused={focusKey === "weekly"}
-                onFocus={() => setFocusKey("weekly")}
-                className="h-44"
+                label={`H4 · ${session} SESSION`}
+                image={draft.h4[session]}
+                onChange={(u) => update("h4", { ...draft.h4, [session]: u })}
+                focused={focusKey === `h4-${session}`}
+                onFocus={() => setFocusKey(`h4-${session}`)}
+                className="h-56"
               />
-              <BiasPicker value={draft.weeklyBias} onChange={(v) => update("weeklyBias", v)} />
-            </div>
-          </Section>
+            </Section>
 
-          {/* Daily */}
-          <Section title="DAILY">
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <PasteSlot
-                label="Daily Chart"
-                image={draft.dailyImg}
-                onChange={(u) => update("dailyImg", u)}
-                focused={focusKey === "daily"}
-                onFocus={() => setFocusKey("daily")}
-                className="h-44"
+            <div className="space-y-3">
+              <Label>Session Notes & Observations</Label>
+              <textarea
+                value={draft.notes ?? ""}
+                onChange={(e) => update("notes", e.target.value)}
+                rows={4}
+                placeholder="Key market takeaways, mistakes, or wins..."
+                className="w-full bg-muted/20 border border-border rounded-2xl px-5 py-4 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
               />
-              <BiasPicker value={draft.dailyBias} onChange={(v) => update("dailyBias", v)} />
             </div>
-          </Section>
-
-          {/* 4H Sessions */}
-          <Section title="4H STRUCTURE">
-            <div className="flex gap-2 mb-2">
-              {(["ASIA", "LDN", "NY"] as Session[]).map((s) => (
-                <button key={s}
-                  onClick={() => { setSession(s); setFocusKey(`h4-${s}`); }}
-                  className={`px-3 py-1 rounded text-xs font-bold tracking-widest border transition-all ${session === s ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan/60 text-glow-cyan" : "border-terminal-border text-muted-foreground hover:text-foreground"}`}>
-                  {s}
-                </button>
-              ))}
-            </div>
-            <PasteSlot
-              label={`4H · ${session}`}
-              image={draft.h4[session]}
-              onChange={(u) => update("h4", { ...draft.h4, [session]: u })}
-              focused={focusKey === `h4-${session}`}
-              onFocus={() => setFocusKey(`h4-${session}`)}
-              className="h-48"
-            />
-          </Section>
-
-          <label className="block space-y-1">
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Notes</span>
-            <textarea value={draft.notes ?? ""} onChange={(e) => update("notes", e.target.value)} rows={3}
-              className="w-full bg-terminal-bg border border-terminal-border rounded px-2 py-1.5 text-sm outline-none resize-none" />
-          </label>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between px-5 py-3 border-t border-terminal-border">
+        {/* Footer */}
+        <div className="flex items-center justify-between px-8 py-6 border-t border-border/50 bg-muted/10 sticky bottom-0 z-20">
           {onDelete ? (
-            <button onClick={() => { onDelete(draft.id); onClose(); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-neon-red border border-neon-red/40 rounded hover:bg-neon-red/10">
-              <Trash2 className="w-3.5 h-3.5" /> DELETE
+            <button
+              onClick={() => {
+                onDelete(draft.id);
+                onClose();
+              }}
+              className="flex items-center gap-2 px-5 py-2.5 text-xs font-black text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" /> DELETE DAY
             </button>
-          ) : <span />}
-          <button onClick={() => { onSave(draft); onClose(); }}
-            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold tracking-widest bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/60 rounded hover:bg-neon-cyan/30 text-glow-cyan">
-            <Save className="w-3.5 h-3.5" /> SAVE
+          ) : (
+            <span />
+          )}
+          <button
+            onClick={() => {
+              onSave(draft);
+              onClose();
+            }}
+            className="forest-gradient flex items-center gap-2 px-8 py-3 text-sm font-black text-white rounded-xl shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest"
+          >
+            <Save className="w-4 h-4" /> Save Changes
           </button>
         </div>
       </div>
@@ -135,28 +192,44 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-2">
-      <div className="text-[10px] tracking-[0.3em] text-neon-cyan/80 font-bold">// {title}</div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="h-4 w-1 bg-primary rounded-full" />
+        <h3 className="text-sm font-black uppercase tracking-widest text-primary">
+          {title}
+        </h3>
+      </div>
       {children}
     </div>
   );
 }
 
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-1">
+      {children}
+    </span>
+  );
+}
+
 function BiasPicker({ value, onChange }: { value: Bias; onChange: (v: Bias) => void }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {BIASES.map((b) => {
         const active = value === b;
         return (
           <button
             key={b}
             onClick={() => onChange(b)}
-            className="px-3 py-1.5 rounded border text-[10px] font-extrabold tracking-widest uppercase transition-all"
-            style={
+            className={`px-3 py-3 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all flex items-center justify-center text-center leading-none h-full ${
               active
-                ? { ...biasStyle(b), borderColor: "transparent" }
-                : { borderColor: "var(--terminal-border)", color: "var(--muted-foreground)", fontFamily: "'JetBrains Mono', ui-monospace, monospace" }
-            }
+                ? b === "bullish" 
+                  ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20" 
+                  : b === "bearish" 
+                    ? "bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/20"
+                    : "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20"
+                : "bg-white border-border text-muted-foreground hover:border-primary/30"
+            }`}
           >
             {biasLabel(b)}
           </button>

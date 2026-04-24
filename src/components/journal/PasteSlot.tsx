@@ -14,7 +14,15 @@ interface Props {
   children?: React.ReactNode;
 }
 
-export function PasteSlot({ label, image, onChange, focused, onFocus, className, children }: Props) {
+export function PasteSlot({
+  label,
+  image,
+  onChange,
+  focused,
+  onFocus,
+  className,
+  children,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -24,11 +32,20 @@ export function PasteSlot({ label, image, onChange, focused, onFocus, className,
   // Resolve storage path -> signed URL (or pass through legacy data URL)
   useEffect(() => {
     let cancelled = false;
-    if (!image) { setDisplayUrl(""); return; }
+    if (!image) {
+      setDisplayUrl("");
+      return;
+    }
     getChartUrl(image)
-      .then((u) => { if (!cancelled) setDisplayUrl(u); })
-      .catch(() => { if (!cancelled) setDisplayUrl(""); });
-    return () => { cancelled = true; };
+      .then((u) => {
+        if (!cancelled) setDisplayUrl(u);
+      })
+      .catch(() => {
+        if (!cancelled) setDisplayUrl("");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [image]);
 
   const handleFile = async (file: File) => {
@@ -78,46 +95,63 @@ export function PasteSlot({ label, image, onChange, focused, onFocus, className,
     return () => window.removeEventListener("paste", handler);
   }, [focused]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div
       ref={ref}
       tabIndex={0}
-      onClick={onFocus}
+      onClick={() => {
+        onFocus?.();
+        if (!displayUrl) fileInputRef.current?.click();
+      }}
+      onDoubleClick={() => displayUrl && setZoom(true)}
       onFocus={onFocus}
-      onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDrag(true);
+      }}
       onDragLeave={() => setDrag(false)}
       onDrop={async (e) => {
-        e.preventDefault(); setDrag(false);
+        e.preventDefault();
+        setDrag(false);
         const f = e.dataTransfer.files?.[0];
         if (f && f.type.startsWith("image/")) await handleFile(f);
       }}
-      className={`relative group rounded-md overflow-hidden border border-terminal-border bg-terminal-bg/60 transition-all cursor-pointer outline-none ${focused ? "neon-focus" : ""} ${drag ? "neon-focus" : ""} ${className ?? ""}`}
+      className={`relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none ${focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30"} ${className ?? ""}`}
     >
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (file) await handleFile(file);
+        }}
+      />
       {displayUrl ? (
         <>
-          <img src={displayUrl} alt={label} className="w-full h-full object-cover" />
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setZoom(true); }}
-            title="Zoom"
-            className="absolute top-1 right-7 w-5 h-5 rounded bg-black/70 border border-terminal-border text-muted-foreground hover:text-neon-cyan hover:border-neon-cyan opacity-0 group-hover:opacity-100 transition flex items-center justify-center z-10"
-          >
-            <Maximize2 className="w-3 h-3" />
-          </button>
+          <img src={displayUrl} alt={label} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         </>
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground/70 text-[10px] uppercase tracking-wider">
-          <ImageIcon className="w-5 h-5 opacity-50" />
-          <span>{label}</span>
-          <span className="flex items-center gap-1 opacity-60"><ClipboardPaste className="w-3 h-3" /> Ctrl+V</span>
+        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground font-medium text-xs">
+          <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center mb-1">
+            <ImageIcon className="w-5 h-5 text-primary/60" />
+          </div>
+          <span className="font-bold uppercase tracking-wider text-[10px] text-primary/80">{label}</span>
+          <span className="flex flex-col items-center gap-1 opacity-60 text-[9px] font-bold text-center px-4">
+            <span className="flex items-center gap-1.5"><ClipboardPaste className="w-3.5 h-3.5" /> TAP TO UPLOAD</span>
+            <span className="hidden sm:inline">OR CTRL+V TO PASTE</span>
+          </span>
         </div>
       )}
       {busy && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-          <Loader2 className="w-5 h-5 text-neon-cyan animate-spin" />
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       )}
-      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] uppercase tracking-widest text-neon-cyan font-bold">
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-widest text-primary font-black border border-primary/10">
         {label}
       </div>
       {children}

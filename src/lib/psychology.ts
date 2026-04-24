@@ -6,6 +6,7 @@
 // On first call, any legacy localStorage data is auto-migrated then cleared.
 
 import { supabase } from "@/integrations/supabase/client";
+import { generateId } from "./utils";
 
 export interface PsychologyLog {
   id: string;
@@ -134,7 +135,8 @@ async function ensureMigrated(): Promise<string | null> {
 
 export async function fetchPsychologyLogs(): Promise<PsychologyLog[]> {
   await ensureMigrated();
-  const { data, error } = await (supabase as any).from(TABLE)
+  const { data, error } = await (supabase as any)
+    .from(TABLE)
     .select("*")
     .order("date", { ascending: false });
   if (error) throw error;
@@ -143,16 +145,15 @@ export async function fetchPsychologyLogs(): Promise<PsychologyLog[]> {
 
 export async function fetchPsychologyForDate(date: string): Promise<PsychologyLog[]> {
   await ensureMigrated();
-  const { data, error } = await (supabase as any).from(TABLE)
-    .select("*")
-    .eq("date", date);
+  const { data, error } = await (supabase as any).from(TABLE).select("*").eq("date", date);
   if (error) throw error;
   return ((data ?? []) as Row[]).map(fromRow);
 }
 
 export async function fetchPsychologyForTrade(tradeId: string): Promise<PsychologyLog | null> {
   await ensureMigrated();
-  const { data, error } = await (supabase as any).from(TABLE)
+  const { data, error } = await (supabase as any)
+    .from(TABLE)
     .select("*")
     .eq("trade_id", tradeId)
     .maybeSingle();
@@ -176,7 +177,7 @@ export async function deletePsychologyLog(id: string): Promise<void> {
 
 export function newDailyLog(date: string): PsychologyLog {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     date,
     tradeId: null,
     updatedAt: new Date().toISOString(),
@@ -185,7 +186,7 @@ export function newDailyLog(date: string): PsychologyLog {
 
 export function newTradeLog(date: string, tradeId: string): PsychologyLog {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     date,
     tradeId,
     updatedAt: new Date().toISOString(),

@@ -18,25 +18,35 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
   const focus = (slot: SlotKind) => setFocus({ id: entry.id, slot });
 
   return (
-    <div id={`bias-entry-${entry.id}`} className="glass rounded-lg w-[260px] shrink-0 flex flex-col overflow-hidden scroll-mx-6 transition-shadow data-[flash=true]:shadow-[0_0_0_2px_var(--neon-cyan),0_0_30px_var(--neon-cyan)]">
+    <div
+      id={`bias-entry-${entry.id}`}
+      className="bg-white rounded-2xl w-[280px] shrink-0 flex flex-col overflow-hidden border border-border shadow-sm scroll-mx-6 transition-all duration-300"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-terminal-border bg-terminal-bg/60">
-        <div className="flex items-baseline gap-2">
-          <span className="text-neon-cyan font-bold text-sm tracking-widest text-glow-cyan">{weekdayOf(entry.date)}</span>
-          <span className="text-xs text-muted-foreground font-mono">{ddmm(entry.date)}</span>
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-border bg-muted/20">
+        <div className="flex flex-col">
+          <span className="text-primary font-bold text-sm tracking-tight">
+            {weekdayOf(entry.date)}
+          </span>
+          <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{ddmm(entry.date)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-neon-amber/80 font-bold tracking-wider text-base">{entry.asset}</span>
-          <button onClick={() => onEdit(entry)} className="text-muted-foreground hover:text-neon-cyan transition-colors">
-            <Edit3 className="w-3.5 h-3.5" />
+          <div className="px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">
+            {entry.asset}
+          </div>
+          <button
+            onClick={() => onEdit(entry)}
+            className="text-muted-foreground hover:text-primary transition-colors p-1"
+          >
+            <Edit3 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="p-2 space-y-2">
+      <div className="p-3 space-y-4">
         {/* Weekly */}
         <SlotWithBias
-          label="WEEKLY"
+          label="Weekly Outlook"
           image={entry.weeklyImg}
           bias={entry.weeklyBias}
           correct={entry.weeklyCorrect}
@@ -44,11 +54,12 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           onFocus={() => focus("weekly")}
           onImg={(u) => onUpdate({ ...entry, weeklyImg: u })}
           onToggle={() => onUpdate({ ...entry, weeklyCorrect: !entry.weeklyCorrect })}
+          hideBiasAndTick={weekdayOf(entry.date) !== "MON"}
         />
 
         {/* Daily */}
         <SlotWithBias
-          label="DAILY"
+          label="Daily Projection"
           image={entry.dailyImg}
           bias={entry.dailyBias}
           correct={entry.dailyCorrect}
@@ -59,16 +70,24 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
         />
 
         {/* 4H */}
-        <div className="space-y-1.5">
-          <div className="flex gap-1">
+        <div className="space-y-2">
+          <div className="flex gap-1.5 p-1 bg-muted rounded-xl">
             {(["ASIA", "LDN", "NY"] as Session[]).map((s) => {
               const active = session === s;
               const has = !!entry.h4[s];
               return (
-                <button key={s}
-                  onClick={() => { setSession(s); focus(`h4-${s}` as SlotKind); }}
-                  className={`flex-1 px-1 py-1 rounded text-[9px] font-bold tracking-widest border transition-all ${active ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan/60 text-glow-cyan" : "border-terminal-border text-muted-foreground hover:text-foreground"}`}>
-                  {s}{has && <span className="ml-1 inline-block w-1 h-1 rounded-full bg-neon-green align-middle" />}
+                <button
+                  key={s}
+                  onClick={() => {
+                    setSession(s);
+                    focus(`h4-${s}` as SlotKind);
+                  }}
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all ${active ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {s}
+                  {has && (
+                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary align-middle" />
+                  )}
                 </button>
               );
             })}
@@ -79,7 +98,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             onChange={(u) => onUpdate({ ...entry, h4: { ...entry.h4, [session]: u } })}
             focused={isFocused(`h4-${session}` as SlotKind)}
             onFocus={() => focus(`h4-${session}` as SlotKind)}
-            className="h-32"
+            className="h-36 rounded-xl overflow-hidden border border-border/50"
           />
         </div>
       </div>
@@ -88,7 +107,15 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
 }
 
 function SlotWithBias({
-  label, image, bias, correct, focused, onFocus, onImg, onToggle,
+  label,
+  image,
+  bias,
+  correct,
+  focused,
+  onFocus,
+  onImg,
+  onToggle,
+  hideBiasAndTick,
 }: {
   label: string;
   image?: string;
@@ -98,6 +125,7 @@ function SlotWithBias({
   onFocus: () => void;
   onImg: (u: string | undefined) => void;
   onToggle: () => void;
+  hideBiasAndTick?: boolean;
 }) {
   return (
     <PasteSlot
@@ -108,18 +136,26 @@ function SlotWithBias({
       onChange={onImg}
       className="h-28"
     >
-      <span
-        className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
-        style={biasStyle(bias)}
-      >
-        {biasLabel(bias)}
-      </span>
-      <button
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        title="Mark accuracy correct"
-        className={`absolute top-1 right-1 w-5 h-5 rounded border border-terminal-border bg-black/70 flex items-center justify-center transition-all ${correct ? "neon-correct" : "text-muted-foreground hover:text-neon-cyan"}`}>
-        {correct && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-      </button>
+      {!hideBiasAndTick && (
+        <>
+          <span
+            className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
+            style={biasStyle(bias)}
+          >
+            {biasLabel(bias)}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            title="Mark accuracy correct"
+            className={`absolute top-1 right-1 w-5 h-5 rounded border border-terminal-border bg-black/70 flex items-center justify-center transition-all ${correct ? "neon-correct" : "text-muted-foreground hover:text-neon-cyan"}`}
+          >
+            {correct && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+          </button>
+        </>
+      )}
     </PasteSlot>
   );
 }

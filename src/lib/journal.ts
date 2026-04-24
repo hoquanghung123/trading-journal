@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { generateId } from "./utils";
 
 export type Bias = "bullish" | "bearish" | "consolidation";
 export type Session = "ASIA" | "LDN" | "NY";
@@ -77,9 +78,7 @@ export async function fetchEntries(): Promise<DayEntry[]> {
 export async function upsertEntry(e: DayEntry): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
-  const { error } = await supabase
-    .from("journal_entries")
-    .upsert(toRow(e, u.user.id));
+  const { error } = await supabase.from("journal_entries").upsert(toRow(e, u.user.id));
   if (error) throw error;
 }
 
@@ -96,10 +95,14 @@ export async function deleteEntry(id: string): Promise<void> {
 
   if (row) {
     const h4 = (row.h4 ?? {}) as { ASIA?: string; LDN?: string; NY?: string };
-    const paths = [row.weekly_img, row.daily_img, h4.ASIA, h4.LDN, h4.NY]
-      .filter((p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"));
+    const paths = [row.weekly_img, row.daily_img, h4.ASIA, h4.LDN, h4.NY].filter(
+      (p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"),
+    );
     if (paths.length) {
-      await supabase.storage.from(BUCKET).remove(paths).catch(() => {});
+      await supabase.storage
+        .from(BUCKET)
+        .remove(paths)
+        .catch(() => {});
     }
   }
 }
@@ -122,7 +125,7 @@ export function monthKey(date: string): string {
 }
 
 export function uid() {
-  return crypto.randomUUID();
+  return generateId();
 }
 
 export function biasBgHex(b: Bias) {
@@ -195,7 +198,7 @@ export async function uploadChartImage(input: string | File): Promise<string> {
     ext = (input.type.split("/")[1] || "png").replace("jpeg", "jpg");
   }
 
-  const path = `${u.user.id}/${crypto.randomUUID()}.${ext}`;
+  const path = `${u.user.id}/${generateId()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: blob.type,
     upsert: false,
@@ -204,14 +207,51 @@ export async function uploadChartImage(input: string | File): Promise<string> {
   return path;
 }
 
-/** Resolve a stored path into a temporary signed URL for display. */
+const URL_CACHE_KEY = "journal-urls-v1";
+let urlCache: Record<string, { url: string; expires: number }> | null = null;
+
+function getCache() {
+  if (urlCache) return urlCache;
+  try {
+    urlCache = JSON.parse(localStorage.getItem(URL_CACHE_KEY) || "{}");
+  } catch {
+    urlCache = {};
+  }
+  return urlCache!;
+}
+
+function saveCache() {
+  if (!urlCache) return;
+  try {
+    localStorage.setItem(URL_CACHE_KEY, JSON.stringify(urlCache));
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+/** Resolve a stored path into a temporary signed URL for display, with caching. */
 export async function getChartUrl(path: string): Promise<string> {
   if (!path) return "";
   if (path.startsWith("data:") || path.startsWith("http")) return path;
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, 60 * 60); // 1 hour
+
+  const cache = getCache();
+  const now = Date.now();
+  if (cache[path] && cache[path].expires > now) {
+    return cache[path].url;
+  }
+
+  // Request a signed URL valid for 1 year (31536000 seconds)
+  const expiresIn = 31536000;
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn);
   if (error) throw error;
+
+  cache[path] = {
+    url: data.signedUrl,
+    // expire the cache 1 day before the actual token expires
+    expires: now + (expiresIn - 86400) * 1000,
+  };
+  saveCache();
+
   return data.signedUrl;
 }
 

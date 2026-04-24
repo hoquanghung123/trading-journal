@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 export interface Symbol {
   id: string;
   name: string;
+  isForex: boolean;
 }
 
 export const DEFAULT_SYMBOLS = ["XAUUSD", "NQ", "ES", "BTCUSD", "EURUSD", "GBPUSD"];
@@ -13,27 +14,43 @@ export const symbolsQueryKey = ["symbols"] as const;
 export async function fetchSymbols(): Promise<Symbol[]> {
   const { data, error } = await supabase
     .from("symbols")
-    .select("id, name")
+    .select("id, name, is_forex")
     .order("name", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as Symbol[];
+  return (data ?? []).map((s: any) => ({
+    id: s.id,
+    name: s.name,
+    isForex: !!s.is_forex,
+  }));
 }
 
-export async function insertSymbol(name: string): Promise<Symbol> {
+export async function insertSymbol(name: string, isForex = false): Promise<Symbol> {
   const trimmed = name.trim().toUpperCase();
   if (!trimmed) throw new Error("Symbol name is required");
   const { data: u } = await supabase.auth.getUser();
   if (!u?.user) throw new Error("Not authenticated");
   const { data, error } = await supabase
     .from("symbols")
-    .insert({ name: trimmed, user_id: u.user.id })
-    .select("id, name")
+    .insert({ name: trimmed, user_id: u.user.id, is_forex: isForex })
+    .select("id, name, is_forex")
     .single();
   if (error) {
     if (error.code === "23505") throw new Error(`Symbol "${trimmed}" already exists`);
     throw error;
   }
-  return data as Symbol;
+  return {
+    id: data.id,
+    name: data.name,
+    isForex: !!data.is_forex,
+  };
+}
+
+export async function toggleForexSymbol(id: string, isForex: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("symbols")
+    .update({ is_forex: isForex })
+    .eq("id", id);
+  if (error) throw error;
 }
 
 /**
@@ -41,16 +58,19 @@ export async function insertSymbol(name: string): Promise<Symbol> {
  * (matched by name, since current FKs are by string).
  */
 export async function deleteSymbol(sym: Symbol): Promise<void> {
-  const [{ count: tradeCount, error: tErr }, { count: biasCount, error: bErr }] = await Promise.all([
-    supabase.from("trades").select("id", { count: "exact", head: true }).eq("symbol", sym.name),
-    supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("asset", sym.name),
-  ]);
+  const [{ count: tradeCount, error: tErr }, { count: biasCount, error: bErr }] = await Promise.all(
+    [
+      supabase.from("trades").select("id", { count: "exact", head: true }).eq("symbol", sym.name),
+      supabase
+        .from("journal_entries")
+        .select("id", { count: "exact", head: true })
+        .eq("asset", sym.name),
+    ],
+  );
   if (tErr) throw tErr;
   if (bErr) throw bErr;
   if ((tradeCount ?? 0) > 0 || (biasCount ?? 0) > 0) {
-    throw new Error(
-      "Không thể xóa cặp tiền này vì đang có dữ liệu giao dịch liên quan",
-    );
+    throw new Error("Không thể xóa cặp tiền này vì đang có dữ liệu giao dịch liên quan");
   }
   const { error } = await supabase.from("symbols").delete().eq("id", sym.id);
   if (error) throw error;

@@ -19,22 +19,40 @@ export function TradeImageThumb({ path, label, pair, captionPrefix }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    if (!path) { setUrl(""); return; }
-    getChartUrl(path).then((u) => { if (!cancelled) setUrl(u); }).catch(() => {});
-    return () => { cancelled = true; };
+    if (!path) {
+      setUrl("");
+      return;
+    }
+    getChartUrl(path)
+      .then((u) => {
+        if (!cancelled) setUrl(u);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [path]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!pair?.path) { setPairUrl(""); return; }
-    getChartUrl(pair.path).then((u) => { if (!cancelled) setPairUrl(u); }).catch(() => {});
-    return () => { cancelled = true; };
+    if (!pair?.path) {
+      setPairUrl("");
+      return;
+    }
+    getChartUrl(pair.path)
+      .then((u) => {
+        if (!cancelled) setPairUrl(u);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [pair?.path]);
 
   if (!path) {
     return (
-      <div className="w-12 h-9 rounded border border-dashed border-terminal-border flex items-center justify-center text-muted-foreground/50">
-        <ImageIcon className="w-3 h-3" />
+      <div className="w-14 h-10 rounded-lg border border-dashed border-border bg-muted/10 flex items-center justify-center text-muted-foreground/30">
+        <ImageIcon className="w-4 h-4" />
       </div>
     );
   }
@@ -53,7 +71,7 @@ export function TradeImageThumb({ path, label, pair, captionPrefix }: Props) {
     <>
       <button
         onClick={openLightbox}
-        className="w-12 h-9 rounded border border-terminal-border overflow-hidden hover:border-neon-cyan transition"
+        className="w-14 h-10 rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-all shadow-sm active:scale-95"
       >
         {url && <img src={url} alt={label} className="w-full h-full object-cover" />}
       </button>

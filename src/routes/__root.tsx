@@ -30,17 +30,34 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Lovable App" },
-      { name: "description", content: "A trading journal app for ICT traders to log and analyze chart setups." },
+      {
+        name: "description",
+        content: "A trading journal app for ICT traders to log and analyze chart setups.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "A trading journal app for ICT traders to log and analyze chart setups." },
+      {
+        property: "og:description",
+        content: "A trading journal app for ICT traders to log and analyze chart setups.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "A trading journal app for ICT traders to log and analyze chart setups." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdbf4fa4-ddc3-4b33-be89-c25149d3c0e4/id-preview-301c0c0c--46508ced-418c-4f8a-9f04-97f501ecbf80.lovable.app-1776570129002.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdbf4fa4-ddc3-4b33-be89-c25149d3c0e4/id-preview-301c0c0c--46508ced-418c-4f8a-9f04-97f501ecbf80.lovable.app-1776570129002.png" },
+      {
+        name: "twitter:description",
+        content: "A trading journal app for ICT traders to log and analyze chart setups.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdbf4fa4-ddc3-4b33-be89-c25149d3c0e4/id-preview-301c0c0c--46508ced-418c-4f8a-9f04-97f501ecbf80.lovable.app-1776570129002.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdbf4fa4-ddc3-4b33-be89-c25149d3c0e4/id-preview-301c0c0c--46508ced-418c-4f8a-9f04-97f501ecbf80.lovable.app-1776570129002.png",
+      },
     ],
     links: [
       {

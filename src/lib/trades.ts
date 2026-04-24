@@ -14,10 +14,17 @@ export interface Trade {
   maxRr: number;
   beforeImg?: string;
   afterImg?: string;
+  monthlyImg?: string;
+  weeklyImg?: string;
+  dailyImg?: string;
+  h4Img?: string;
   h1Img?: string;
   m15Img?: string;
   m5Img?: string;
   biasEntryId?: string;
+  setupId?: string;
+  complianceCheck: boolean;
+  missedConfluences?: string[];
   notes?: string;
 }
 
@@ -33,10 +40,17 @@ type Row = {
   max_rr: number;
   before_img: string | null;
   after_img: string | null;
+  monthly_img: string | null;
+  weekly_img: string | null;
+  daily_img: string | null;
+  h4_img: string | null;
   h1_img: string | null;
   m15_img: string | null;
   m5_img: string | null;
   bias_entry_id: string | null;
+  setup_id: string | null;
+  compliance_check: boolean;
+  missed_confluences: any;
   notes: string | null;
 };
 
@@ -52,10 +66,17 @@ const fromRow = (r: Row): Trade => ({
   maxRr: Number(r.max_rr),
   beforeImg: r.before_img ?? undefined,
   afterImg: r.after_img ?? undefined,
+  monthlyImg: r.monthly_img ?? undefined,
+  weeklyImg: r.weekly_img ?? undefined,
+  dailyImg: r.daily_img ?? undefined,
+  h4Img: r.h4_img ?? undefined,
   h1Img: r.h1_img ?? undefined,
   m15Img: r.m15_img ?? undefined,
   m5Img: r.m5_img ?? undefined,
   biasEntryId: r.bias_entry_id ?? undefined,
+  setupId: r.setup_id ?? undefined,
+  complianceCheck: !!r.compliance_check,
+  missedConfluences: r.missed_confluences ?? [],
   notes: r.notes ?? undefined,
 });
 
@@ -72,10 +93,17 @@ const toRow = (t: Trade, userId: string) => ({
   max_rr: t.maxRr,
   before_img: t.beforeImg ?? null,
   after_img: t.afterImg ?? null,
+  monthly_img: t.monthlyImg ?? null,
+  weekly_img: t.weeklyImg ?? null,
+  daily_img: t.dailyImg ?? null,
+  h4_img: t.h4Img ?? null,
   h1_img: t.h1Img ?? null,
   m15_img: t.m15Img ?? null,
   m5_img: t.m5Img ?? null,
   bias_entry_id: t.biasEntryId ?? null,
+  setup_id: t.setupId ?? null,
+  compliance_check: t.complianceCheck,
+  missed_confluences: t.missedConfluences ?? [],
   notes: t.notes ?? null,
 });
 
@@ -98,7 +126,7 @@ export async function upsertTrade(t: Trade): Promise<void> {
 export async function deleteTrade(id: string): Promise<void> {
   const { data: row } = await supabase
     .from("trades")
-    .select("before_img, after_img")
+    .select("before_img, after_img, monthly_img, weekly_img, daily_img, h4_img, h1_img, m15_img, m5_img")
     .eq("id", id)
     .maybeSingle();
 
@@ -106,11 +134,15 @@ export async function deleteTrade(id: string): Promise<void> {
   if (error) throw error;
 
   if (row) {
-    const paths = [row.before_img, row.after_img].filter(
+    const images = row as Record<string, string | null>;
+    const paths = Object.values(images).filter(
       (p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"),
     );
     if (paths.length) {
-      await supabase.storage.from("journal-charts").remove(paths).catch(() => {});
+      await supabase.storage
+        .from("journal-charts")
+        .remove(paths)
+        .catch(() => {});
     }
   }
 }
@@ -153,9 +185,11 @@ export const outcomeStyle: Record<OutcomeColor, string> = {
 
 export const SYMBOLS = ["XAUUSD", "NQ", "ES", "BTCUSD", "EURUSD", "GBPUSD"];
 
+import { generateId } from "./utils";
+
 export function newTrade(): Trade {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     entryTime: new Date().toISOString(),
     symbol: "XAUUSD",
     side: "buy",
@@ -164,5 +198,7 @@ export function newTrade(): Trade {
     netPnl: 0,
     actualRr: 0,
     maxRr: 0,
+    complianceCheck: true,
+    missedConfluences: [],
   };
 }

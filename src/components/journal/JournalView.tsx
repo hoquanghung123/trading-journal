@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, ChevronsRight, Filter, Activity, Terminal as TerminalIcon } from "lucide-react";
 import {
-  type DayEntry, type SlotKind,
-  fetchEntries, upsertEntry, deleteEntry, monthKey, uid,
+  type DayEntry,
+  type SlotKind,
+  fetchEntries,
+  upsertEntry,
+  deleteEntry,
+  monthKey,
+  uid,
 } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
@@ -23,9 +28,9 @@ const newEntry = (asset: string): DayEntry => ({
 
 export function JournalView() {
   const { data: assetList = [] } = useSymbols();
-  const ASSETS = useMemo(() => assetList.map((s) => s.name), [assetList]);
+  const ASSETS = useMemo(() => assetList.filter(s => !s.isForex).map((s) => s.name), [assetList]);
   const [entries, setEntries] = useState<DayEntry[]>([]);
-  const [asset, setAsset] = useState<string>("ALL");
+  const [asset, setAsset] = useState<string>("TODAY");
   const [month, setMonth] = useState<string>("ALL");
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
@@ -33,7 +38,9 @@ export function JournalView() {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchEntries().then(setEntries).catch((e) => toast.error(e.message));
+    fetchEntries()
+      .then(setEntries)
+      .catch((e) => toast.error(e.message));
   }, []);
 
   useEffect(() => {
@@ -70,7 +77,8 @@ export function JournalView() {
         return;
       }
       attempts += 1;
-      if (attempts > 30) { // ~3s at 100ms
+      if (attempts > 30) {
+        // ~3s at 100ms
         toast.error("Bias entry not found");
         setPendingFocusId(null);
         return;
@@ -78,9 +86,10 @@ export function JournalView() {
       raf = window.setTimeout(tick, 100) as unknown as number;
     };
     tick();
-    return () => { if (raf) clearTimeout(raf); };
+    return () => {
+      if (raf) clearTimeout(raf);
+    };
   }, [pendingFocusId, entries]);
-
 
   const months = useMemo(() => {
     const set = new Set(entries.map((e) => monthKey(e.date)));
@@ -88,15 +97,24 @@ export function JournalView() {
   }, [entries]);
 
   const filtered = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const forexNames = new Set(assetList.filter(s => s.isForex).map(s => s.name));
     return [...entries]
-      .filter((e) => (asset === "ALL" ? true : e.asset === asset))
-      .filter((e) => (month === "ALL" ? true : monthKey(e.date) === month))
+      .filter((e) => !forexNames.has(e.asset))
+      .filter((e) => {
+        if (asset === "TODAY") return e.date === today;
+        return asset === "ALL" ? true : e.asset === asset;
+      })
+      .filter((e) => (asset === "TODAY" ? true : (month === "ALL" ? true : monthKey(e.date) === month)))
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [entries, asset, month]);
+  }, [entries, asset, month, assetList]);
 
   const stats = useMemo(() => {
     const total = filtered.length * 2;
-    const correct = filtered.reduce((s, e) => s + (e.weeklyCorrect ? 1 : 0) + (e.dailyCorrect ? 1 : 0), 0);
+    const correct = filtered.reduce(
+      (s, e) => s + (e.weeklyCorrect ? 1 : 0) + (e.dailyCorrect ? 1 : 0),
+      0,
+    );
     const acc = total ? Math.round((correct / total) * 100) : 0;
     return { days: filtered.length, correct, total, acc };
   }, [filtered]);
@@ -107,78 +125,128 @@ export function JournalView() {
   };
 
   const upsert = async (e: DayEntry) => {
-    setEntries((p) => (p.find((x) => x.id === e.id) ? p.map((x) => (x.id === e.id ? e : x)) : [...p, e]));
-    try { await upsertEntry(e); } catch (err: any) { toast.error(err.message); }
+    setEntries((p) =>
+      p.find((x) => x.id === e.id) ? p.map((x) => (x.id === e.id ? e : x)) : [...p, e],
+    );
+    try {
+      await upsertEntry(e);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const remove = async (id: string) => {
     setEntries((p) => p.filter((x) => x.id !== id));
-    try { await deleteEntry(id); } catch (err: any) { toast.error(err.message); }
+    try {
+      await deleteEntry(id);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   const addEntry = async () => {
     const fallback = ASSETS[0] ?? "XAUUSD";
-    const e = newEntry(asset === "ALL" ? fallback : asset);
+    const e = newEntry(asset === "ALL" || asset === "TODAY" ? fallback : asset);
     await upsert(e);
     setEditing(e);
     setTimeout(jumpRight, 100);
   };
 
   return (
-    <div className="min-h-screen grid-bg">
-      <header className="sticky top-0 z-30 glass-strong border-b border-terminal-border">
-        <div className="flex items-center gap-4 px-4 py-2.5 flex-wrap">
-          <div className="flex items-center gap-2">
-            <TerminalIcon className="w-5 h-5 text-neon-cyan text-glow-cyan" />
-            <h1 className="text-sm font-bold tracking-[0.3em] text-neon-cyan text-glow-cyan">BIAS_EXPECT</h1>
-            <span className="text-[10px] text-muted-foreground tracking-widest">// JOURNAL TIMELINE</span>
-          </div>
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6 px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between lg:justify-start gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Activity className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
+                  Bias Expect
+                </h1>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                  Journal Timeline
+                </p>
+              </div>
+            </div>
 
-          <button
-            type="button"
-            onClick={addEntry}
-            className="relative flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-[0.2em] bg-gradient-to-r from-neon-cyan/40 to-neon-cyan/20 text-neon-cyan border-2 border-neon-cyan rounded hover:from-neon-cyan/60 hover:to-neon-cyan/30 text-glow-cyan transition-all shadow-[0_0_18px_oklch(0.85_0.18_200/0.4)] hover:shadow-[0_0_28px_oklch(0.85_0.18_200/0.7)]"
-          >
-            <Plus className="w-4 h-4" strokeWidth={3} /> ADD DAY
-          </button>
-
-          <div className="h-6 w-px bg-terminal-border" />
-
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[9px] text-muted-foreground tracking-widest mr-1">ASSET:</span>
-            <button onClick={() => setAsset("ALL")}
-              className={`px-2 py-1 text-[10px] font-bold tracking-widest rounded border transition-all ${asset === "ALL" ? "bg-neon-amber/20 text-neon-amber border-neon-amber/60" : "border-terminal-border text-muted-foreground hover:text-foreground"}`}>
-              ALL
+            <button
+              type="button"
+              onClick={addEntry}
+              className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95 transition-all"
+            >
+              <Plus className="w-5 h-5" strokeWidth={3} />
             </button>
-            {ASSETS.map((a) => (
-              <button key={a} onClick={() => setAsset(a)}
-                className={`px-2 py-1 text-[10px] font-bold tracking-widest rounded border transition-all ${asset === a ? "bg-neon-amber/20 text-neon-amber border-neon-amber/60" : "border-terminal-border text-muted-foreground hover:text-foreground"}`}>
-                {a}
-              </button>
-            ))}
           </div>
 
-          <label className="flex items-center gap-1.5 ml-auto">
-            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-            <select value={month} onChange={(e) => setMonth(e.target.value)}
-              className="bg-terminal-bg border border-terminal-border rounded px-2 py-1 text-xs outline-none">
-              <option value="ALL">All months</option>
-              {months.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </label>
+          <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
+            <button
+              type="button"
+              onClick={addEntry}
+              className="hidden lg:flex forest-gradient items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" strokeWidth={3} /> Add Day
+            </button>
 
-          <button onClick={jumpRight}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold tracking-widest border border-terminal-border rounded hover:border-neon-cyan/60 hover:text-neon-cyan transition-all">
-            JUMP <ChevronsRight className="w-3.5 h-3.5" />
-          </button>
+            <div className="hidden lg:block h-8 w-px bg-border" />
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Asset:</span>
+              <button
+                onClick={() => setAsset("TODAY")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+              >
+                Today
+              </button>
+              {ASSETS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setAsset(a)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 lg:ml-auto">
+            <label className="flex items-center gap-2 flex-1 lg:flex-none">
+              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="flex-1 lg:flex-none bg-white border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              >
+                <option value="ALL">All months</option>
+                {months.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              onClick={jumpRight}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-white rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap"
+            >
+              Jump <ChevronsRight className="w-4 h-4 text-primary" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-6 px-4 py-1.5 border-t border-terminal-border bg-black/30 text-[10px] tracking-widest">
-          <Stat label="DAYS" value={stats.days} />
-          <Stat label="CHECKS" value={`${stats.correct}/${stats.total}`} />
-          <Stat label="ACC" value={`${stats.acc}%`} accent={stats.acc >= 60 ? "green" : "amber"} />
-          <span className="ml-auto flex items-center gap-1.5 text-neon-green">
-            <Activity className="w-3 h-3 animate-pulse" /> LIVE
+        <div className="flex items-center gap-4 lg:gap-8 px-4 lg:px-6 py-2 border-t border-border bg-muted/30 text-[10px] font-semibold tracking-wide overflow-x-auto hide-scrollbar">
+          <Stat label="Days" value={stats.days} />
+          <Stat label="Checks" value={`${stats.correct}/${stats.total}`} />
+          <Stat label="Win %" value={`${stats.acc}%`} accent={stats.acc >= 60 ? "green" : "amber"} />
+          <span className="ml-auto hidden sm:flex items-center gap-2 text-primary whitespace-nowrap">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            Live
           </span>
         </div>
       </header>
@@ -216,27 +284,46 @@ export function JournalView() {
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string | number; accent?: "green" | "amber" }) {
-  const color = accent === "green" ? "text-neon-green" : accent === "amber" ? "text-neon-amber" : "text-foreground";
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string | number;
+  accent?: "green" | "amber";
+}) {
+  const color =
+    accent === "green"
+      ? "text-emerald-600"
+      : accent === "amber"
+        ? "text-amber-600"
+        : "text-foreground";
   return (
     <span className="flex items-center gap-1.5">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={`font-bold ${color}`}>{value}</span>
+      <span className="text-muted-foreground font-bold uppercase tracking-widest text-[9px]">{label}</span>
+      <span className={`font-black text-[12px] ${color}`}>{value}</span>
     </span>
   );
 }
 
 function Empty({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="glass rounded-lg p-12 text-center max-w-xl mx-auto mt-12">
-      <TerminalIcon className="w-10 h-10 mx-auto text-neon-cyan/60 mb-3" />
-      <h2 className="text-lg font-bold tracking-widest text-neon-cyan text-glow-cyan">NO ENTRIES</h2>
-      <p className="text-xs text-muted-foreground mt-1 mb-4 tracking-wide">
-        // Initialize your journal by adding your first trading day.
+    <div className="bg-white rounded-[32px] border border-border p-16 text-center max-w-xl mx-auto mt-20 shadow-xl">
+      <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+        <Activity className="w-10 h-10 text-primary" />
+      </div>
+      <h2 className="text-2xl font-black tracking-tight text-foreground">
+        Your Journal is Empty
+      </h2>
+      <p className="text-sm font-medium text-muted-foreground mt-2 mb-8 leading-relaxed px-6">
+        Initialize your trading journey by recording your first analysis and bias expectations.
       </p>
-      <button onClick={onAdd}
-        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold tracking-widest bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/60 rounded hover:bg-neon-cyan/30 text-glow-cyan">
-        <Plus className="w-3.5 h-3.5" /> ADD FIRST DAY
+      <button
+        onClick={onAdd}
+        className="forest-gradient inline-flex items-center gap-2 px-8 py-3 text-sm font-black text-white rounded-xl shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest"
+      >
+        <Plus className="w-4 h-4" /> Add Your First Day
       </button>
     </div>
   );

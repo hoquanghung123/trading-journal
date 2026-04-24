@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, CalendarDays, Save, Loader2, Check } from "lucide-react";
+import { Brain, CalendarDays, Save, Loader2, Check, ShieldAlert } from "lucide-react";
 import { fetchTrades, type Trade } from "@/lib/trades";
 import {
   fetchPsychologyLogs,
@@ -9,16 +9,15 @@ import {
   MOOD_OPTIONS,
   PRE_EMOTIONS,
   POST_EMOTIONS,
-  toNyDateStr,
-  todayNyDateStr,
   type PsychologyLog,
 } from "@/lib/psychology";
+import { format } from "date-fns";
 import { PsychologyCalendar } from "./PsychologyCalendar";
 import { PsychologyDayTimeline } from "./PsychologyDayTimeline";
 import { toast } from "sonner";
 
 export function PsychologyView() {
-  const [date, setDate] = useState<string>(() => todayNyDateStr());
+  const [date, setDate] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
   const [trades, setTrades] = useState<Trade[]>([]);
   const [logs, setLogs] = useState<PsychologyLog[]>([]);
   const [selectedTradeId, setSelectedTradeId] = useState<string>("");
@@ -41,13 +40,15 @@ export function PsychologyView() {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Trades placed on the selected date — compared in **New York** timezone
   // because users enter entry_time in NY local time.
   const tradesForDate = useMemo(
-    () => trades.filter((t) => toNyDateStr(t.entryTime) === date),
+    () => trades.filter((t) => format(new Date(t.entryTime), "yyyy-MM-dd") === date),
     [trades, date],
   );
 
@@ -124,24 +125,36 @@ export function PsychologyView() {
     }
   };
 
-  const SaveButton = ({ sectionKey, disabled }: { sectionKey: "daily" | "trade"; disabled?: boolean }) => {
+  const SaveButton = ({
+    sectionKey,
+    disabled,
+  }: {
+    sectionKey: "daily" | "trade";
+    disabled?: boolean;
+  }) => {
     const justSaved = !!savedFlash[sectionKey];
     return (
       <button
         onClick={() => saveSection(sectionKey)}
         disabled={disabled || saving}
-        className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold tracking-[0.2em] border transition ${
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
           justSaved
-            ? "border-emerald-500/60 text-emerald-400 bg-emerald-500/10"
-            : "border-[#48C0D8]/60 text-[#48C0D8] hover:bg-[#48C0D8]/10 disabled:opacity-40 disabled:cursor-not-allowed"
+            ? "bg-emerald-500 text-white shadow-emerald-500/20"
+            : "forest-gradient text-white shadow-primary/20 hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
         }`}
       >
         {saving ? (
-          <><Loader2 className="w-3 h-3 animate-spin" /> SAVING…</>
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> SAVING...
+          </>
         ) : justSaved ? (
-          <><Check className="w-3 h-3" /> SAVED</>
+          <>
+            <Check className="w-3.5 h-3.5" /> SAVED
+          </>
         ) : (
-          <><Save className="w-3 h-3" /> SAVE</>
+          <>
+            <Save className="w-3.5 h-3.5" /> SAVE
+          </>
         )}
       </button>
     );
@@ -149,57 +162,61 @@ export function PsychologyView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#05080A" }}>
-        <Loader2 className="w-6 h-6 animate-spin text-neon-cyan" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "#05080A" }}>
-      <div className="max-w-[1400px] mx-auto">
+    <div className="min-h-screen bg-background p-6 lg:p-10">
+      <div className="max-w-[1500px] mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <Brain className="w-5 h-5 text-neon-cyan text-glow-cyan" />
+        <div className="flex items-center justify-between border-b border-border pb-8 flex-wrap gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Brain className="w-7 h-7 text-primary" />
+            </div>
             <div>
-              <h1 className="text-lg font-bold tracking-[0.3em] text-[#48C0D8]">PSYCHOLOGY_JOURNAL</h1>
-              <p className="text-[10px] text-muted-foreground tracking-widest mt-0.5">
-                // {logs.length} ENTRIES &nbsp;•&nbsp; {tradesForDate.length} TRADES ON {date}
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                Psychology Journal
+              </h1>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mt-1">
+                {logs.length} Entries • {tradesForDate.length} Trades on {date}
               </p>
             </div>
           </div>
 
-          <label className="flex items-center gap-2 px-3 py-2 rounded border border-terminal-border bg-[#0D1117]">
-            <CalendarDays className="w-4 h-4 text-muted-foreground" />
+          <div className="flex items-center gap-4 px-4 py-2.5 rounded-2xl border border-border bg-white shadow-sm">
+            <CalendarDays className="w-5 h-5 text-primary" />
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-xs font-mono text-foreground outline-none"
+              className="bg-transparent text-sm font-bold text-foreground outline-none cursor-pointer"
             />
-            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-neon-cyan" />}
-          </label>
+            {saving && <Loader2 className="w-4 h-4 animate-spin text-primary ml-2" />}
+          </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-8">
           {/* Left column */}
-          <div className="col-span-12 lg:col-span-8 space-y-4">
+          <div className="col-span-12 lg:col-span-8 space-y-8">
             {/* Morning Check-in */}
-            <Section title="MORNING CHECK-IN" action={<SaveButton sectionKey="daily" />}>
-              <div className="mb-4">
-                <Label>START OF DAY MOOD</Label>
-                <div className="flex gap-2 flex-wrap">
+            <Section title="Morning Check-in" action={<SaveButton sectionKey="daily" />}>
+              <div className="mb-8">
+                <Label>Start of Day Mood</Label>
+                <div className="flex gap-3 flex-wrap">
                   {MOOD_OPTIONS.map((m) => {
                     const active = dailyLog.morningMood === m;
                     return (
                       <button
                         key={m}
                         onClick={() => updateDaily({ morningMood: active ? undefined : m })}
-                        className={`text-2xl p-1.5 rounded-md border transition ${
+                        className={`text-3xl p-3 rounded-2xl border-2 transition-all duration-300 ${
                           active
-                            ? "bg-neon-cyan/15 border-neon-cyan/60 shadow-[0_0_12px_oklch(0.85_0.18_200/0.35)]"
-                            : "border-terminal-border opacity-50 hover:opacity-100"
+                            ? "bg-primary/10 border-primary shadow-lg scale-110"
+                            : "bg-white border-muted hover:border-primary/30"
                         }`}
                       >
                         {m}
@@ -210,7 +227,7 @@ export function PsychologyView() {
               </div>
 
               <Field
-                label="CHECK-IN NOTE"
+                label="Check-in Note"
                 value={dailyLog.morningNotes ?? ""}
                 placeholder="How do you feel? (Tired, motivated, stressed...)"
                 onCommit={(v) => updateDaily({ morningNotes: v })}
@@ -218,103 +235,126 @@ export function PsychologyView() {
             </Section>
 
             {/* Trade Discipline & Emotions */}
-            <Section title="TRADE DISCIPLINE & EMOTIONS" action={<SaveButton sectionKey="trade" disabled={!tradeLog || !selectedTradeId} />}>
-              <div className="flex items-center gap-3 mb-4 flex-wrap">
-                <Label className="!mb-0">TRADE</Label>
+            <Section
+              title="Trade Discipline & Emotions"
+              action={<SaveButton sectionKey="trade" disabled={!tradeLog || !selectedTradeId} />}
+            >
+              <div className="flex items-center gap-4 mb-8 flex-wrap">
+                <Label className="!mb-0">Selected Trade</Label>
                 <select
                   value={selectedTradeId}
                   onChange={(e) => setSelectedTradeId(e.target.value)}
-                  className="bg-[#05080A] border border-terminal-border rounded px-3 py-1.5 text-xs font-mono outline-none focus:border-[#48C0D8]/60 min-w-[260px]"
+                  className="bg-muted/30 border border-border rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[300px]"
                   disabled={tradesForDate.length === 0}
                 >
                   <option value="">
-                    {tradesForDate.length === 0 ? "— No trades on this date —" : "Select specific trade…"}
+                    {tradesForDate.length === 0
+                      ? "— No trades on this date —"
+                      : "Select specific trade..."}
                   </option>
                   {tradesForDate.map((t, i) => (
                     <option key={t.id} value={t.id}>
-                      #{String(i + 1).padStart(2, "0")} • {t.symbol} • {t.side.toUpperCase()} • {new Date(t.entryTime).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false })} NY
+                      #{String(i + 1).padStart(2, "0")} • {t.symbol} • {t.side.toUpperCase()} •{" "}
+                      {new Date(t.entryTime).toLocaleTimeString("en-US", {
+                        timeZone: "America/New_York",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      })}{" "}
+                      NY
                     </option>
                   ))}
                 </select>
               </div>
 
               {tradeLog && selectedTradeId ? (
-                <div className="space-y-5">
+                <div className="space-y-8">
                   <TagPicker
-                    label="PRE-TRADE EMOTION"
+                    label="Pre-Trade Emotion"
                     options={PRE_EMOTIONS}
                     value={tradeLog.preTradeEmotion}
                     onChange={(v) => updateTrade({ preTradeEmotion: v })}
                   />
                   <Field
-                    label="ENTRY RATIONALE (INTERNAL)"
+                    label="Entry Rationale (Internal)"
                     value={tradeLog.entryRationale ?? ""}
                     placeholder="Why did you take this entry?"
                     onCommit={(v) => updateTrade({ entryRationale: v })}
                   />
 
                   <TagPicker
-                    label="POST-TRADE EMOTION"
+                    label="Post-Trade Emotion"
                     options={POST_EMOTIONS}
                     value={tradeLog.postTradeEmotion}
                     onChange={(v) => updateTrade({ postTradeEmotion: v })}
                   />
                   <Field
-                    label="EXIT FEELINGS & ASSESSMENT"
+                    label="Exit Feelings & Assessment"
                     value={tradeLog.exitAssessment ?? ""}
                     placeholder="How did you feel exiting? Any regrets?"
                     onCommit={(v) => updateTrade({ exitAssessment: v })}
                   />
-
                 </div>
               ) : (
-                <div className="text-center py-8 text-xs text-muted-foreground tracking-widest">
-                  // {tradesForDate.length === 0
-                    ? "NO TRADES ON THIS DATE — LOG A TRADE FIRST"
-                    : "SELECT A TRADE TO RECORD PSYCHOLOGY"}
+                <div className="text-center py-12 bg-muted/20 rounded-2xl border border-dashed border-border">
+                  <Brain className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                    {tradesForDate.length === 0
+                      ? "No trades on this date"
+                      : "Select a trade to log psychology"}
+                  </p>
                 </div>
               )}
             </Section>
-
           </div>
 
           {/* Right column */}
-          <div className="col-span-12 lg:col-span-4 space-y-4">
-            <Section title="DAILY OBSERVATIONS">
-              <ul className="text-xs space-y-2 text-muted-foreground tracking-wide">
-                <li>• Quick note: avoid over-trading</li>
-                <li>• Quick note: respect your stop loss</li>
-                <li>• Quick note: avoid FOMO entries</li>
+          <div className="col-span-12 lg:col-span-4 space-y-8">
+            <Section title="Daily Observations">
+              <ul className="text-sm space-y-4 text-muted-foreground font-medium">
+                <li className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <span>Always respect your stop loss rules.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <span>Avoid over-trading during consolidation.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <span>Trust the process, not just the outcome.</span>
+                </li>
               </ul>
             </Section>
 
-            <Section title="KNOWLEDGE & REFRESHERS">
-              <div className="space-y-3 text-xs">
-                <div className="p-3 rounded border-l-2 border-[#48C0D8] bg-white/[0.02] text-foreground">
-                  Trading Psychology Principles
+            <Section title="Knowledge Base">
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-sm font-bold text-primary shadow-sm">
+                  Trading Psychology Principle
                 </div>
-                <p className="italic text-muted-foreground leading-relaxed">
+                <p className="italic text-muted-foreground text-sm leading-relaxed font-medium px-2">
                   "You don't trade the markets, you trade your beliefs about the markets."
                 </p>
-                <div className="p-3 rounded border border-neon-amber/30 bg-neon-amber/5 text-neon-amber text-[11px] tracking-wide leading-relaxed">
-                  REMINDER: If your heart rate is high, your position size is too big.
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs font-bold leading-relaxed shadow-sm">
+                  <ShieldAlert className="w-4 h-4 inline-block mr-2 -mt-0.5" />
+                  REMINDER: If your heart rate is high, your position size is likely too big.
                 </div>
               </div>
             </Section>
 
-            <Section title="TODAY'S SAVE STATE">
-              <div className="space-y-1.5 text-[11px] font-mono text-muted-foreground">
-                <Line k="Daily log" v={dailyLog.id !== "" ? "✓ tracked" : "—"} />
-                <Line k="Trades logged" v={`${tradesForDate.length}`} />
-                <Line k="Psych entries" v={`${logs.filter((l) => l.date === date).length}`} />
-                <Line k="Last save" v={new Date(dailyLog.updatedAt).toLocaleTimeString()} />
+            <Section title="Session Statistics">
+              <div className="space-y-3">
+                <Line k="Daily Log" v={dailyLog.id !== "" ? "Tracked" : "None"} />
+                <Line k="Trades Logged" v={`${tradesForDate.length}`} />
+                <Line k="Psych Entries" v={`${logs.filter((l) => l.date === date).length}`} />
+                <Line k="Last Sync" v={new Date(dailyLog.updatedAt).toLocaleTimeString()} />
               </div>
             </Section>
           </div>
         </div>
 
         {/* Psychology History Calendar */}
-        <div className="mt-4">
+        <div className="mt-12 pt-12 border-t border-border">
           <PsychologyCalendar
             selectedDate={date}
             onSelectDate={(d) => {
@@ -353,11 +393,10 @@ function Section({
 }) {
   return (
     <section
-      className="rounded-lg border border-terminal-border p-5"
-      style={{ background: "#0D1117" }}
+      className="bg-white rounded-2xl border border-border p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
     >
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <h2 className="text-[11px] font-bold tracking-[0.3em] text-[#48C0D8]">{title}</h2>
+      <div className="flex items-center justify-between mb-8 gap-4">
+        <h2 className="text-sm font-black uppercase tracking-widest text-primary">{title}</h2>
         {action}
       </div>
       {children}
@@ -367,7 +406,9 @@ function Section({
 
 function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`text-[10px] font-bold tracking-[0.25em] text-muted-foreground mb-2 ${className}`}>
+    <div
+      className={`text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 ${className}`}
+    >
       {children}
     </div>
   );
@@ -375,8 +416,9 @@ function Label({ children, className = "" }: { children: React.ReactNode; classN
 
 function Line({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between gap-2 border-b border-terminal-border/40 pb-1">
-      <span>{k}</span><span className="text-foreground">{v}</span>
+    <div className="flex justify-between items-center py-2 border-b border-muted/50 last:border-0">
+      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{k}</span>
+      <span className="text-xs font-black text-foreground">{v}</span>
     </div>
   );
 }
@@ -386,7 +428,7 @@ function Field({
   label,
   value,
   placeholder,
-  rows = 3,
+  rows = 4,
   onCommit,
 }: {
   label?: string;
@@ -397,7 +439,9 @@ function Field({
 }) {
   const [v, setV] = useState(value);
   // Sync when external value changes (e.g. switching date/trade)
-  useEffect(() => { setV(value); }, [value]);
+  useEffect(() => {
+    setV(value);
+  }, [value]);
   return (
     <div>
       {label && <Label>{label}</Label>}
@@ -406,8 +450,10 @@ function Field({
         rows={rows}
         placeholder={placeholder}
         onChange={(e) => setV(e.target.value)}
-        onBlur={() => { if (v !== value) onCommit(v); }}
-        className="w-full bg-[#05080A] border border-terminal-border rounded px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-[#48C0D8]/60 resize-y"
+        onBlur={() => {
+          if (v !== value) onCommit(v);
+        }}
+        className="w-full bg-muted/20 border border-border rounded-2xl px-5 py-4 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary/50 transition-all resize-y"
       />
     </div>
   );
@@ -427,17 +473,17 @@ function TagPicker({
   return (
     <div>
       <Label>{label}</Label>
-      <div className="flex gap-1.5 flex-wrap">
+      <div className="flex gap-2 flex-wrap">
         {options.map((opt) => {
           const active = value === opt;
           return (
             <button
               key={opt}
               onClick={() => onChange(active ? undefined : opt)}
-              className={`px-2.5 py-1 rounded text-[11px] font-bold tracking-wider border transition ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold tracking-wide border-2 transition-all duration-200 ${
                 active
-                  ? "bg-[#48C0D8]/15 text-[#48C0D8] border-[#48C0D8]/60"
-                  : "border-terminal-border text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-white border-primary shadow-lg scale-105"
+                  : "bg-white border-muted text-muted-foreground hover:border-primary/30"
               }`}
             >
               {opt}

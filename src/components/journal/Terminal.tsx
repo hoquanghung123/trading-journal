@@ -1,5 +1,22 @@
-import { useEffect, useState } from "react";
-import { LayoutDashboard, Crosshair, FileText, LogOut, Terminal as TerminalIcon, Construction, Settings, Brain } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { 
+  LayoutDashboard, 
+  Crosshair, 
+  FileText, 
+  LogOut, 
+  Terminal as TerminalIcon, 
+  Construction, 
+  Settings, 
+  Brain, 
+  CalendarCheck, 
+  BookOpen,
+  Menu,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  Activity
+} from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGate } from "./AuthGate";
@@ -7,15 +24,22 @@ import { JournalView } from "./JournalView";
 import { TradeLog } from "./TradeLog";
 import { PsychologyView } from "./PsychologyView";
 import { ManageAssetsModal } from "./ManageAssetsModal";
+import { ReviewPage } from "@/components/review/ReviewPage";
+import { PlaybookPage } from "@/components/playbook/PlaybookPage";
+import { DashboardPage } from "@/components/dashboard/DashboardPage";
+import { DailyViewPage } from "@/components/dashboard/DailyViewPage";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
+import { fetchTrades, type Trade } from "@/lib/trades";
 
-type Page = "dashboard" | "bias" | "trades" | "psychology";
+type Page = "dashboard" | "bias" | "trades" | "psychology" | "review" | "playbook" | "daily";
 
 const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "playbook", label: "Playbook", icon: BookOpen },
   { id: "bias", label: "Bias Expect", icon: Crosshair },
   { id: "trades", label: "Trade Log", icon: FileText },
   { id: "psychology", label: "Psychology", icon: Brain },
+  { id: "review", label: "Review", icon: CalendarCheck },
 ];
 
 const queryClient = new QueryClient({
@@ -25,27 +49,60 @@ const queryClient = new QueryClient({
 function Shell() {
   const [page, setPage] = useState<Page>("bias");
   const [assetsOpen, setAssetsOpen] = useState(false);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [trades, setTrades] = useState<Trade[]>([]);
 
-  useEffect(() => onPageChange((p) => setPage(p as PageId as Page)), []);
+  useEffect(() => {
+    onPageChange((p) => {
+      setPage(p as PageId as Page);
+      setIsMobileOpen(false);
+    });
+    
+    fetchTrades().then(setTrades).catch(console.error);
+  }, []);
+
+  const stats = useMemo(() => {
+    const total = trades.length;
+    const wins = trades.filter(t => t.netPnl > 0).length;
+    const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+    const pnl = trades.reduce((acc, t) => acc + t.netPnl, 0);
+    return { total, wr, pnl };
+  }, [trades]);
 
   const signOut = async () => { await supabase.auth.signOut(); };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
+    <div className="min-h-screen flex bg-background font-sans overflow-hidden">
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Left Sidebar */}
       <aside
-        className="fixed inset-y-0 left-0 z-40 w-[240px] flex flex-col border-r border-terminal-border"
-        style={{ background: "#0D131A" }}
+        className={`
+          fixed lg:relative inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-sidebar sidebar-transition
+          ${isMobileOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0"}
+          ${isLeftCollapsed ? "lg:w-[80px]" : "lg:w-[260px]"}
+        `}
       >
-        <div className="px-5 py-5 border-b border-terminal-border flex items-center gap-2">
-          <TerminalIcon className="w-5 h-5 text-neon-cyan text-glow-cyan" />
-          <div>
-            <div className="text-sm font-bold tracking-[0.25em] text-neon-cyan text-glow-cyan">ICT_JOURNAL</div>
-            <div className="text-[9px] text-muted-foreground tracking-widest">// v1.0 TERMINAL</div>
+        <div className={`px-6 py-8 flex items-center gap-3 ${isLeftCollapsed ? "justify-center px-0" : ""}`}>
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center forest-gradient soft-shadow shrink-0">
+            <TerminalIcon className="w-5 h-5 text-white" />
           </div>
+          {!isLeftCollapsed && (
+            <div className="overflow-hidden whitespace-nowrap">
+              <div className="text-lg font-bold tracking-tight text-foreground">Chartmate</div>
+              <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Trading Journal</div>
+            </div>
+          )}
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto hide-scrollbar">
           {NAV.map((item) => {
             const Icon = item.icon;
             const active = page === item.id;
@@ -53,44 +110,108 @@ function Shell() {
               <button
                 key={item.id}
                 onClick={() => setPage(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-bold tracking-[0.18em] border transition-all ${
-                  active
-                    ? "bg-neon-cyan/15 text-neon-cyan border-neon-cyan/50 text-glow-cyan shadow-[0_0_18px_oklch(0.85_0.18_200/0.25)]"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5"
-                }`}
+                title={isLeftCollapsed ? item.label : ""}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 
+                  ${active ? "forest-gradient text-white soft-shadow" : "text-muted-foreground hover:text-foreground hover:bg-muted"}
+                  ${isLeftCollapsed ? "justify-center px-0" : ""}
+                `}
               >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="uppercase">{item.label}</span>
+                <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
+                {!isLeftCollapsed && <span>{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
-        <div className="p-3 border-t border-terminal-border space-y-1">
+        <div className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed ? "flex flex-col items-center" : ""}`}>
           <button
             onClick={() => setAssetsOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-bold tracking-widest border border-terminal-border text-muted-foreground hover:text-neon-cyan hover:border-neon-cyan/60 transition-all"
+            title="Manage Assets"
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all ${isLeftCollapsed ? "justify-center px-0" : ""}`}
           >
-            <Settings className="w-3.5 h-3.5" /> MANAGE ASSETS
+            <Settings className="w-4 h-4 shrink-0" /> {!isLeftCollapsed && "Manage Assets"}
           </button>
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-bold tracking-widest border border-terminal-border text-muted-foreground hover:text-neon-red hover:border-neon-red/60 transition-all"
+            title="Sign Out"
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-all ${isLeftCollapsed ? "justify-center px-0" : ""}`}
           >
-            <LogOut className="w-3.5 h-3.5" /> SIGN OUT
+            <LogOut className="w-4 h-4 shrink-0" /> {!isLeftCollapsed && "Sign Out"}
+          </button>
+          
+          {/* Collapse Toggle Desktop */}
+          <button
+            onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
+            className="hidden lg:flex w-full mt-4 items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+          >
+            {isLeftCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <div className="flex-1 ml-[240px] min-w-0">
-        {page === "bias" && <JournalView />}
-        {page === "dashboard" && <UnderConstruction title="DASHBOARD" />}
-        {page === "trades" && <TradeLog />}
-        {page === "psychology" && <PsychologyView />}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        {/* Mobile Header */}
+        <header className="lg:hidden h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-30">
+          <button 
+            onClick={() => setIsMobileOpen(true)}
+            className="p-2 rounded-xl bg-muted text-foreground"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center forest-gradient">
+              <TerminalIcon className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-sm tracking-tight">Chartmate</span>
+          </div>
+          <div className="w-9" /> {/* Spacer */}
+        </header>
+
+        {/* Viewport content */}
+        <main className="flex-1 overflow-y-auto relative bg-[#F8FAF9]">
+          {/* Desktop Left Sidebar Toggle Overlay Button - When Collapsed */}
+          {isLeftCollapsed && (
+            <button
+              onClick={() => setIsLeftCollapsed(false)}
+              className="fixed top-4 left-4 z-40 hidden lg:flex w-10 h-10 items-center justify-center rounded-xl bg-white border border-border shadow-md text-muted-foreground hover:text-primary transition-all"
+              title="Expand Sidebar"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+
+          <div className="h-full">
+            {page === "bias" && <JournalView />}
+            {page === "dashboard" && <DashboardPage />}
+            {page === "daily" && <DailyViewPage />}
+            {page === "trades" && <TradeLog />}
+            {page === "psychology" && <PsychologyView />}
+            {page === "review" && <ReviewPage />}
+            {page === "playbook" && <PlaybookPage />}
+          </div>
+        </main>
       </div>
 
       <ManageAssetsModal open={assetsOpen} onClose={() => setAssetsOpen(false)} />
+    </div>
+  );
+}
+
+function QuickStat({ label, value, icon, subValue, isPositive }: { label: string; value: string | number; icon: React.ReactNode; subValue?: string; isPositive?: boolean }) {
+  return (
+    <div className="bg-muted/30 rounded-2xl p-4 border border-border/50 hover:border-primary/20 transition-all group">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 rounded-lg bg-white shadow-sm group-hover:scale-110 transition-transform">
+          {icon}
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">{label}</span>
+      </div>
+      <div className={`text-2xl font-black tracking-tight ${isPositive === undefined ? "text-foreground" : isPositive ? "text-emerald-600" : "text-rose-600"}`}>
+        {value}
+      </div>
+      {subValue && <div className="text-[10px] font-bold text-muted-foreground/60 mt-1 uppercase tracking-widest">{subValue}</div>}
     </div>
   );
 }

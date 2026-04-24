@@ -81,10 +81,7 @@ async function migrateRow(row) {
 
   if (!changed) return { id: row.id, skipped: true };
 
-  const { error } = await supabase
-    .from("journal_entries")
-    .update(updates)
-    .eq("id", row.id);
+  const { error } = await supabase.from("journal_entries").update(updates).eq("id", row.id);
   if (error) throw error;
   return { id: row.id, updated: Object.keys(updates) };
 }
@@ -103,8 +100,7 @@ async function main() {
     (r) =>
       isDataUrl(r.weekly_img) ||
       isDataUrl(r.daily_img) ||
-      (r.h4 &&
-        ["ASIA", "LDN", "NY"].some((k) => isDataUrl(r.h4[k])))
+      (r.h4 && ["ASIA", "LDN", "NY"].some((k) => isDataUrl(r.h4[k]))),
   );
 
   console.log(`Found ${targets.length} row(s) to migrate.`);
