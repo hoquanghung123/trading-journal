@@ -13,17 +13,18 @@ import {
   subMonths,
   parseISO,
 } from "date-fns";
-import { fetchTrades, type Trade } from "@/lib/trades";
+import { fetchTrades, tradesQueryKey, type Trade } from "@/lib/trades";
 import { navigateToPage, focusDailyView } from "@/lib/nav-bus";
+import { useQuery } from "@tanstack/react-query";
 
 export function TradingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [trades, setTrades] = useState<Trade[]>([]);
   const [newsFilter, setNewsFilter] = useState<number>(0);
 
-  useEffect(() => {
-    fetchTrades().then((t) => setTrades(t)).catch(console.error);
-  }, []);
+  const { data: trades = [] } = useQuery({
+    queryKey: tradesQueryKey,
+    queryFn: fetchTrades,
+  });
 
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));

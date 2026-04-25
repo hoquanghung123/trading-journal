@@ -1,56 +1,57 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TradingCalendar } from "./TradingCalendar";
 import { 
   EquityCurveChart, 
 } from "./DashboardCharts";
 import { DisciplineGauge, MistakesCard, ActionPlanCard } from "./PerformanceWidgets";
-import { fetchTrades, type Trade } from "@/lib/trades";
-import { fetchFunding } from "@/lib/funding";
-import { fetchReviews } from "@/lib/reviews";
+import { fetchTrades, tradesQueryKey, type Trade } from "@/lib/trades";
+import { fetchFunding, fundingQueryKey, type MonthlyFunding } from "@/lib/funding";
+import { fetchReviews, reviewsQueryKey } from "@/lib/reviews";
 import { AccountModal } from "./AccountModal";
 import { 
   Loader2,
   Wallet 
 } from "lucide-react";
 import { isSameMonth, format, parseISO } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Review } from "@/types/review";
 
 export function DashboardPage() {
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [funding, setFunding] = useState<any[]>([]);
-  const [latestReview, setLatestReview] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isMonthOnly, setIsMonthOnly] = useState(true);
   const [showAccountModal, setShowAccountModal] = useState(false);
 
-  const load = async () => {
-    try {
-      const [t, f, r] = await Promise.all([fetchTrades(), fetchFunding(), fetchReviews()]);
-      setTrades(t);
-      setFunding(f);
-      if (r.length > 0) {
-        // Sort by period descending (lexicographical)
-        const sortedReviews = [...r].sort((a, b) => b.period.localeCompare(a.period));
-        
-        // Find the most recent review that has some content
-        const relevantReview = sortedReviews.find(rev => 
-          rev.topMistakes.some(m => m.text.trim() !== "") || 
-          rev.actionPlan.hardRules.some(i => (typeof i === 'string' ? i : i.text).trim() !== "") ||
-          rev.actionPlan.optimization.some(i => (typeof i === 'string' ? i : i.text).trim() !== "") ||
-          rev.actionPlan.training.some(i => (typeof i === 'string' ? i : i.text).trim() !== "")
-        ) || sortedReviews[0];
-        
-        setLatestReview(relevantReview);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: trades = [], isLoading: loadingTrades } = useQuery({
+    queryKey: tradesQueryKey,
+    queryFn: fetchTrades,
+  });
 
-  useEffect(() => {
-    load();
-  }, []);
+  const { data: funding = [], isLoading: loadingFunding } = useQuery({
+    queryKey: fundingQueryKey,
+    queryFn: fetchFunding,
+  });
+
+  const { data: reviews = [], isLoading: loadingReviews } = useQuery({
+    queryKey: reviewsQueryKey,
+    queryFn: fetchReviews,
+  });
+
+  const loading = loadingTrades || loadingFunding || loadingReviews;
+
+  const latestReview = useMemo(() => {
+    if (reviews.length === 0) return null;
+    
+    // Sort by period descending (lexicographical)
+    const sortedReviews = [...reviews].sort((a, b) => b.period.localeCompare(a.period));
+    
+    // Find the most recent review that has some content
+    return sortedReviews.find(rev => 
+      rev.topMistakes.some(m => m.text.trim() !== "") || 
+      rev.actionPlan.hardRules.some(i => (typeof i === 'string' ? i : i.text).trim() !== "") ||
+      rev.actionPlan.optimization.some(i => (typeof i === 'string' ? i : i.text).trim() !== "") ||
+      rev.actionPlan.training.some(i => (typeof i === 'string' ? i : i.text).trim() !== "")
+    ) || sortedReviews[0];
+  }, [reviews]);
 
   const filteredTrades = useMemo(() => {
     if (!isMonthOnly) return trades;
@@ -73,17 +74,6 @@ export function DashboardPage() {
     const stdDev = Math.sqrt(pnls.map(p => Math.pow(p - avgPnl, 2)).reduce((a, b) => a + b, 0) / total);
     const sqn = stdDev > 0 ? (avgPnl / stdDev) * Math.sqrt(total) : 0;
 
-    // ROC Calculation
-    const nowKey = format(new Date(), "yyyy-MM");
-    const currentMonthFunding = funding.find(f => f.monthKey === nowKey)?.amount || 0;
-    
-    // ROC only calculated for monthly view as requested
-    const baseCapital = isMonthOnly 
-      ? (currentMonthFunding || (funding.length > 0 ? funding[funding.length - 1].amount : 10000))
-      : 0;
-      
-    const roc = isMonthOnly && baseCapital > 0 ? (totalPnl / baseCapital) * 100 : 0;
-
     // Discipline Calculation
     const disciplined = activeTrades.filter(t => t.complianceCheck).length;
     const discipline = (disciplined / total) * 100;
@@ -102,7 +92,7 @@ export function DashboardPage() {
       discipline,
       disciplined,
     };
-  }, [filteredTrades, funding, isMonthOnly]);
+  }, [filteredTrades]);
 
   const equityData = useMemo(() => {
     const sorted = [...trades].sort((a, b) => a.entryTime.localeCompare(b.entryTime));
@@ -221,7 +211,10 @@ export function DashboardPage() {
       {showAccountModal && (
         <AccountModal 
           onClose={() => setShowAccountModal(false)} 
-          onRefresh={load} 
+          onRefresh={() => {
+            queryClient.invalidateQueries({ queryKey: tradesQueryKey });
+            queryClient.invalidateQueries({ queryKey: fundingQueryKey });
+          }} 
         />
       )}
 

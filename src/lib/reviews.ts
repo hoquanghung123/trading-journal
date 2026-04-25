@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Review, ReviewType } from "@/types/review";
 
+export const reviewsQueryKey = ["reviews"] as const;
+
 export const fetchReviews = async (): Promise<Review[]> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];

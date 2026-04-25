@@ -187,7 +187,7 @@ export const outcomeStyle: Record<OutcomeColor, string> = {
   blue: "bg-sky-500/15 text-sky-400 border-sky-500/40",
 };
 
-export const SYMBOLS = ["XAUUSD", "NQ", "ES", "BTCUSD", "EURUSD", "GBPUSD"];
+export const tradesQueryKey = ["trades"] as const;
 
 import { generateId } from "./utils";
 

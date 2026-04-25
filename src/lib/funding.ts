@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export const fundingQueryKey = ["funding"] as const;
+
 export interface MonthlyFunding {
   id: string;
   monthKey: string; // YYYY-MM
