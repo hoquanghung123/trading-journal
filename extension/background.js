@@ -2,28 +2,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "FORWARD_TO_JOURNAL") {
     console.log("Forwarding to journal:", message.data);
     
-    // Search for the journal tab in both Production and Localhost
+    // Search for all possible journal tabs
     chrome.tabs.query({}, (tabs) => {
-      const journalTab = tabs.find(t => 
+      const journalTabs = tabs.filter(t => 
         t.url && (
           t.url.includes("trading-journal-3di.pages.dev") || 
-          t.url.includes("localhost:8080")
+          t.url.includes("localhost:8080") ||
+          t.url.includes("127.0.0.1")
         )
       );
 
-      if (journalTab) {
-        console.log("Found journal tab, injecting script...");
-        // Use direct execution to bypass any listener issues
-        chrome.scripting.executeScript({
-          target: { tabId: journalTab.id },
-          func: (data) => {
-            console.log("Injected script receiving data:", data);
-            window.postMessage({ type: "SYNC_TRADE_IMAGE", data: data }, "*");
-          },
-          args: [message.data]
+      if (journalTabs.length > 0) {
+        journalTabs.forEach(tab => {
+          console.log("Injecting SYNC into tab:", tab.url);
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (data) => {
+              // MATCH THE FORMAT EXPECTED BY __root.tsx
+              window.postMessage({ 
+                source: 'JOURNAL_EXTENSION', 
+                payload: data 
+              }, "*");
+            },
+            args: [message.data]
+          });
         });
       } else {
-        console.error("Journal tab not found!");
+        console.error("No journal tabs found to receive data!");
       }
     });
   }
