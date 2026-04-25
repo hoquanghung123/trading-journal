@@ -87,19 +87,31 @@ function Shell() {
       <aside
         className={`
           fixed lg:relative inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-sidebar sidebar-transition
-          ${isMobileOpen ? "translate-x-0 w-[280px]" : "-translate-x-full lg:translate-x-0"}
+          ${isMobileOpen ? "translate-x-0 w-[280px] sidebar-mobile-shadow" : "-translate-x-full lg:translate-x-0"}
           ${isLeftCollapsed ? "lg:w-[80px]" : "lg:w-[260px]"}
         `}
       >
-        <div className={`px-6 py-8 flex items-center gap-3 ${isLeftCollapsed ? "justify-center px-0" : ""}`}>
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center forest-gradient soft-shadow shrink-0">
-            <TerminalIcon className="w-5 h-5 text-white" />
-          </div>
-          {!isLeftCollapsed && (
-            <div className="overflow-hidden whitespace-nowrap">
-              <div className="text-lg font-bold tracking-tight text-foreground">Chartmate</div>
-              <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Trading Journal</div>
+        <div className={`px-6 py-8 flex items-center justify-between gap-3 ${isLeftCollapsed ? "lg:justify-center lg:px-0" : ""}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center forest-gradient soft-shadow shrink-0">
+              <TerminalIcon className="w-5 h-5 text-white" />
             </div>
+            {(!isLeftCollapsed || isMobileOpen) && (
+              <div className="overflow-hidden whitespace-nowrap">
+                <div className="text-lg font-bold tracking-tight text-foreground">Chartmate</div>
+                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Trading Journal</div>
+              </div>
+            )}
+          </div>
+          
+          {/* Close button for mobile */}
+          {isMobileOpen && (
+            <button 
+              onClick={() => setIsMobileOpen(false)}
+              className="lg:hidden p-2 rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           )}
         </div>
 
@@ -110,19 +122,22 @@ function Shell() {
               const active = page === item.id;
               const button = (
                 <button
-                  onClick={() => setPage(item.id)}
+                  onClick={() => {
+                    setPage(item.id);
+                    if (isMobileOpen) setIsMobileOpen(false);
+                  }}
                   className={`
-                    w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 
+                    w-full flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-xl text-sm font-semibold transition-all duration-200 
                     ${active ? "forest-gradient text-white soft-shadow" : "text-muted-foreground hover:text-foreground hover:bg-muted"}
-                    ${isLeftCollapsed ? "justify-center px-0" : ""}
+                    ${isLeftCollapsed && !isMobileOpen ? "lg:justify-center lg:px-0" : ""}
                   `}
                 >
                   <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
-                  {!isLeftCollapsed && <span>{item.label}</span>}
+                  {(!isLeftCollapsed || isMobileOpen) && <span>{item.label}</span>}
                 </button>
               );
 
-              if (isLeftCollapsed) {
+              if (isLeftCollapsed && !isMobileOpen) {
                 return (
                   <Tooltip key={item.id}>
                     <TooltipTrigger asChild>
@@ -139,8 +154,32 @@ function Shell() {
             })}
           </nav>
 
-          <div className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed ? "flex flex-col items-center" : ""}`}>
-            {isLeftCollapsed ? (
+          {/* Quick Stats in Sidebar for Mobile/Expanded Sidebar */}
+          {(!isLeftCollapsed || isMobileOpen) && (
+            <div className="px-6 py-4 space-y-4">
+              <div className="p-4 rounded-2xl bg-muted/50 border border-border/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Performance</span>
+                  <Activity className="w-3 h-3 text-primary" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[9px] font-bold text-muted-foreground uppercase">Win Rate</div>
+                    <div className="text-sm font-black text-foreground">{stats.wr}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold text-muted-foreground uppercase">Net PnL</div>
+                    <div className={`text-sm font-black ${stats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                      ${stats.pnl.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed && !isMobileOpen ? "flex flex-col items-center" : ""}`}>
+            {isLeftCollapsed && !isMobileOpen ? (
               <>
                 <Tooltip>
                   <TooltipTrigger asChild>

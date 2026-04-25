@@ -233,5 +233,25 @@
     margin-bottom: 0.75rem;
     line-height: 1.6;
   }
+
+  /* Mobile Optimizations */
+  @media (max-width: 640px) {
+    .mobile-card-shadow {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .mobile-p {
+      padding: 1rem;
+    }
+    .mobile-px {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    .mobile-pb {
+      padding-bottom: 5rem;
+    }
+    .sidebar-mobile-shadow {
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
+    }
+  }
 }
 

@@ -150,193 +150,217 @@ export function TradeLog() {
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="rounded-2xl border border-border bg-white overflow-x-auto hide-scrollbar shadow-sm">
-          <table className="w-full text-sm border-collapse min-w-[800px] lg:min-w-0">
-            <thead>
-              <tr className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
-                <th className="text-left p-4 w-[220px]">Outcome</th>
-                {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
-                <th className="text-left p-4 w-[160px]">Symbol / Side</th>
-                {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
-                {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
-                {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
-                {cols.compliance && <th className="text-left p-4 w-[200px]">Follow Playbook</th>}
-                <th className="text-left p-4">Trade Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {loading && (
-                <tr>
-                  <td colSpan={6} className="p-20 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-                  </td>
-                </tr>
-              )}
-              {!loading && sorted.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="p-20 text-center text-muted-foreground text-sm font-medium"
-                  >
-                    Your trade log is empty. Start your first entry to see data here.
-                  </td>
-                </tr>
-              )}
-              {sorted.map((t, i) => {
-                const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
-                return (
-                  <tr
-                    key={t.id}
-                    onClick={() => openEdit(t)}
-                    className="group hover:bg-muted/30 cursor-pointer transition-colors"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                          #{String(i + 1).padStart(2, "0")}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}
-                        >
-                          {outcome.label}
-                        </span>
-                      </div>
-                    </td>
+        {/* Table/Card Container */}
+        <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
+          {/* Mobile Card View */}
+          <div className="block lg:hidden divide-y divide-border/50">
+            {loading && (
+              <div className="p-20 text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+            {!loading && sorted.length === 0 && (
+              <div className="p-10 text-center text-muted-foreground text-sm font-medium">
+                Your trade log is empty.
+              </div>
+            )}
+            {sorted.map((t, i) => {
+              const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+              return (
+                <div 
+                  key={t.id} 
+                  onClick={() => openEdit(t)}
+                  className="p-4 active:bg-muted transition-colors space-y-3"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        #{String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${t.side === "buy" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                        {t.side}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${outcomeStyle[outcome.color]}`}>
+                      {outcome.label}
+                    </span>
+                  </div>
 
-                    {cols.entryTime && (
-                      <td className="p-4 text-xs font-semibold text-muted-foreground">
-                        {formatTime(t.entryTime)}
-                      </td>
-                    )}
-
-                    <td className="p-4">
+                  <div className="flex justify-between items-end">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                        {formatTimeShort(t.entryTime)}
+                      </span>
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-foreground text-sm">
-                          {t.symbol}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${
-                            t.side === "buy"
-                              ? "bg-primary/10 text-primary border border-primary/20"
-                              : "bg-destructive/10 text-destructive border border-destructive/20"
-                          }`}
-                        >
-                          {t.side}
-                        </span>
-                        {t.biasEntryId && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigateToPage("bias");
-                              setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 150);
-                            }}
-                            className="text-muted-foreground hover:text-primary transition-colors ml-1"
-                            title="Open bias entry"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </button>
+                        {t.setupId && (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-primary">
+                            <BookOpen className="w-3 h-3" />
+                            {playbookSetups.find(s => s.id === t.setupId)?.name || "Setup"}
+                          </div>
+                        )}
+                        {!t.complianceCheck && (
+                          <ShieldAlert className="w-3 h-3 text-rose-500" />
                         )}
                       </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-base font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                        {t.netPnl > 0 ? "+" : ""}{t.netPnl.toFixed(2)}
+                      </div>
+                      <div className="text-[10px] font-bold text-muted-foreground/60">
+                        RR {t.actualRr} / {t.maxRr}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-sm border-collapse min-w-[800px]">
+              <thead>
+                <tr className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
+                  <th className="text-left p-4 w-[220px]">Outcome</th>
+                  {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
+                  <th className="text-left p-4 w-[160px]">Symbol / Side</th>
+                  {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
+                  {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
+                  {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
+                  {cols.compliance && <th className="text-left p-4 w-[200px]">Follow Playbook</th>}
+                  <th className="text-left p-4">Trade Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {loading && (
+                  <tr>
+                    <td colSpan={8} className="p-20 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
                     </td>
-
-                    {cols.playbook && (
+                  </tr>
+                )}
+                {!loading && sorted.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="p-20 text-center text-muted-foreground text-sm font-medium">
+                      Your trade log is empty.
+                    </td>
+                  </tr>
+                )}
+                {sorted.map((t, i) => {
+                  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+                  return (
+                    <tr
+                      key={t.id}
+                      onClick={() => openEdit(t)}
+                      className="group hover:bg-muted/30 cursor-pointer transition-colors"
+                    >
                       <td className="p-4">
-                        {t.setupId && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigateToPage("playbook");
-                              setTimeout(() => focusPlaybookModel(t.setupId!), 50);
-                            }}
-                            className="px-3 py-1.5 rounded-lg bg-muted/50 flex items-center gap-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm border border-border/50 group/pb"
-                            title="Open playbook setup"
-                          >
-                            <BookOpen className="w-3.5 h-3.5 group-hover/pb:scale-110 transition-transform" />
-                            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
-                              {playbookSetups.find(s => s.id === t.setupId)?.name || "Unknown"}
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            #{String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}>
+                            {outcome.label}
+                          </span>
+                        </div>
+                      </td>
+
+                      {cols.entryTime && (
+                        <td className="p-4 text-xs font-semibold text-muted-foreground">
+                          {formatTime(t.entryTime)}
+                        </td>
+                      )}
+
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${t.side === "buy" ? "bg-primary/10 text-primary border border-primary/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>
+                            {t.side}
+                          </span>
+                          {t.biasEntryId && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigateToPage("bias");
+                                setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 150);
+                              }}
+                              className="text-muted-foreground hover:text-primary transition-colors ml-1"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
+                      {cols.playbook && (
+                        <td className="p-4">
+                          {t.setupId && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigateToPage("playbook");
+                                setTimeout(() => focusPlaybookModel(t.setupId!), 50);
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-muted/50 flex items-center gap-2 text-muted-foreground hover:text-primary transition-all shadow-sm border border-border/50"
+                            >
+                              <BookOpen className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                {playbookSetups.find(s => s.id === t.setupId)?.name || "Unknown"}
+                              </span>
+                            </button>
+                          )}
+                        </td>
+                      )}
+
+                      {cols.stats && (
+                        <td className="p-4">
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-sm font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                              {t.netPnl > 0 ? "+" : ""}{t.netPnl.toFixed(2)}
                             </span>
-                          </button>
-                        )}
-                      </td>
-                    )}
-
-                    {cols.stats && (
-                      <td className="p-4">
-                        <div className="flex flex-col gap-0.5">
-                          <span
-                            className={`text-sm font-black ${
-                              t.netPnl > 0
-                                ? "text-primary"
-                                : t.netPnl < 0
-                                  ? "text-destructive"
-                                  : "text-muted-foreground"
-                            }`}
-                          >
-                            {t.netPnl > 0 ? "+" : ""}
-                            {t.netPnl.toFixed(2)}
-                          </span>
-                          <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-                            RR {t.actualRr} / {t.maxRr}
-                          </span>
-                        </div>
-                      </td>
-                    )}
-
-                    {cols.images && (
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-2">
-                          <TradeImageThumb
-                            path={t.beforeImg}
-                            label="PRE"
-                            pair={{ path: t.afterImg, label: "POST" }}
-                            captionPrefix={`Trade #${String(i + 1).padStart(2, "0")} • ${t.symbol}`}
-                          />
-                          <TradeImageThumb
-                            path={t.afterImg}
-                            label="POST"
-                            pair={{ path: t.beforeImg, label: "PRE" }}
-                            captionPrefix={`Trade #${String(i + 1).padStart(2, "0")} • ${t.symbol}`}
-                          />
-                        </div>
-                      </td>
-                    )}
-
-                    {cols.compliance && (
-                      <td className="p-4">
-                        {t.complianceCheck ? (
-                          <div className="flex items-center gap-1.5 text-emerald-500" title="Followed Playbook">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Followed</span>
+                            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                              RR {t.actualRr} / {t.maxRr}
+                            </span>
                           </div>
-                        ) : (
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-1.5 text-rose-500" title="Did not Follow Playbook">
+                        </td>
+                      )}
+
+                      {cols.images && (
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-2">
+                            <TradeImageThumb path={t.beforeImg} label="PRE" pair={{ path: t.afterImg, label: "POST" }} />
+                            <TradeImageThumb path={t.afterImg} label="POST" pair={{ path: t.beforeImg, label: "PRE" }} />
+                          </div>
+                        </td>
+                      )}
+
+                      {cols.compliance && (
+                        <td className="p-4">
+                          {t.complianceCheck ? (
+                            <div className="flex items-center gap-1.5 text-emerald-500">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span className="text-[10px] font-bold uppercase tracking-wider">Followed</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-rose-500">
                               <ShieldAlert className="w-4 h-4" />
                               <span className="text-[10px] font-black uppercase tracking-widest">Incomplete</span>
                             </div>
-                            {t.missedConfluences && t.missedConfluences.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {t.missedConfluences.map(c => (
-                                  <span key={c} className="px-2 py-0.5 rounded-lg bg-rose-50 text-[9px] font-bold text-rose-500 border border-rose-100 whitespace-nowrap shadow-sm">
-                                    {c}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    )}
+                          )}
+                        </td>
+                      )}
 
-                    <td className="p-4 text-xs font-medium text-muted-foreground truncate max-w-[300px]">
-                      {t.notes ?? "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      <td className="p-4 text-xs font-medium text-muted-foreground truncate max-w-[300px]">
+                        {t.notes ?? "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -372,4 +396,23 @@ function formatTime(iso: string) {
 
   // Returns format: DD/MM/YY HH:MM
   return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
+}
+
+function formatTimeShort(iso: string) {
+  const d = new Date(iso);
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/New_York",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(d).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== "literal") acc[p.type] = p.value;
+    return acc;
+  }, {});
+
+  return `${parts.day}/${parts.month} ${parts.hour}:${parts.minute} NY`;
 }

@@ -169,53 +169,53 @@ export function PsychologyView() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 lg:p-10">
-      <div className="max-w-[1500px] mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-10 mobile-pb">
+      <div className="max-w-[1500px] mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border pb-8 flex-wrap gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-6 sm:pb-8 gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Brain className="w-7 h-7 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
                 Psychology Journal
               </h1>
-              <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mt-1">
+              <p className="text-[10px] sm:text-sm text-muted-foreground font-medium uppercase tracking-wider mt-0.5 sm:mt-1">
                 {logs.length} Entries • {tradesForDate.length} Trades on {date}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-2xl border border-border bg-white shadow-sm">
+          <div className="flex items-center gap-4 px-4 py-2.5 rounded-2xl border border-border bg-white shadow-sm w-full sm:w-auto justify-center">
             <CalendarDays className="w-5 h-5 text-primary" />
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-sm font-bold text-foreground outline-none cursor-pointer"
+              className="bg-transparent text-sm font-bold text-foreground outline-none cursor-pointer flex-1 sm:flex-none"
             />
             {saving && <Loader2 className="w-4 h-4 animate-spin text-primary ml-2" />}
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
           {/* Left column */}
-          <div className="col-span-12 lg:col-span-8 space-y-8">
+          <div className="lg:col-span-8 space-y-6 sm:space-y-8">
             {/* Morning Check-in */}
             <Section title="Morning Check-in" action={<SaveButton sectionKey="daily" />}>
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-8">
                 <Label>Start of Day Mood</Label>
-                <div className="flex gap-3 flex-wrap">
+                <div className="flex gap-2 sm:gap-3 flex-wrap justify-between sm:justify-start">
                   {MOOD_OPTIONS.map((m) => {
                     const active = dailyLog.morningMood === m;
                     return (
                       <button
                         key={m}
                         onClick={() => updateDaily({ morningMood: active ? undefined : m })}
-                        className={`text-3xl p-3 rounded-2xl border-2 transition-all duration-300 ${
+                        className={`text-2xl sm:text-3xl p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center ${
                           active
-                            ? "bg-primary/10 border-primary shadow-lg scale-110"
+                            ? "bg-primary/10 border-primary shadow-lg scale-105"
                             : "bg-white border-muted hover:border-primary/30"
                         }`}
                       >
@@ -229,7 +229,7 @@ export function PsychologyView() {
               <Field
                 label="Check-in Note"
                 value={dailyLog.morningNotes ?? ""}
-                placeholder="How do you feel? (Tired, motivated, stressed...)"
+                placeholder="How do you feel?"
                 onCommit={(v) => updateDaily({ morningNotes: v })}
               />
             </Section>
@@ -239,12 +239,12 @@ export function PsychologyView() {
               title="Trade Discipline & Emotions"
               action={<SaveButton sectionKey="trade" disabled={!tradeLog || !selectedTradeId} />}
             >
-              <div className="flex items-center gap-4 mb-8 flex-wrap">
-                <Label className="!mb-0">Selected Trade</Label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8">
+                <Label className="!mb-0 whitespace-nowrap">Selected Trade</Label>
                 <select
                   value={selectedTradeId}
                   onChange={(e) => setSelectedTradeId(e.target.value)}
-                  className="bg-muted/30 border border-border rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all min-w-[300px]"
+                  className="w-full bg-muted/30 border border-border rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   disabled={tradesForDate.length === 0}
                 >
                   <option value="">
@@ -268,7 +268,7 @@ export function PsychologyView() {
               </div>
 
               {tradeLog && selectedTradeId ? (
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   <TagPicker
                     label="Pre-Trade Emotion"
                     options={PRE_EMOTIONS}
@@ -291,14 +291,14 @@ export function PsychologyView() {
                   <Field
                     label="Exit Feelings & Assessment"
                     value={tradeLog.exitAssessment ?? ""}
-                    placeholder="How did you feel exiting? Any regrets?"
+                    placeholder="How did you feel exiting?"
                     onCommit={(v) => updateTrade({ exitAssessment: v })}
                   />
                 </div>
               ) : (
-                <div className="text-center py-12 bg-muted/20 rounded-2xl border border-dashed border-border">
-                  <Brain className="w-10 h-10 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                <div className="text-center py-10 sm:py-12 bg-muted/20 rounded-2xl border border-dashed border-border">
+                  <Brain className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground/30 mx-auto mb-4" />
+                  <p className="text-[10px] sm:text-sm font-bold text-muted-foreground uppercase tracking-widest px-4">
                     {tradesForDate.length === 0
                       ? "No trades on this date"
                       : "Select a trade to log psychology"}
@@ -309,7 +309,7 @@ export function PsychologyView() {
           </div>
 
           {/* Right column */}
-          <div className="col-span-12 lg:col-span-4 space-y-8">
+          <div className="lg:col-span-4 space-y-6 sm:space-y-8">
             <Section title="Daily Observations">
               <ul className="text-sm space-y-4 text-muted-foreground font-medium">
                 <li className="flex items-start gap-3">
@@ -393,10 +393,10 @@ function Section({
 }) {
   return (
     <section
-      className="bg-white rounded-2xl border border-border p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
+      className="bg-white rounded-2xl border border-border p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
     >
-      <div className="flex items-center justify-between mb-8 gap-4">
-        <h2 className="text-sm font-black uppercase tracking-widest text-primary">{title}</h2>
+      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-4">
+        <h2 className="text-[10px] sm:text-sm font-black uppercase tracking-widest text-primary">{title}</h2>
         {action}
       </div>
       {children}

@@ -193,10 +193,10 @@ export function JournalView() {
             <div className="hidden lg:block h-8 w-px bg-border" />
 
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Asset:</span>
+              <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Asset:</span>
               <button
                 onClick={() => setAsset("TODAY")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
               >
                 Today
               </button>
@@ -204,7 +204,7 @@ export function JournalView() {
                 <button
                   key={a}
                   onClick={() => setAsset(a)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
                   {a}
                 </button>
