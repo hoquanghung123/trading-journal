@@ -14,6 +14,7 @@ import { CheckCircle2, ShieldAlert, BookOpen } from "lucide-react";
 import { TradeModal } from "./TradeModal";
 import { TradeImageThumb } from "./TradeImageThumb";
 import { toast } from "sonner";
+import { usePlaybook } from "@/hooks/usePlaybook";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -23,17 +24,20 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-type ColKey = "entryTime" | "stats" | "images";
+type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
   stats: "Statistics",
   images: "Images",
+  compliance: "Follow Playbook",
+  playbook: "Playbook",
 };
 
 export function TradeLog() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
+  const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
   const [cols, setCols] = useState<Record<ColKey, boolean>>(() => {
@@ -41,7 +45,7 @@ export function TradeLog() {
       const s = localStorage.getItem("trade-log-cols");
       if (s) return JSON.parse(s);
     } catch {}
-    return { entryTime: true, stats: true, images: true };
+    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true };
   });
 
   useEffect(() => {
@@ -154,8 +158,10 @@ export function TradeLog() {
                 <th className="text-left p-4 w-[220px]">Outcome</th>
                 {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
                 <th className="text-left p-4 w-[160px]">Symbol / Side</th>
+                {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
                 {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
                 {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
+                {cols.compliance && <th className="text-left p-4 w-[200px]">Follow Playbook</th>}
                 <th className="text-left p-4">Trade Notes</th>
               </tr>
             </thead>
@@ -195,26 +201,6 @@ export function TradeLog() {
                         >
                           {outcome.label}
                         </span>
-                        {t.complianceCheck ? (
-                          <div className="flex items-center gap-1 text-emerald-500" title="Followed Playbook">
-                            <CheckCircle2 className="w-4 h-4" />
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1 text-rose-500" title="Did not Follow Playbook">
-                              <ShieldAlert className="w-4 h-4" />
-                            </div>
-                            {t.missedConfluences && t.missedConfluences.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {t.missedConfluences.map(c => (
-                                  <span key={c} className="px-1.5 py-0.5 rounded-md bg-rose-50 text-[8px] font-bold text-rose-500 border border-rose-100 whitespace-nowrap">
-                                    {c}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </td>
 
@@ -243,7 +229,7 @@ export function TradeLog() {
                             onClick={(e) => {
                               e.stopPropagation();
                               navigateToPage("bias");
-                              setTimeout(() => focusBiasEntry(t.biasEntryId!), 50);
+                              setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 150);
                             }}
                             className="text-muted-foreground hover:text-primary transition-colors ml-1"
                             title="Open bias entry"
@@ -251,6 +237,11 @@ export function TradeLog() {
                             <ExternalLink className="w-4 h-4" />
                           </button>
                         )}
+                      </div>
+                    </td>
+
+                    {cols.playbook && (
+                      <td className="p-4">
                         {t.setupId && (
                           <button
                             onClick={(e) => {
@@ -258,14 +249,17 @@ export function TradeLog() {
                               navigateToPage("playbook");
                               setTimeout(() => focusPlaybookModel(t.setupId!), 50);
                             }}
-                            className="text-muted-foreground hover:text-primary transition-colors ml-1"
+                            className="px-3 py-1.5 rounded-lg bg-muted/50 flex items-center gap-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm border border-border/50 group/pb"
                             title="Open playbook setup"
                           >
-                            <BookOpen className="w-4 h-4" />
+                            <BookOpen className="w-3.5 h-3.5 group-hover/pb:scale-110 transition-transform" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                              {playbookSetups.find(s => s.id === t.setupId)?.name || "Unknown"}
+                            </span>
                           </button>
                         )}
-                      </div>
-                    </td>
+                      </td>
+                    )}
 
                     {cols.stats && (
                       <td className="p-4">
@@ -305,6 +299,33 @@ export function TradeLog() {
                             captionPrefix={`Trade #${String(i + 1).padStart(2, "0")} • ${t.symbol}`}
                           />
                         </div>
+                      </td>
+                    )}
+
+                    {cols.compliance && (
+                      <td className="p-4">
+                        {t.complianceCheck ? (
+                          <div className="flex items-center gap-1.5 text-emerald-500" title="Followed Playbook">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Followed</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-1.5 text-rose-500" title="Did not Follow Playbook">
+                              <ShieldAlert className="w-4 h-4" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Incomplete</span>
+                            </div>
+                            {t.missedConfluences && t.missedConfluences.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {t.missedConfluences.map(c => (
+                                  <span key={c} className="px-2 py-0.5 rounded-lg bg-rose-50 text-[9px] font-bold text-rose-500 border border-rose-100 whitespace-nowrap shadow-sm">
+                                    {c}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </td>
                     )}
 

@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Activity
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGate } from "./AuthGate";
@@ -49,7 +50,7 @@ const queryClient = new QueryClient({
 function Shell() {
   const [page, setPage] = useState<Page>("bias");
   const [assetsOpen, setAssetsOpen] = useState(false);
-  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
 
@@ -102,52 +103,95 @@ function Shell() {
           )}
         </div>
 
-        <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto hide-scrollbar">
-          {NAV.map((item) => {
-            const Icon = item.icon;
-            const active = page === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setPage(item.id)}
-                title={isLeftCollapsed ? item.label : ""}
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 
-                  ${active ? "forest-gradient text-white soft-shadow" : "text-muted-foreground hover:text-foreground hover:bg-muted"}
-                  ${isLeftCollapsed ? "justify-center px-0" : ""}
-                `}
-              >
-                <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
-                {!isLeftCollapsed && <span>{item.label}</span>}
-              </button>
-            );
-          })}
-        </nav>
+        <TooltipProvider delayDuration={0}>
+          <nav className="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto hide-scrollbar">
+            {NAV.map((item) => {
+              const Icon = item.icon;
+              const active = page === item.id;
+              const button = (
+                <button
+                  onClick={() => setPage(item.id)}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 
+                    ${active ? "forest-gradient text-white soft-shadow" : "text-muted-foreground hover:text-foreground hover:bg-muted"}
+                    ${isLeftCollapsed ? "justify-center px-0" : ""}
+                  `}
+                >
+                  <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
+                  {!isLeftCollapsed && <span>{item.label}</span>}
+                </button>
+              );
 
-        <div className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed ? "flex flex-col items-center" : ""}`}>
-          <button
-            onClick={() => setAssetsOpen(true)}
-            title="Manage Assets"
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all ${isLeftCollapsed ? "justify-center px-0" : ""}`}
-          >
-            <Settings className="w-4 h-4 shrink-0" /> {!isLeftCollapsed && "Manage Assets"}
-          </button>
-          <button
-            onClick={signOut}
-            title="Sign Out"
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-all ${isLeftCollapsed ? "justify-center px-0" : ""}`}
-          >
-            <LogOut className="w-4 h-4 shrink-0" /> {!isLeftCollapsed && "Sign Out"}
-          </button>
-          
-          {/* Collapse Toggle Desktop */}
-          <button
-            onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
-            className="hidden lg:flex w-full mt-4 items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-          >
-            {isLeftCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
+              if (isLeftCollapsed) {
+                return (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      {button}
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return <div key={item.id}>{button}</div>;
+            })}
+          </nav>
+
+          <div className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed ? "flex flex-col items-center" : ""}`}>
+            {isLeftCollapsed ? (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setAssetsOpen(true)}
+                      className="w-full flex items-center justify-center py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                    >
+                      <Settings className="w-4 h-4 shrink-0" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Manage Assets</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center justify-center py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-all"
+                    >
+                      <LogOut className="w-4 h-4 shrink-0" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Sign Out</TooltipContent>
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setAssetsOpen(true)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                >
+                  <Settings className="w-4 h-4 shrink-0" /> Manage Assets
+                </button>
+                <button
+                  onClick={signOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-all"
+                >
+                  <LogOut className="w-4 h-4 shrink-0" /> Sign Out
+                </button>
+              </>
+            )}
+            
+            {/* Collapse Toggle Desktop */}
+            <button
+              onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
+              className="hidden lg:flex w-full mt-4 items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            >
+              {isLeftCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+          </div>
+        </TooltipProvider>
       </aside>
 
       {/* Main Content Area */}

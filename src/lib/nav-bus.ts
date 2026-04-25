@@ -1,6 +1,6 @@
 // Tiny pub/sub for cross-page navigation (Bias Expect <-> Trade Log)
 
-type Listener = (entryId: string) => void;
+type Listener = (entryId: string, asset?: string) => void;
 const listeners = new Set<Listener>();
 
 export function onBiasFocus(fn: Listener): () => void {
@@ -10,8 +10,8 @@ export function onBiasFocus(fn: Listener): () => void {
   };
 }
 
-export function focusBiasEntry(entryId: string) {
-  listeners.forEach((fn) => fn(entryId));
+export function focusBiasEntry(entryId: string, asset?: string) {
+  listeners.forEach((fn) => fn(entryId, asset));
 }
 
 // Page navigation bus

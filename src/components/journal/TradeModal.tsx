@@ -78,7 +78,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
 
-  const dtLocal = (() => {
+  const toNyLocal = (iso: string) => {
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/New_York",
       year: "numeric",
@@ -88,7 +88,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
       minute: "2-digit",
       hour12: false,
     });
-    const parts = formatter.formatToParts(new Date(t.entryTime)).reduce<Record<string, string>>(
+    const parts = formatter.formatToParts(new Date(iso)).reduce<Record<string, string>>(
       (acc, p) => {
         if (p.type !== "literal") acc[p.type] = p.value;
         return acc;
@@ -97,7 +97,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
     );
     const hh = parts.hour === "24" ? "00" : parts.hour;
     return `${parts.year}-${parts.month}-${parts.day}T${hh}:${parts.minute}`;
-  })();
+  };
+
+  const dtLocal = toNyLocal(t.entryTime);
+  const exitDtLocal = t.exitTime ? toNyLocal(t.exitTime) : "";
 
   const nyLocalToIso = (local: string): string => {
     const [datePart, timePart] = local.split("T");
@@ -188,6 +191,14 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   type="datetime-local"
                   value={dtLocal}
                   onChange={(e) => update({ entryTime: nyLocalToIso(e.target.value) })}
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                />
+              </Field>
+              <Field label="Exit time (NY)">
+                <Input
+                  type="datetime-local"
+                  value={exitDtLocal}
+                  onChange={(e) => update({ exitTime: nyLocalToIso(e.target.value) })}
                   className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                 />
               </Field>

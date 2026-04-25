@@ -54,8 +54,9 @@ export function JournalView() {
 
   // Subscribe to smart-link focus events from Trade Log
   useEffect(() => {
-    return onBiasFocus((entryId) => {
-      setAsset("ALL");
+    return onBiasFocus((entryId, assetName) => {
+      if (assetName) setAsset(assetName);
+      else setAsset("ALL");
       setMonth("ALL");
       setPendingFocusId(entryId);
     });

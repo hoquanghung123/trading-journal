@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { PlaybookModel, SetupConfluences, ExecutionRules } from "@/types/playbook";
-import { X, Save, Target, CheckSquare, Settings2, FileText, Clock, TrendingUp } from "lucide-react";
+import { X, Save, Target, CheckSquare, Settings2, FileText, Clock, TrendingUp, Plus } from "lucide-react";
 import { generateId } from "@/lib/utils";
+import { RichEditor } from "@/components/ui/rich-editor";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface StrategyFormProps {
   initialData?: PlaybookModel;
@@ -14,7 +17,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
   const [timeframe, setTimeframe] = useState(initialData?.timeframe || "1H");
   const [marketCondition, setMarketCondition] = useState(initialData?.marketCondition || "Trending");
   const [killzones, setKillzones] = useState(initialData?.killzones || "");
-  const [status, setStatus] = useState<"Approved" | "Testing">(initialData?.status || "Testing");
+  const [status, setStatus] = useState<"Approved" | "Testing" | "Under Review">(initialData?.status || "Testing");
   const [definition, setDefinition] = useState(initialData?.definition || "");
 
   const [confluences, setConfluences] = useState<SetupConfluences>(
@@ -68,249 +71,235 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 lg:p-8 overflow-y-auto scrollbar-hide">
-      <div className="bg-white rounded-[48px] w-full max-w-4xl max-h-[92vh] overflow-y-auto border border-border flex flex-col my-auto relative shadow-2xl animate-in zoom-in-95 duration-300 scrollbar-hide">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 lg:p-8 overflow-y-auto scrollbar-hide">
+      <div className="bg-white rounded-[48px] w-full max-w-5xl max-h-[92vh] overflow-hidden border border-border flex flex-col my-auto relative shadow-2xl animate-in zoom-in-95 duration-300">
         
-        {/* Header */}
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-border px-10 py-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Target className="w-6 h-6 text-primary" />
+        {/* Header - Identical to TradeModal */}
+        <div className="px-10 pt-10 pb-6 border-b border-border/50 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Target className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black tracking-tight text-foreground">
+                  {initialData ? "Edit Strategy" : "Add New Strategy"}
+                </h2>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">
+                   Strategy Configuration & Protocol
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-black tracking-tight text-foreground">
-                {initialData ? "Edit Strategy" : "Add New Strategy"}
-              </h2>
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1">
-                 Playbook Configuration
-              </p>
-            </div>
+            <button
+              onClick={onCancel}
+              className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={onCancel}
-            className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-10 space-y-12">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-10 py-8 space-y-10 scrollbar-hide">
           
-          {/* General Section */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-               <FileText className="w-5 h-5 text-primary/40" />
-               <h3 className="text-xs font-black tracking-[0.2em] text-muted-foreground uppercase">
-                 General Definition
-               </h3>
-            </div>
-            
+          {/* Section: Basic Info */}
+          <div className="space-y-6">
+            <SectionHeader title="Model Specification" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Field label="Model Name" required>
-                <input
-                  type="text"
+              <Field label="Model Name">
+                <Input
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="modern-input"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                   placeholder="e.g., 2022 Mentorship Model"
                 />
               </Field>
               <Field label="Current Status">
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as "Approved" | "Testing")}
-                  className="modern-input appearance-none cursor-pointer"
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
                 >
-                  <option value="Testing">🧪 Testing Phase</option>
-                  <option value="Approved">✅ Approved Model</option>
+                  <option value="Testing">🧪 TESTING_PHASE</option>
+                  <option value="Approved">✅ APPROVED_MODEL</option>
+                  <option value="Under Review">⚠️ UNDER_REVIEW</option>
                 </select>
               </Field>
-              <Field label="Execution Timeframe" icon={<Clock className="w-3.5 h-3.5" />}>
-                <input
-                  type="text"
+              <Field label="Execution Timeframe">
+                <Input
                   value={timeframe}
                   onChange={(e) => setTimeframe(e.target.value)}
-                  className="modern-input"
-                  placeholder="e.g., 1H / 15M / 5M"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                  placeholder="e.g., 1H / 15M"
                 />
               </Field>
-              <Field label="Ideal Market Condition" icon={<TrendingUp className="w-3.5 h-3.5" />}>
-                <input
-                  type="text"
+              <Field label="Ideal Market Condition">
+                <Input
                   value={marketCondition}
                   onChange={(e) => setMarketCondition(e.target.value)}
-                  className="modern-input"
-                  placeholder="e.g., Trending, Reversal"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                  placeholder="e.g., Trending / Reversal"
                 />
               </Field>
               <div className="md:col-span-2">
-                <Field label="Optimal Killzones">
-                  <input
-                    type="text"
+                <Field label="Optimal Operating Killzones">
+                  <Input
                     value={killzones}
                     onChange={(e) => setKillzones(e.target.value)}
-                    className="modern-input"
-                    placeholder="e.g., London Open, NY AM Session"
-                  />
-                </Field>
-              </div>
-              <div className="md:col-span-2">
-                <Field label="Model Description / Definition">
-                  <textarea
-                    value={definition}
-                    onChange={(e) => setDefinition(e.target.value)}
-                    className="modern-input min-h-[120px] py-4 resize-none"
-                    placeholder="Briefly describe the core logic of this model..."
+                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                    placeholder="e.g., London Open, New York AM..."
                   />
                 </Field>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Confluences Section */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-               <CheckSquare className="w-5 h-5 text-primary/40" />
-               <h3 className="text-xs font-black tracking-[0.2em] text-muted-foreground uppercase">
-                 Setup Confluences
-               </h3>
-            </div>
+          {/* Section: Logic & Protocol */}
+          <div className="space-y-10">
+            <SectionHeader title="Logic & Protocol" />
             
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={newConfluence}
-                onChange={(e) => setNewConfluence(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence())}
-                placeholder="Add new confluence (e.g., DOL, MSS, FVG...)"
-                className="modern-input flex-1"
-              />
-              <button
-                type="button"
-                onClick={addConfluence}
-                className="px-6 rounded-2xl bg-primary text-white font-bold text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all"
-              >
-                Add
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {confluences.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center justify-between gap-4 p-4 rounded-2xl border-2 border-primary/20 bg-primary/[0.02] shadow-sm animate-in zoom-in-95 duration-200"
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <Input
+                  value={newConfluence}
+                  onChange={(e) => setNewConfluence(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence())}
+                  placeholder="Add new confluence rule..."
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={addConfluence}
+                  className="px-8 rounded-xl bg-primary text-white font-black text-[10px] uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20"
                 >
-                  <span className="text-xs font-black uppercase tracking-widest text-primary truncate">
-                    {item}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeConfluence(item)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {confluences.length === 0 && (
-                <div className="col-span-full py-8 text-center border-2 border-dashed border-border rounded-3xl text-muted-foreground text-xs font-medium italic">
-                  No confluences added yet. Use the field above to add your strategy rules.
-                </div>
-              )}
-            </div>
-          </section>
+                  Add Rule
+                </button>
+              </div>
 
-          {/* Execution Rules Section */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3 border-b border-border pb-4">
-               <Settings2 className="w-5 h-5 text-primary/40" />
-               <h3 className="text-xs font-black tracking-[0.2em] text-muted-foreground uppercase">
-                 Execution & Management
-               </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {confluences.map((item) => (
+                  <div
+                    key={item}
+                    className="group flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/10 hover:bg-white hover:border-primary/20 hover:shadow-md transition-all duration-300"
+                  >
+                    <span className="text-xs font-bold uppercase tracking-widest text-foreground truncate">
+                      {item}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeConfluence(item)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {confluences.length === 0 && (
+                  <div className="col-span-full py-8 text-center border-2 border-dashed border-border rounded-3xl text-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-40">
+                    No confluences added yet
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-100">
               <Field label="Entry Trigger">
-                <input
-                  type="text"
+                <Input
                   value={execution.entry}
                   onChange={(e) => handleExecutionChange("entry", e.target.value)}
-                  className="modern-input"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4"
                   placeholder="e.g., Tap into 15m FVG"
                 />
               </Field>
               <Field label="Risk Allocation (%)">
-                <input
-                  type="text"
+                <Input
                   value={execution.riskPercent}
                   onChange={(e) => handleExecutionChange("riskPercent", e.target.value)}
-                  className="modern-input"
-                  placeholder="e.g., 1%"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4"
+                  placeholder="e.g., 1.0%"
                 />
               </Field>
               <Field label="Stop Loss Placement">
-                <input
-                  type="text"
+                <Input
                   value={execution.stopLoss}
                   onChange={(e) => handleExecutionChange("stopLoss", e.target.value)}
-                  className="modern-input"
-                  placeholder="e.g., Below Swing Low of MSS"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4"
+                  placeholder="e.g., Swing Low Offset"
                 />
               </Field>
               <Field label="Take Profit Target">
-                <input
-                  type="text"
+                <Input
                   value={execution.takeProfit}
                   onChange={(e) => handleExecutionChange("takeProfit", e.target.value)}
-                  className="modern-input"
-                  placeholder="e.g., Opposite Liquidity Pool"
+                  className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4"
+                  placeholder="e.g., External Liquidity"
                 />
               </Field>
               <div className="md:col-span-2">
-                <Field label="Management (BE / Partial) Rules">
-                  <input
-                    type="text"
+                <Field label="Management Rules (BE / Partials)">
+                  <Input
                     value={execution.breakEven}
                     onChange={(e) => handleExecutionChange("breakEven", e.target.value)}
-                    className="modern-input"
+                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4"
                     placeholder="e.g., Move SL to BE at 2R"
                   />
                 </Field>
               </div>
             </div>
-          </section>
+          </div>
 
-          {/* Actions */}
-          <div className="pt-8 flex justify-end gap-5 border-t border-border mt-8">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-8 py-4 rounded-2xl text-xs font-black tracking-widest text-muted-foreground hover:text-foreground transition-all uppercase"
-            >
-              Discard Changes
-            </button>
-            <button
-              type="submit"
-              className="forest-gradient px-10 py-4 rounded-2xl text-xs font-black tracking-widest text-white shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase flex items-center gap-3"
-            >
-              <Save className="w-4 h-4" /> Save Strategy
-            </button>
+          {/* Section: Definition */}
+          <div className="space-y-6">
+            <SectionHeader title="Definition" />
+            <div className="rounded-[32px] overflow-hidden border border-border bg-muted/10">
+              <RichEditor
+                value={definition}
+                onChange={setDefinition}
+                className="min-h-[400px] bg-white p-6"
+                placeholder="Provide detailed logic, rules, and examples..."
+              />
+            </div>
           </div>
         </form>
+
+        {/* Footer - Identical to TradeModal */}
+        <div className="px-10 py-8 border-t border-border/50 bg-muted/10 flex justify-end gap-6 shrink-0">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-8 py-4 rounded-2xl text-[10px] font-black tracking-widest text-muted-foreground hover:text-foreground transition-all uppercase"
+          >
+            Discard Changes
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="forest-gradient px-12 py-4 rounded-2xl text-sm font-black text-white shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest flex items-center gap-3"
+          >
+            <Save className="w-5 h-5" /> Save Configuration
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function Field({ label, children, required, icon }: { label: string; children: React.ReactNode; required?: boolean; icon?: React.ReactNode }) {
+function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center gap-2">
-        {icon && <span className="text-muted-foreground/40">{icon}</span>}
-        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-          {label} {required && <span className="text-destructive">*</span>}
-        </label>
-      </div>
+    <div className="flex items-center gap-3">
+      <div className="h-4 w-1 bg-primary rounded-full" />
+      <h3 className="text-xs font-black uppercase tracking-widest text-primary">
+        {title}
+      </h3>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+        {label}
+      </Label>
       {children}
     </div>
   );

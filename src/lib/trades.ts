@@ -5,6 +5,7 @@ export type TradeSide = "buy" | "sell";
 export interface Trade {
   id: string;
   entryTime: string; // ISO
+  exitTime?: string; // ISO
   symbol: string;
   side: TradeSide;
   grossPnl: number;
@@ -31,6 +32,7 @@ export interface Trade {
 type Row = {
   id: string;
   entry_time: string;
+  exit_time: string | null;
   symbol: string;
   side: TradeSide;
   gross_pnl: number;
@@ -57,6 +59,7 @@ type Row = {
 const fromRow = (r: Row): Trade => ({
   id: r.id,
   entryTime: r.entry_time,
+  exitTime: r.exit_time ?? undefined,
   symbol: r.symbol,
   side: r.side,
   grossPnl: Number(r.gross_pnl),
@@ -84,6 +87,7 @@ const toRow = (t: Trade, userId: string) => ({
   id: t.id,
   user_id: userId,
   entry_time: t.entryTime,
+  exit_time: t.exitTime ?? null,
   symbol: t.symbol,
   side: t.side,
   gross_pnl: t.grossPnl,
@@ -191,6 +195,7 @@ export function newTrade(): Trade {
   return {
     id: generateId(),
     entryTime: new Date().toISOString(),
+    exitTime: new Date().toISOString(),
     symbol: "XAUUSD",
     side: "buy",
     grossPnl: 0,

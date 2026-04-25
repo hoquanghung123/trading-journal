@@ -3,11 +3,12 @@ import { usePlaybook } from "@/hooks/usePlaybook";
 import { PlaybookGrid } from "./PlaybookGrid";
 import { StrategyDetail } from "./StrategyDetail";
 import { StrategyForm } from "./StrategyForm";
+import { TradeModal } from "../journal/TradeModal";
 import { PlaybookModel } from "@/types/playbook";
 import { toast } from "sonner";
 import { useEffect, useMemo } from "react";
 import { onPlaybookFocus } from "@/lib/nav-bus";
-import { fetchTrades, Trade } from "@/lib/trades";
+import { fetchTrades, Trade, upsertTrade, deleteTrade } from "@/lib/trades";
 import { AlertTriangle, TrendingUp } from "lucide-react";
 
 export function PlaybookPage() {
@@ -16,6 +17,10 @@ export function PlaybookPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<PlaybookModel | undefined>(undefined);
   const [trades, setTrades] = useState<Trade[]>([]);
+  
+  // Trade Modal State
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
 
   useEffect(() => {
     return onPlaybookFocus((id) => {
@@ -23,8 +28,17 @@ export function PlaybookPage() {
     });
   }, []);
 
+  const reloadTrades = async () => {
+    try {
+      const data = await fetchTrades();
+      setTrades(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    fetchTrades().then(setTrades).catch(console.error);
+    reloadTrades();
   }, [isLoaded]);
 
   const stats = useMemo(() => {
@@ -82,6 +96,33 @@ export function PlaybookPage() {
     setIsFormOpen(true);
   };
 
+  const handleTradeClick = (trade: Trade) => {
+    setSelectedTrade(trade);
+    setIsTradeModalOpen(true);
+  };
+
+  const handleSaveTrade = async (trade: Trade) => {
+    try {
+      await upsertTrade(trade);
+      toast.success("Trade updated");
+      reloadTrades();
+      setIsTradeModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update trade");
+    }
+  };
+
+  const handleDeleteTrade = async (id: string) => {
+    try {
+      await deleteTrade(id);
+      toast.success("Trade deleted");
+      reloadTrades();
+      setIsTradeModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete trade");
+    }
+  };
+
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
   return (
@@ -89,10 +130,12 @@ export function PlaybookPage() {
       {selectedModel ? (
         <StrategyDetail
           model={selectedModel}
+          trades={trades}
           onBack={() => setSelectedModelId(null)}
           onEdit={() => handleEdit(selectedModel)}
           onDelete={() => handleDelete(selectedModel.id)}
           onUpdate={updateModel}
+          onTradeClick={handleTradeClick}
         />
       ) : (
         <>
@@ -135,6 +178,17 @@ export function PlaybookPage() {
           }}
         />
       )}
+
+      {selectedTrade && (
+        <TradeModal
+          open={isTradeModalOpen}
+          trade={selectedTrade}
+          onClose={() => setIsTradeModalOpen(false)}
+          onSave={handleSaveTrade}
+          onDelete={() => handleDeleteTrade(selectedTrade.id)}
+        />
+      )}
     </div>
   );
 }
+
