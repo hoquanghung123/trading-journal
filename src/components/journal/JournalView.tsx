@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, ChevronsRight, Filter, Activity, Terminal as TerminalIcon } from "lucide-react";
+import { Plus, ChevronsRight, Filter, Activity, Terminal as TerminalIcon, Sparkles } from "lucide-react";
 import {
   type DayEntry,
   type SlotKind,
+  type Session,
   fetchEntries,
   upsertEntry,
   deleteEntry,
   monthKey,
   uid,
+  resolveTradingViewUrl,
+  uploadChartImage,
 } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
@@ -36,6 +39,7 @@ export function JournalView() {
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     fetchEntries()
@@ -152,6 +156,10 @@ export function JournalView() {
     setEditing(e);
     setTimeout(jumpRight, 100);
   };
+
+  // The extension sync is now handled globally in src/routes/__root.tsx
+  // This component will automatically see the new entries when they are saved to DB
+  // because we re-fetch or use real-time updates if implemented.
 
   return (
     <div className="min-h-screen bg-background">

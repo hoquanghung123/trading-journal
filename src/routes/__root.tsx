@@ -1,6 +1,8 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-
 import appCss from "../styles.css?url";
+import { useEffect } from "react";
+import { toast, Toaster } from "sonner";
+import { resolveTradingViewUrl, uploadChartImage, upsertEntry, fetchEntries, Session } from "../lib/journal";
 
 function NotFoundComponent() {
   return (
@@ -29,42 +31,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      {
-        name: "description",
-        content: "A trading journal app for ICT traders to log and analyze chart setups.",
-      },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      {
-        property: "og:description",
-        content: "A trading journal app for ICT traders to log and analyze chart setups.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      {
-        name: "twitter:description",
-        content: "A trading journal app for ICT traders to log and analyze chart setups.",
-      },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdbf4fa4-ddc3-4b33-be89-c25149d3c0e4/id-preview-301c0c0c--46508ced-418c-4f8a-9f04-97f501ecbf80.lovable.app-1776570129002.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/cdbf4fa4-ddc3-4b33-be89-c25149d3c0e4/id-preview-301c0c0c--46508ced-418c-4f8a-9f04-97f501ecbf80.lovable.app-1776570129002.png",
-      },
+      { title: "ICT Trading Journal" },
+      { name: "description", content: "A trading journal app for ICT traders." },
     ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
+    links: [{ rel: "stylesheet", href: appCss }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -86,5 +56,87 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      // Listen for our specific extension message
+      if (event.data?.source !== 'JOURNAL_EXTENSION') return;
+      
+      const data = event.data.payload;
+      toast.info(`Nhận dữ liệu ${data.asset}...`, { duration: 2000 });
+      
+      if ((window as any).__JOURNAL_SYNC_IN_PROGRESS__) return;
+      (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = true;
+
+      const { asset: targetAsset, timeframe, url } = data;
+      const tvUrl = resolveTradingViewUrl(url);
+      
+      if (!tvUrl) {
+        toast.error('Link TradingView không hợp lệ');
+        (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+        return;
+      }
+
+      const toastId = toast.loading(`Đang đồng bộ ${targetAsset}...`);
+
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const currentEntries = await fetchEntries();
+        let entry = currentEntries.find(e => e.date === today && e.asset === targetAsset);
+        
+        if (!entry) {
+          entry = {
+            id: crypto.randomUUID(),
+            date: today,
+            asset: targetAsset,
+            weeklyBias: "consolidation",
+            weeklyCorrect: false,
+            dailyBias: "consolidation",
+            dailyCorrect: false,
+            h4: {},
+          };
+        }
+
+        const path = await uploadChartImage(tvUrl);
+        const updatedEntry = { ...entry };
+        const tf = timeframe.toUpperCase();
+        
+        if (tf === "W" || tf === "WEEK") {
+          toast.info("Đang lưu vào khung WEEKLY...");
+          updatedEntry.weeklyImg = path;
+        } else if (tf === "D" || tf === "DAY") {
+          toast.info("Đang lưu vào khung DAILY...");
+          updatedEntry.dailyImg = path;
+        } else {
+          const hour = new Date().getHours();
+          let session: Session = "ASIA";
+          if (hour >= 12 && hour < 18) session = "LDN";
+          else if (hour >= 18 || hour < 5) session = "NY";
+          toast.info(`Đang lưu vào khung H4 (${session})...`);
+          updatedEntry.h4 = { ...entry.h4, [session]: path };
+        }
+        
+        await upsertEntry(updatedEntry);
+        toast.success(`Đã lưu ${targetAsset} thành công!`, { id: toastId });
+        
+        // Reload faster
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
+      } catch (err: any) {
+        toast.error("Lỗi: " + err.message, { id: toastId });
+      } finally {
+        (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  return (
+    <>
+      <Outlet />
+      <Toaster position="top-right" richColors />
+    </>
+  );
 }

@@ -183,7 +183,14 @@ export async function uploadChartImage(input: string | File): Promise<string> {
 
   let blob: Blob;
   let ext = "png";
-  if (typeof input === "string") {
+
+  if (typeof input === "string" && input.startsWith("http")) {
+    // Remote URL
+    const response = await fetch(input);
+    if (!response.ok) throw new Error("Failed to fetch image from URL");
+    blob = await response.blob();
+    ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg");
+  } else if (typeof input === "string") {
     // data URL
     const m = input.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid image data");
@@ -258,4 +265,16 @@ export async function getChartUrl(path: string): Promise<string> {
 export async function deleteChartImage(path?: string): Promise<void> {
   if (!path || path.startsWith("data:") || path.startsWith("http")) return;
   await supabase.storage.from(BUCKET).remove([path]);
+}
+
+/**
+ * Resolve a TradingView snapshot URL to a direct image URL.
+ * Example: https://www.tradingview.com/x/mlUOYC1G/ -> https://s3.tradingview.com/snapshots/m/mlUOYC1G.png
+ */
+export function resolveTradingViewUrl(url: string): string | null {
+  const match = url.match(/tradingview\.com\/x\/([a-zA-Z0-9]+)\/?/);
+  if (!match) return null;
+  const id = match[1];
+  const prefix = id[0].toLowerCase();
+  return `https://s3.tradingview.com/snapshots/${prefix}/${id}.png`;
 }

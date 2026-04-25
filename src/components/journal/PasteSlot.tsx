@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageIcon, ClipboardPaste, Loader2, Maximize2 } from "lucide-react";
-import { deleteChartImage, getChartUrl, uploadChartImage } from "@/lib/journal";
+import { deleteChartImage, getChartUrl, uploadChartImage, resolveTradingViewUrl } from "@/lib/journal";
 import { toast } from "sonner";
 import { Lightbox } from "./Lightbox";
 
@@ -87,6 +87,17 @@ export function PasteSlot({
           if (!file) continue;
           e.preventDefault();
           await handleFile(file);
+          return;
+        }
+      }
+
+      // Handle TradingView Link
+      const text = e.clipboardData?.getData("text");
+      if (text) {
+        const tvUrl = resolveTradingViewUrl(text);
+        if (tvUrl) {
+          e.preventDefault();
+          await handleDataUrl(tvUrl);
           return;
         }
       }
