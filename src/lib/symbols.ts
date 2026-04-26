@@ -7,7 +7,7 @@ export interface Symbol {
   isForex: boolean;
 }
 
-export const DEFAULT_SYMBOLS = ["XAUUSD", "NQ", "ES", "BTCUSD", "EURUSD", "GBPUSD"];
+export const DEFAULT_SYMBOLS = ["GC1!", "NQ1!", "ES1!", "BTCUSD", "EURUSD", "GBPUSD"];
 
 export const symbolsQueryKey = ["symbols"] as const;
 

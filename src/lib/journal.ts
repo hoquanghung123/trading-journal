@@ -20,7 +20,7 @@ export interface DayEntry {
   notes?: string;
 }
 
-export const ASSETS = ["XAUUSD", "NQ", "ES", "BTCUSD", "EURUSD", "GBPUSD"];
+export const ASSETS = ["GC1!", "NQ1!", "ES1!", "BTCUSD", "EURUSD", "GBPUSD"];
 
 // ---- Row mapping ----
 type Row = {
