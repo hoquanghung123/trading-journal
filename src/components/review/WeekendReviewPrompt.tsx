@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Save, X, ArrowRight, Sparkles } from "lucide-react";
 import { useReviewsStorage } from "@/hooks/useReviewsStorage";
-import { useNavigate } from "@tanstack/react-router";
+import { navigateToPage } from "@/lib/nav-bus";
 
 // Helper to get current week period, e.g., "2026-04-W3"
 // Matches logic in ReviewPage.tsx
@@ -65,8 +65,7 @@ export function WeekendReviewPrompt() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
-                // @ts-ignore - navigation to string path
-                navigate({ to: "/review" });
+                navigateToPage("review");
                 setShow(false);
               }}
               className="bg-amber-500 text-white px-4 py-2 rounded-xl font-bold text-[11px] uppercase tracking-wider shadow-lg shadow-amber-500/20 hover:bg-amber-600 active:scale-95 transition-all flex items-center gap-2"
