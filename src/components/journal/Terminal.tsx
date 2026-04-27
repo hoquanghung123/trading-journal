@@ -29,6 +29,7 @@ import { ReviewPage } from "@/components/review/ReviewPage";
 import { PlaybookPage } from "@/components/playbook/PlaybookPage";
 import { DashboardPage } from "@/components/dashboard/DashboardPage";
 import { DailyViewPage } from "@/components/dashboard/DailyViewPage";
+import { WeekendReviewPrompt } from "@/components/review/WeekendReviewPrompt";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
 import { fetchTrades, type Trade } from "@/lib/trades";
 
@@ -278,6 +279,7 @@ function Shell() {
       </div>
 
       <ManageAssetsModal open={assetsOpen} onClose={() => setAssetsOpen(false)} />
+      <WeekendReviewPrompt />
     </div>
   );
 }
