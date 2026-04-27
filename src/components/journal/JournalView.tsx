@@ -15,8 +15,10 @@ import {
 import { useSymbols } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
 import { EditDayModal } from "./EditDayModal";
+import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
 import { onBiasFocus } from "@/lib/nav-bus";
 import { toast } from "sonner";
+import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
 
 const newEntry = (asset: string): DayEntry => ({
   id: uid(),
@@ -39,6 +41,32 @@ export function JournalView() {
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Morning Psychology Prompt Logic
+  const [showPsychPrompt, setShowPsychPrompt] = useState(false);
+  const [todayLog, setTodayLog] = useState<PsychologyLog | undefined>();
+
+  useEffect(() => {
+    const checkPsych = async () => {
+      try {
+        const today = toLocalDateStr(new Date());
+        const logs = await fetchPsychologyForDate(today);
+        const daily = logs.find((l) => l.tradeId === null);
+        
+        const isTest = new URLSearchParams(window.location.search).get("test") === "psych";
+
+        // If no daily log or no mood recorded, show prompt (or if in test mode)
+        if (!daily || !daily.morningMood || isTest) {
+          setTodayLog(daily);
+          setShowPsychPrompt(true);
+        }
+      } catch (e) {
+        console.error("Failed to check psychology status:", e);
+      }
+    };
+    
+    checkPsych();
+  }, []);
 
 
   useEffect(() => {
@@ -289,6 +317,12 @@ export function JournalView() {
           onClose={() => setEditing(null)}
         />
       )}
+
+      <MorningPsychologyPrompt 
+        isOpen={showPsychPrompt}
+        onClose={() => setShowPsychPrompt(false)}
+        existingLog={todayLog}
+      />
     </div>
   );
 }
