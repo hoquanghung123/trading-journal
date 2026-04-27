@@ -20,7 +20,6 @@ const getCurrentWeekPeriod = () => {
 export function WeekendReviewPrompt() {
   const { reviews, isLoaded } = useReviewsStorage();
   const [show, setShow] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoaded) return;
