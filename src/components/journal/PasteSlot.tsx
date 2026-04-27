@@ -31,21 +31,11 @@ export function PasteSlot({
 
   // Resolve storage path -> signed URL (or pass through legacy data URL)
   useEffect(() => {
-    let cancelled = false;
     if (!image) {
       setDisplayUrl("");
       return;
     }
-    getChartUrl(image)
-      .then((u) => {
-        if (!cancelled) setDisplayUrl(u);
-      })
-      .catch(() => {
-        if (!cancelled) setDisplayUrl("");
-      });
-    return () => {
-      cancelled = true;
-    };
+    setDisplayUrl(getChartUrl(image));
   }, [image]);
 
   const handleFile = async (file: File) => {

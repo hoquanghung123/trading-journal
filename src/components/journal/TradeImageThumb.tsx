@@ -18,35 +18,19 @@ export function TradeImageThumb({ path, label, pair, captionPrefix }: Props) {
   const [lightbox, setLightbox] = useState<{ images: LightboxImage[]; index: number } | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
     if (!path) {
       setUrl("");
       return;
     }
-    getChartUrl(path)
-      .then((u) => {
-        if (!cancelled) setUrl(u);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    setUrl(getChartUrl(path));
   }, [path]);
 
   useEffect(() => {
-    let cancelled = false;
     if (!pair?.path) {
       setPairUrl("");
       return;
     }
-    getChartUrl(pair.path)
-      .then((u) => {
-        if (!cancelled) setPairUrl(u);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    setPairUrl(getChartUrl(pair.path));
   }, [pair?.path]);
 
   if (!path) {

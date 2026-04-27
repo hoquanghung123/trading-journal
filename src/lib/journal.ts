@@ -176,7 +176,7 @@ export function fileToDataURL(file: File): Promise<string> {
 
 const BUCKET = "journal-charts";
 
-/** Upload a data URL or File to Storage. Returns a public-style signed/url path stored in DB. */
+/** Upload a data URL or File to Storage. Returns a public path stored in DB. */
 export async function uploadChartImage(input: string | File): Promise<string> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
@@ -214,52 +214,14 @@ export async function uploadChartImage(input: string | File): Promise<string> {
   return path;
 }
 
-const URL_CACHE_KEY = "journal-urls-v1";
-let urlCache: Record<string, { url: string; expires: number }> | null = null;
-
-function getCache() {
-  if (urlCache) return urlCache;
-  try {
-    urlCache = JSON.parse(localStorage.getItem(URL_CACHE_KEY) || "{}");
-  } catch {
-    urlCache = {};
-  }
-  return urlCache!;
-}
-
-function saveCache() {
-  if (!urlCache) return;
-  try {
-    localStorage.setItem(URL_CACHE_KEY, JSON.stringify(urlCache));
-  } catch {
-    // Ignore quota errors
-  }
-}
-
-/** Resolve a stored path into a temporary signed URL for display, with caching. */
-export async function getChartUrl(path: string): Promise<string> {
+/** Resolve a stored path into a proxy URL (Cloudflare CDN) for display. */
+export function getChartUrl(path: string): string {
   if (!path) return "";
   if (path.startsWith("data:") || path.startsWith("http")) return path;
 
-  const cache = getCache();
-  const now = Date.now();
-  if (cache[path] && cache[path].expires > now) {
-    return cache[path].url;
-  }
-
-  // Request a signed URL valid for 1 year (31536000 seconds)
-  const expiresIn = 31536000;
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn);
-  if (error) throw error;
-
-  cache[path] = {
-    url: data.signedUrl,
-    // expire the cache 1 day before the actual token expires
-    expires: now + (expiresIn - 86400) * 1000,
-  };
-  saveCache();
-
-  return data.signedUrl;
+  // Gọi qua Cloudflare Pages Function tại đường dẫn /storage/[path]
+  // Việc này giúp Cloudflare cache ảnh và tiết kiệm Egress cho Supabase
+  return `/storage/${path}`;
 }
 
 export async function deleteChartImage(path?: string): Promise<void> {
