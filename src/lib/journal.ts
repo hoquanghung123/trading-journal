@@ -214,14 +214,14 @@ export async function uploadChartImage(input: string | File): Promise<string> {
   return path;
 }
 
-/** Resolve a stored path into a proxy URL (API Route) for display. */
+/** Resolve a stored path into a proxy URL for display. */
 export function getChartUrl(path: string): string {
   if (!path) return "";
   if (path.startsWith("data:") || path.startsWith("http")) return path;
 
-  // Sử dụng API Route của TanStack Start để làm Proxy
-  // Giúp tận dụng Cloudflare CDN của Pages mà không bị xung đột với _worker.js
-  return `/api/storage?path=${encodeURIComponent(path)}`;
+  // Sử dụng Splat Route (/storage/$) làm Proxy
+  // Cách này tương thích 100% với Cloudflare Pages và TanStack Start
+  return `/storage/${path}`;
 }
 
 export async function deleteChartImage(path?: string): Promise<void> {

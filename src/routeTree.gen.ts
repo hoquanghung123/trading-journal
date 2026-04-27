@@ -10,43 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiStorageRouteImport } from './routes/api.storage'
+import { Route as StorageSplatRouteImport } from './routes/storage.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiStorageRoute = ApiStorageRouteImport.update({
-  id: '/api/storage',
-  path: '/api/storage',
+const StorageSplatRoute = StorageSplatRouteImport.update({
+  id: '/storage/$',
+  path: '/storage/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api/storage': typeof ApiStorageRoute
+  '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api/storage': typeof ApiStorageRoute
+  '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api/storage': typeof ApiStorageRoute
+  '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/storage'
+  fullPaths: '/' | '/storage/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/storage'
-  id: '__root__' | '/' | '/api/storage'
+  to: '/' | '/storage/$'
+  id: '__root__' | '/' | '/storage/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiStorageRoute: typeof ApiStorageRoute
+  StorageSplatRoute: typeof StorageSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,11 +58,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/storage': {
-      id: '/api/storage'
-      path: '/api/storage'
-      fullPath: '/api/storage'
-      preLoaderRoute: typeof ApiStorageRouteImport
+    '/storage/$': {
+      id: '/storage/$'
+      path: '/storage/$'
+      fullPath: '/storage/$'
+      preLoaderRoute: typeof StorageSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -70,7 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiStorageRoute: ApiStorageRoute,
+  StorageSplatRoute: StorageSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
