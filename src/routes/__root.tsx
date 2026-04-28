@@ -61,6 +61,8 @@ function RootComponent() {
       // Listen for our specific extension message
       if (event.data?.source !== 'JOURNAL_EXTENSION') return;
       
+      const data = event.data.payload;
+      
       if ((window as any).__JOURNAL_SYNC_IN_PROGRESS__) return;
       (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = true;
 
