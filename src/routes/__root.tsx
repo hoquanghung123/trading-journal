@@ -2,7 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import appCss from "../styles.css?url";
 import { useEffect } from "react";
 import { toast, Toaster } from "sonner";
-import { resolveTradingViewUrl, uploadChartImage, upsertEntry, fetchEntries, Session } from "../lib/journal";
+import { resolveTradingViewUrl, uploadChartImage, upsertEntry, fetchEntries, Session, weekdayOf } from "../lib/journal";
 
 function NotFoundComponent() {
   return (
@@ -90,6 +90,8 @@ function RootComponent() {
             asset: targetAsset,
             weeklyBias: "consolidation",
             weeklyCorrect: false,
+            monthlyBias: "consolidation",
+            monthlyCorrect: false,
             dailyBias: "consolidation",
             dailyCorrect: false,
             h4: {},
@@ -100,7 +102,15 @@ function RootComponent() {
         const updatedEntry = { ...entry };
         const tf = timeframe.toUpperCase();
         
-        if (tf === "W" || tf === "WEEK") {
+        if (tf === "M" || tf === "MONTH") {
+          if (weekdayOf(today) !== "MON") {
+            toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2!");
+            (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+            return;
+          }
+          toast.info("Đang lưu vào khung MONTHLY...");
+          updatedEntry.monthlyImg = path;
+        } else if (tf === "W" || tf === "WEEK") {
           toast.info("Đang lưu vào khung WEEKLY...");
           updatedEntry.weeklyImg = path;
         } else if (tf === "D" || tf === "DAY") {
