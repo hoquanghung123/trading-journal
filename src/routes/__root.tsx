@@ -76,10 +76,19 @@ function RootComponent() {
         return;
       }
 
+      const today = new Date().toISOString().slice(0, 10);
+      const tf = timeframe.toUpperCase();
+
+      // Early validation for Monthly
+      if ((tf === "M" || tf === "MONTH" || tf === "1M") && weekdayOf(today) !== "MON") {
+        toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2!");
+        (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+        return;
+      }
+
       const toastId = toast.loading(`Đang đồng bộ ${targetAsset}...`);
 
       try {
-        const today = new Date().toISOString().slice(0, 10);
         const currentEntries = await fetchEntries();
         let entry = currentEntries.find(e => e.date === today && e.asset === targetAsset);
         
@@ -100,14 +109,8 @@ function RootComponent() {
 
         const path = await uploadChartImage(tvUrl);
         const updatedEntry = { ...entry };
-        const tf = timeframe.toUpperCase();
         
         if (tf === "M" || tf === "MONTH" || tf === "1M") {
-          if (weekdayOf(today) !== "MON") {
-            toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2!");
-            (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
-            return;
-          }
           toast.info("Đang lưu vào khung MONTHLY...");
           updatedEntry.monthlyImg = path;
         } else if (tf === "W" || tf === "WEEK") {
