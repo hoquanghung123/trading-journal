@@ -61,9 +61,6 @@ function RootComponent() {
       // Listen for our specific extension message
       if (event.data?.source !== 'JOURNAL_EXTENSION') return;
       
-      const data = event.data.payload;
-      toast.info(`Nhận dữ liệu ${data.asset}...`, { duration: 2000 });
-      
       if ((window as any).__JOURNAL_SYNC_IN_PROGRESS__) return;
       (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = true;
 
@@ -85,6 +82,8 @@ function RootComponent() {
         (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
         return;
       }
+
+      toast.info(`Nhận dữ liệu ${targetAsset}...`, { duration: 2000 });
 
       const toastId = toast.loading(`Đang đồng bộ ${targetAsset}...`);
 
