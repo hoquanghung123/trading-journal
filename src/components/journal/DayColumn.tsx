@@ -44,8 +44,8 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
       </div>
 
       <div className="p-3 space-y-4">
-        {/* Monthly - Only on Mondays */}
-        {weekdayOf(entry.date) === "MON" && (
+        {/* Monthly Outlook Area - Fixed Height for Alignment */}
+        {weekdayOf(entry.date) === "MON" ? (
           <SlotWithBias
             label="Monthly Outlook"
             image={entry.monthlyImg}
@@ -56,6 +56,14 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             onImg={(u) => onUpdate({ ...entry, monthlyImg: u })}
             onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
           />
+        ) : (
+          /* Spacer for Tue-Fri to maintain horizontal alignment */
+          <div className="h-28 rounded-xl border border-terminal-border/10 bg-black/5 flex items-center justify-center relative group/spacer">
+            <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/20 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/20 font-black border border-white/5">
+              Monthly Outlook
+            </div>
+            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/10 font-bold">MONDAY ONLY</span>
+          </div>
         )}
 
         {/* Weekly */}
