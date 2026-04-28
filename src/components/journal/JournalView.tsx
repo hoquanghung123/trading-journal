@@ -26,6 +26,8 @@ const newEntry = (asset: string): DayEntry => ({
   asset,
   weeklyBias: "consolidation",
   weeklyCorrect: false,
+  monthlyBias: "consolidation",
+  monthlyCorrect: false,
   dailyBias: "consolidation",
   dailyCorrect: false,
   h4: {},

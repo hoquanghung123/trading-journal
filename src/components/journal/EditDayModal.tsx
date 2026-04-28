@@ -91,6 +91,23 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
           </div>
 
           <div className="space-y-10">
+            {/* Monthly - Only on Mondays */}
+            {weekdayOf(draft.date) === "MON" && (
+              <Section title="Monthly Outlook">
+                <div className="grid grid-cols-[1fr_120px] gap-4">
+                  <PasteSlot
+                    label="Monthly Chart"
+                    image={draft.monthlyImg}
+                    onChange={(u) => update("monthlyImg", u)}
+                    focused={focusKey === "monthly"}
+                    onFocus={() => setFocusKey("monthly")}
+                    className="h-48"
+                  />
+                  <BiasPicker value={draft.monthlyBias} onChange={(v) => update("monthlyBias", v)} />
+                </div>
+              </Section>
+            )}
+
             {/* Weekly */}
             <Section title="Weekly Outlook">
               <div className="grid grid-cols-[1fr_120px] gap-4">

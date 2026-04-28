@@ -24,6 +24,9 @@ export type Database = {
           weekly_bias: Database["public"]["Enums"]["bias_type"];
           weekly_correct: boolean;
           weekly_img: string | null;
+          monthly_bias: Database["public"]["Enums"]["bias_type"];
+          monthly_correct: boolean;
+          monthly_img: string | null;
         };
         Insert: {
           asset: string;
@@ -40,6 +43,9 @@ export type Database = {
           weekly_bias?: Database["public"]["Enums"]["bias_type"];
           weekly_correct?: boolean;
           weekly_img?: string | null;
+          monthly_bias?: Database["public"]["Enums"]["bias_type"];
+          monthly_correct?: boolean;
+          monthly_img?: string | null;
         };
         Update: {
           asset?: string;
@@ -56,6 +62,9 @@ export type Database = {
           weekly_bias?: Database["public"]["Enums"]["bias_type"];
           weekly_correct?: boolean;
           weekly_img?: string | null;
+          monthly_bias?: Database["public"]["Enums"]["bias_type"];
+          monthly_correct?: boolean;
+          monthly_img?: string | null;
         };
         Relationships: [];
       };

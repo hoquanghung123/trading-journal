@@ -44,6 +44,20 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
       </div>
 
       <div className="p-3 space-y-4">
+        {/* Monthly - Only on Mondays */}
+        {weekdayOf(entry.date) === "MON" && (
+          <SlotWithBias
+            label="Monthly Outlook"
+            image={entry.monthlyImg}
+            bias={entry.monthlyBias}
+            correct={entry.monthlyCorrect}
+            focused={isFocused("monthly")}
+            onFocus={() => focus("monthly")}
+            onImg={(u) => onUpdate({ ...entry, monthlyImg: u })}
+            onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
+          />
+        )}
+
         {/* Weekly */}
         <SlotWithBias
           label="Weekly Outlook"

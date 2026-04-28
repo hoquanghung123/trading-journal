@@ -4,7 +4,7 @@ import { generateId } from "./utils";
 
 export type Bias = "bullish" | "bearish" | "consolidation";
 export type Session = "ASIA" | "LDN" | "NY";
-export type SlotKind = "weekly" | "daily" | "h4-ASIA" | "h4-LDN" | "h4-NY";
+export type SlotKind = "monthly" | "weekly" | "daily" | "h4-ASIA" | "h4-LDN" | "h4-NY";
 
 export interface DayEntry {
   id: string;
@@ -13,6 +13,9 @@ export interface DayEntry {
   weeklyImg?: string;
   weeklyBias: Bias;
   weeklyCorrect: boolean;
+  monthlyImg?: string;
+  monthlyBias: Bias;
+  monthlyCorrect: boolean;
   dailyImg?: string;
   dailyBias: Bias;
   dailyCorrect: boolean;
@@ -30,6 +33,9 @@ type Row = {
   weekly_img: string | null;
   weekly_bias: Bias;
   weekly_correct: boolean;
+  monthly_img: string | null;
+  monthly_bias: Bias;
+  monthly_correct: boolean;
   daily_img: string | null;
   daily_bias: Bias;
   daily_correct: boolean;
@@ -44,6 +50,9 @@ const fromRow = (r: Row): DayEntry => ({
   weeklyImg: r.weekly_img ?? undefined,
   weeklyBias: r.weekly_bias,
   weeklyCorrect: r.weekly_correct,
+  monthlyImg: r.monthly_img ?? undefined,
+  monthlyBias: r.monthly_bias,
+  monthlyCorrect: r.monthly_correct,
   dailyImg: r.daily_img ?? undefined,
   dailyBias: r.daily_bias,
   dailyCorrect: r.daily_correct,
@@ -59,6 +68,9 @@ const toRow = (e: DayEntry, userId: string) => ({
   weekly_img: e.weeklyImg ?? null,
   weekly_bias: e.weeklyBias,
   weekly_correct: e.weeklyCorrect,
+  monthly_img: e.monthlyImg ?? null,
+  monthly_bias: e.monthlyBias,
+  monthly_correct: e.monthlyCorrect,
   daily_img: e.dailyImg ?? null,
   daily_bias: e.dailyBias,
   daily_correct: e.dailyCorrect,
@@ -95,7 +107,7 @@ export async function deleteEntry(id: string): Promise<void> {
 
   if (row) {
     const h4 = (row.h4 ?? {}) as { ASIA?: string; LDN?: string; NY?: string };
-    const paths = [row.weekly_img, row.daily_img, h4.ASIA, h4.LDN, h4.NY].filter(
+    const paths = [row.monthly_img, row.weekly_img, row.daily_img, h4.ASIA, h4.LDN, h4.NY].filter(
       (p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"),
     );
     if (paths.length) {
