@@ -10,6 +10,7 @@ function getTimeframe() {
   const intervalEl = document.querySelector('[data-qa-id="title-wrapper legend-source-interval"] button');
   if (intervalEl) {
     const text = intervalEl.innerText.trim().toUpperCase();
+    if (text.includes('M')) return 'M';
     if (text.includes('W')) return 'W';
     if (text.includes('D')) return 'D';
     if (text.match(/4H|240|H4/)) return 'H4';
@@ -18,6 +19,7 @@ function getTimeframe() {
   const intervalMenu = document.getElementById('header-toolbar-intervals-menu');
   if (intervalMenu) {
     const text = intervalMenu.innerText.trim().toUpperCase();
+    if (text.includes('M')) return 'M';
     if (text.includes('W')) return 'W';
     if (text.includes('D')) return 'D';
     if (text.match(/4H|240|H4/)) return 'H4';

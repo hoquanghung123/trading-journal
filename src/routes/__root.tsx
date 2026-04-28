@@ -102,7 +102,7 @@ function RootComponent() {
         const updatedEntry = { ...entry };
         const tf = timeframe.toUpperCase();
         
-        if (tf === "M" || tf === "MONTH") {
+        if (tf === "M" || tf === "MONTH" || tf === "1M") {
           if (weekdayOf(today) !== "MON") {
             toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2!");
             (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
