@@ -69,3 +69,5 @@ export async function deleteSetup(id: string): Promise<void> {
   const { error } = await supabase.from("playbook_setups").delete().eq("id", id);
   if (error) throw error;
 }
+
+export const playbookQueryKey = ["playbook"] as const;

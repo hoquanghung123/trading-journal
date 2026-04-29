@@ -12,6 +12,8 @@ import {
   Loader2,
   Wallet 
 } from "lucide-react";
+import { PlaybookPerformance } from "./PlaybookPerformance";
+import { fetchPlaybook, playbookQueryKey } from "@/lib/playbook";
 import { isSameMonth, format, parseISO } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Review } from "@/types/review";
@@ -36,7 +38,12 @@ export function DashboardPage() {
     queryFn: fetchReviews,
   });
 
-  const loading = loadingTrades || loadingFunding || loadingReviews;
+  const { data: playbooks = [], isLoading: loadingPlaybooks } = useQuery({
+    queryKey: playbookQueryKey,
+    queryFn: fetchPlaybook,
+  });
+
+  const loading = loadingTrades || loadingFunding || loadingReviews || loadingPlaybooks;
 
   const latestReview = useMemo(() => {
     if (reviews.length === 0) return null;
@@ -197,6 +204,9 @@ export function DashboardPage() {
           period={latestReview?.period}
         />
       </div>
+
+      {/* Playbook Performance Section */}
+      <PlaybookPerformance trades={trades} playbooks={playbooks} />
 
       {/* Tier 3: Trading Calendar */}
       <div className="bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
