@@ -53,7 +53,11 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const filteredBias = useMemo(
     () =>
       biasEntries
-        .filter((e) => !t?.symbol || e.asset === t.symbol)
+        .filter((e) => {
+          const isToday = e.date === new Date().toISOString().slice(0, 10);
+          const isMatchingSymbol = !t?.symbol || e.asset === t.symbol;
+          return isToday && isMatchingSymbol;
+        })
         .sort((a, b) => b.date.localeCompare(a.date)),
     [biasEntries, t?.symbol],
   );
@@ -251,7 +255,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   ))}
                   {filteredBias.length === 0 && (
                     <option value="" disabled>
-                      No {t.symbol} journal entries found
+                      No {t.symbol} journal entries found for today
                     </option>
                   )}
                 </select>
