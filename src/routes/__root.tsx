@@ -126,7 +126,7 @@ function RootComponent() {
           if (hour >= 12 && hour < 18) session = "LDN";
           else if (hour >= 18 || hour < 5) session = "NY";
           toast.info(`Đang lưu vào khung H4 (${session})...`);
-          updatedEntry.h4 = { ...entry.h4, [session]: path };
+          updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }
         
         await upsertEntry(updatedEntry);

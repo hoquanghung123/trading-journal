@@ -154,14 +154,20 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   </button>
                 ))}
               </div>
-              <PasteSlot
-                label={`H4 · ${session} SESSION`}
-                image={draft.h4[session]}
-                onChange={(u) => update("h4", { ...draft.h4, [session]: u })}
-                focused={focusKey === `h4-${session}`}
-                onFocus={() => setFocusKey(`h4-${session}`)}
-                className="h-56"
-              />
+              <div className="grid grid-cols-[1fr_120px] gap-4">
+                <PasteSlot
+                  label={`H4 · ${session} SESSION`}
+                  image={draft.h4[session]?.img}
+                  onChange={(u) => update("h4", { ...draft.h4, [session]: { ...draft.h4[session], img: u } })}
+                  focused={focusKey === `h4-${session}`}
+                  onFocus={() => setFocusKey(`h4-${session}`)}
+                  className="h-56"
+                />
+                <BiasPicker 
+                  value={draft.h4[session]?.bias as Bias} 
+                  onChange={(v) => update("h4", { ...draft.h4, [session]: { ...draft.h4[session], bias: v } })} 
+                />
+              </div>
             </Section>
 
             <div className="space-y-3">

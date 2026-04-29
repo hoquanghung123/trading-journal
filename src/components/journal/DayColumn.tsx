@@ -96,7 +96,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           <div className="flex gap-1.5 p-1 bg-muted rounded-xl">
             {(["ASIA", "LDN", "NY"] as Session[]).map((s) => {
               const active = session === s;
-              const has = !!entry.h4[s];
+              const has = !!entry.h4[s]?.img || !!entry.h4[s]?.bias;
               return (
                 <button
                   key={s}
@@ -116,12 +116,21 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           </div>
           <PasteSlot
             label={`4H ${session}`}
-            image={entry.h4[session]}
-            onChange={(u) => onUpdate({ ...entry, h4: { ...entry.h4, [session]: u } })}
+            image={entry.h4[session]?.img}
+            onChange={(u) => onUpdate({ ...entry, h4: { ...entry.h4, [session]: { ...entry.h4[session], img: u } } })}
             focused={isFocused(`h4-${session}` as SlotKind)}
             onFocus={() => focus(`h4-${session}` as SlotKind)}
             className="h-36 rounded-xl overflow-hidden border border-border/50"
-          />
+          >
+            {entry.h4[session]?.bias && (
+              <span
+                className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
+                style={biasStyle(entry.h4[session]!.bias!)}
+              >
+                {biasLabel(entry.h4[session]!.bias!)}
+              </span>
+            )}
+          </PasteSlot>
         </div>
       </div>
     </div>

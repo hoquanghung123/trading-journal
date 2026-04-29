@@ -19,7 +19,7 @@ export interface DayEntry {
   dailyImg?: string;
   dailyBias: Bias;
   dailyCorrect: boolean;
-  h4: { ASIA?: string; LDN?: string; NY?: string };
+  h4: { ASIA?: { img?: string; bias?: Bias }; LDN?: { img?: string; bias?: Bias }; NY?: { img?: string; bias?: Bias } };
   notes?: string;
 }
 
@@ -39,8 +39,19 @@ type Row = {
   daily_img: string | null;
   daily_bias: Bias;
   daily_correct: boolean;
-  h4: { ASIA?: string; LDN?: string; NY?: string } | null;
+  h4: any;
   notes: string | null;
+};
+
+const parseH4 = (val: any) => {
+  if (!val || typeof val !== "object") return {};
+  const res: DayEntry["h4"] = {};
+  for (const s of ["ASIA", "LDN", "NY"] as const) {
+    const v = val[s];
+    if (typeof v === "string") res[s] = { img: v };
+    else if (v && typeof v === "object") res[s] = { img: v.img, bias: v.bias };
+  }
+  return res;
 };
 
 const fromRow = (r: Row): DayEntry => ({
@@ -56,7 +67,7 @@ const fromRow = (r: Row): DayEntry => ({
   dailyImg: r.daily_img ?? undefined,
   dailyBias: r.daily_bias,
   dailyCorrect: r.daily_correct,
-  h4: r.h4 ?? {},
+  h4: parseH4(r.h4),
   notes: r.notes ?? undefined,
 });
 
@@ -106,8 +117,15 @@ export async function deleteEntry(id: string): Promise<void> {
   if (error) throw error;
 
   if (row) {
-    const h4 = (row.h4 ?? {}) as { ASIA?: string; LDN?: string; NY?: string };
-    const paths = [row.monthly_img, row.weekly_img, row.daily_img, h4.ASIA, h4.LDN, h4.NY].filter(
+    const h4 = (row.h4 ?? {}) as any;
+    const paths = [
+      row.monthly_img, 
+      row.weekly_img, 
+      row.daily_img, 
+      typeof h4?.ASIA === "string" ? h4.ASIA : h4?.ASIA?.img,
+      typeof h4?.LDN === "string" ? h4.LDN : h4?.LDN?.img,
+      typeof h4?.NY === "string" ? h4.NY : h4?.NY?.img,
+    ].filter(
       (p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"),
     );
     if (paths.length) {
