@@ -98,14 +98,14 @@ export function useSymbols() {
 
 export function getAssetIconUrl(asset: string): string | null {
   const symbol = asset.toUpperCase();
-  if (symbol.includes("BTC")) return "https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg";
-  if (symbol.includes("CL1!")) return "https://s3-symbol-logo.tradingview.com/crude-oil.svg";
-  if (symbol.includes("DXY")) return "https://s3-symbol-logo.tradingview.com/indices/u-s-dollar-index.svg";
-  if (symbol.includes("ES1!")) return "https://s3-symbol-logo.tradingview.com/indices/s-and-p-500.svg";
-  if (symbol.includes("FDAX1!")) return "https://s3-symbol-logo.tradingview.com/indices/dax.svg";
-  if (symbol.includes("GC1!")) return "https://s3-symbol-logo.tradingview.com/metal/gold.svg";
-  if (symbol.includes("NQ1!")) return "https://s3-symbol-logo.tradingview.com/indices/nasdaq-100.svg";
-  if (symbol.includes("SI1!")) return "https://s3-symbol-logo.tradingview.com/metal/silver.svg";
-  if (symbol.includes("YM1!")) return "https://s3-symbol-logo.tradingview.com/indices/dow-30.svg";
+  if (symbol.startsWith("BTC")) return "https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg";
+  if (symbol.startsWith("CL")) return "https://s3-symbol-logo.tradingview.com/crude-oil.svg";
+  if (symbol.startsWith("DXY") || symbol.startsWith("DX")) return "https://s3-symbol-logo.tradingview.com/indices/u-s-dollar-index.svg";
+  if (symbol.startsWith("ES") || symbol.includes("SPX")) return "https://s3-symbol-logo.tradingview.com/indices/s-and-p-500.svg";
+  if (symbol.startsWith("FDAX") || symbol.startsWith("DAX")) return "https://s3-symbol-logo.tradingview.com/indices/dax.svg";
+  if (symbol.startsWith("GC") || symbol.startsWith("XAU")) return "https://s3-symbol-logo.tradingview.com/metal/gold.svg";
+  if (symbol.startsWith("NQ") || symbol.startsWith("NAS") || symbol.startsWith("US100")) return "https://s3-symbol-logo.tradingview.com/indices/nasdaq-100.svg";
+  if (symbol.startsWith("SI") || symbol.startsWith("XAG")) return "https://s3-symbol-logo.tradingview.com/metal/silver.svg";
+  if (symbol.startsWith("YM") || symbol.startsWith("US30")) return "https://s3-symbol-logo.tradingview.com/indices/dow-30.svg";
   return null;
 }
