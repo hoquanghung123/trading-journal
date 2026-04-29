@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 export type TradeSide = "buy" | "sell";
 export type TradeStatus = "Not Started" | "Opened" | "Closed";
 
+export type TradeOutcome = "Win" | "Loss" | "BE";
+
 export interface Trade {
   id: string;
   entryTime: string; // ISO
@@ -41,7 +43,6 @@ type Row = {
   gross_pnl: number;
   fees: number;
   net_pnl: number;
-  status: string;
   actual_rr: number;
   max_rr: number;
   before_img: string | null;
@@ -58,6 +59,7 @@ type Row = {
   compliance_check: boolean;
   missed_confluences: any;
   notes: string | null;
+  status: string;
   grade: string | null;
 };
 
@@ -168,32 +170,18 @@ export interface Outcome {
   color: OutcomeColor;
 }
 
-export function computeOutcome(actualRr: number, maxRr: number, netPnl: number): Outcome {
-  if (actualRr > 0) {
-    const ratio = maxRr > 0 ? actualRr / maxRr : 1;
-    if (ratio >= 0.9) return { label: "🚀 Maximum Profit!", color: "green" };
-    if (ratio >= 0.6) return { label: "✅ Great Exit!", color: "green" };
-    return { label: "💰 Profit Taken", color: "green" };
-  }
-  if (actualRr < 0) {
-    if (maxRr > 0) return { label: "💔 Winning Trade Turned Loser", color: "red" };
-    return { label: "🔴 Loss, Review Setup", color: "red" };
-  }
-  // actualRr === 0
-  if (maxRr > 0) {
-    if (netPnl < 0) return { label: "⚠️ Winner to BE but Fees Lost", color: "amber" };
-    return { label: "🟡 Winner to Breakeven", color: "yellow" };
-  }
-  if (netPnl < 0) return { label: "⚠️ Breakeven but Fees Lost", color: "amber" };
-  return { label: "🔵 Capital Protected", color: "blue" };
+export function computeOutcome(actualRr: number, _maxRr: number, _netPnl: number): Outcome {
+  if (actualRr > 0) return { label: "Win", color: "green" };
+  if (actualRr < 0) return { label: "Loss", color: "red" };
+  return { label: "BE", color: "amber" };
 }
 
 export const outcomeStyle: Record<OutcomeColor, string> = {
-  green: "bg-emerald-500/15 text-emerald-400 border-emerald-500/40",
-  red: "bg-red-500/15 text-red-400 border-red-500/40",
-  amber: "bg-orange-500/15 text-orange-400 border-orange-500/40",
-  yellow: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
-  blue: "bg-sky-500/15 text-sky-400 border-sky-500/40",
+  green: "bg-primary text-primary-foreground shadow-primary/20",
+  red: "bg-destructive text-destructive-foreground shadow-destructive/20",
+  amber: "bg-amber-500 text-white shadow-amber-500/20",
+  blue: "bg-blue-500 text-white shadow-blue-500/20",
+  yellow: "bg-yellow-500 text-white shadow-yellow-500/20",
 };
 
 export const tradesQueryKey = ["trades"] as const;

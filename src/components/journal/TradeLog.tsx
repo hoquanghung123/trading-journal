@@ -10,7 +10,7 @@ import {
   type Trade,
 } from "@/lib/trades";
 import { focusBiasEntry, focusPlaybookModel, navigateToPage } from "@/lib/nav-bus";
-import { CheckCircle2, ShieldAlert, BookOpen } from "lucide-react";
+import { CheckCircle2, ShieldAlert, AlertCircle, BookOpen } from "lucide-react";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { TradeModal } from "./TradeModal";
 import { TradeImageThumb } from "./TradeImageThumb";
@@ -27,7 +27,7 @@ import {
 import { fetchSettings } from "@/lib/settings";
 import { useQuery } from "@tanstack/react-query";
 
-type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook" | "status" | "grade";
+type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook" | "status" | "grade" | "outcome" | "side";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
@@ -37,12 +37,14 @@ const COL_LABELS: Record<ColKey, string> = {
   playbook: "Playbook",
   status: "Status",
   grade: "Grade",
+  outcome: "Outcome",
+  side: "Side",
 };
 
 const gradeStyle: Record<string, string> = {
-  "A+": "bg-emerald-500 text-white shadow-emerald-500/20",
+  "A+": "bg-primary text-primary-foreground shadow-primary/20",
   "A": "bg-amber-500 text-white shadow-amber-500/20",
-  "B": "bg-rose-500 text-white shadow-rose-500/20",
+  "B": "bg-destructive text-destructive-foreground shadow-destructive/20",
 };
 
 export function TradeLog() {
@@ -62,7 +64,7 @@ export function TradeLog() {
       const s = localStorage.getItem("trade-log-cols");
       if (s) return JSON.parse(s);
     } catch {}
-    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true, status: true, grade: true };
+    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true, status: true, grade: true, outcome: true, side: true };
   });
 
   useEffect(() => {
@@ -267,12 +269,14 @@ export function TradeLog() {
             <table className="w-full text-sm border-collapse min-w-[800px]">
               <thead>
                 <tr className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
-                  <th className="text-left p-4 w-[220px]">Outcome</th>
+                  <th className="text-center py-4 px-1 w-[30px]">#</th>
+                  {cols.outcome && <th className="text-left p-4 w-[160px]">Outcome</th>}
                   {settings?.showTradeGrade && cols.grade && (
                     <th className="text-left p-4 w-[100px]">Grade</th>
                   )}
                   {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
-                  <th className="text-left p-4 w-[160px]">Symbol / Side</th>
+                  <th className="text-left p-4 w-[120px]">Symbol</th>
+                  {cols.side && <th className="text-left p-4 w-[80px]">Side</th>}
                   {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
                   {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
                   {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
@@ -304,16 +308,18 @@ export function TradeLog() {
                       onClick={() => openEdit(t)}
                       className="group hover:bg-muted/30 cursor-pointer transition-colors"
                     >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                            #{String(i + 1).padStart(2, "0")}
-                          </span>
+                      <td className="py-4 px-1 text-center">
+                        <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          #{String(i + 1).padStart(2, "0")}
+                        </span>
+                      </td>
+                      {cols.outcome && (
+                        <td className="p-4">
                           <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}>
                             {outcome.label}
                           </span>
-                        </div>
-                      </td>
+                        </td>
+                      )}
 
                       {settings?.showTradeGrade && cols.grade && (
                         <td className="p-4">
@@ -334,22 +340,17 @@ export function TradeLog() {
                       )}
 
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5">
-                            {getAssetIconUrl(t.symbol) && (
-                              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
-                                <img
-                                  src={getAssetIconUrl(t.symbol)!}
-                                  alt={t.symbol}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            )}
-                            <span className="font-black text-foreground text-sm">{t.symbol}</span>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${t.side === "buy" ? "bg-primary/10 text-primary border border-primary/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>
-                            {t.side}
-                          </span>
+                        <div className="flex items-center gap-1.5">
+                          {getAssetIconUrl(t.symbol) && (
+                            <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
+                              <img
+                                src={getAssetIconUrl(t.symbol)!}
+                                alt={t.symbol}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <span className="font-black text-foreground text-sm">{t.symbol}</span>
                           {t.biasEntryId && (
                             <button
                               onClick={(e) => {
@@ -364,6 +365,18 @@ export function TradeLog() {
                           )}
                         </div>
                       </td>
+
+                      {cols.side && (
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                            t.side === "buy" 
+                              ? "bg-primary text-primary-foreground shadow-primary/20" 
+                              : "bg-destructive text-destructive-foreground shadow-destructive/20"
+                          }`}>
+                            {t.side}
+                          </span>
+                        </td>
+                      )}
 
                       {cols.playbook && (
                         <td className="p-4">
@@ -410,24 +423,24 @@ export function TradeLog() {
                       {cols.compliance && (
                         <td className="p-4">
                           {t.complianceCheck ? (
-                            <div className="flex items-center gap-1.5 text-emerald-500">
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span className="text-[10px] font-bold uppercase tracking-wider">Followed</span>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-black uppercase tracking-wider">Followed</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1.5 text-rose-500">
-                              <ShieldAlert className="w-4 h-4" />
-                              <span className="text-[10px] font-black uppercase tracking-widest">Incomplete</span>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive text-destructive-foreground shadow-sm shadow-destructive/20">
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-black uppercase tracking-wider">Incomplete</span>
                             </div>
                           )}
                         </td>
                       )}
                       {cols.status && (
                         <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all ${
-                            t.status === "Not Started" ? "bg-muted/50 text-muted-foreground border-border/50" :
-                            t.status === "Opened" ? "bg-sky-50 text-sky-600 border-sky-100" :
-                            "bg-emerald-50 text-emerald-600 border-emerald-100"
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                            t.status === "Not Started" ? "bg-destructive text-destructive-foreground shadow-destructive/20" :
+                            t.status === "Opened" ? "bg-primary text-primary-foreground shadow-primary/20" :
+                            "bg-amber-500 text-white shadow-amber-500/20"
                           }`}>
                             {t.status}
                           </span>

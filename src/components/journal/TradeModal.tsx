@@ -87,7 +87,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   if (!t) return null;
 
-  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.outcome);
 
   const toNyLocal = (iso: string) => {
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -235,10 +235,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       className={`flex-1 h-12 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${
                         t.status === s
                           ? s === "Not Started"
-                            ? "bg-muted text-muted-foreground border-muted-foreground/30 scale-[1.02]"
+                            ? "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
                             : s === "Opened"
-                              ? "bg-sky-500 text-white border-sky-500 shadow-sky-500/20 scale-[1.02]"
-                              : "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20 scale-[1.02]"
+                              ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
+                              : "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
                           : "bg-white border-border text-muted-foreground hover:border-primary/30"
                       }`}
                     >
@@ -259,10 +259,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
                           t.grade === g
                             ? g === "A+"
-                              ? "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20 scale-[1.02]"
+                              ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
                               : g === "A"
                                 ? "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
-                                : "bg-rose-500 text-white border-rose-500 shadow-rose-500/20 scale-[1.02]"
+                                : "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
                             : "bg-white border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
