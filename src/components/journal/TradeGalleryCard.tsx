@@ -2,6 +2,7 @@ import { Trade, computeOutcome, outcomeStyle } from "@/lib/trades";
 import { format } from "date-fns";
 import { TrendingUp, TrendingDown, Clock, BarChart2, CheckCircle2, AlertCircle } from "lucide-react";
 import { getAssetIconUrl } from "@/lib/symbols";
+import { getChartUrl } from "@/lib/journal";
 import { useState } from "react";
 
 interface TradeGalleryCardProps {
@@ -36,7 +37,7 @@ export function TradeGalleryCard({ trade, onClick, showGrade }: TradeGalleryCard
         >
           {trade.beforeImg ? (
             <img 
-              src={trade.beforeImg} 
+              src={getChartUrl(trade.beforeImg)} 
               alt="Before" 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
@@ -56,7 +57,7 @@ export function TradeGalleryCard({ trade, onClick, showGrade }: TradeGalleryCard
             className={`absolute inset-0 transition-opacity duration-700 ${hovered ? "opacity-100" : "opacity-0"}`}
           >
             <img 
-              src={trade.afterImg} 
+              src={getChartUrl(trade.afterImg)} 
               alt="After" 
               className="w-full h-full object-cover transition-transform duration-700 scale-110 group-hover:scale-100"
             />
