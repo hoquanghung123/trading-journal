@@ -282,7 +282,7 @@ export function JournalView() {
               <button
                 onClick={() => {
                   setViewMode("month");
-                  if (asset === "TODAY") setAsset("ALL");
+                  if (asset === "TODAY") setAsset(ASSETS[0] || "ALL");
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
