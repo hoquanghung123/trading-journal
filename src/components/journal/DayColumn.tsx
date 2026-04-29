@@ -68,7 +68,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
 
         {/* Weekly */}
         <SlotWithBias
-          label="Weekly Outlook"
+          label="W"
           image={entry.weeklyImg}
           bias={entry.weeklyBias}
           correct={entry.weeklyCorrect}
@@ -81,7 +81,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
 
         {/* Daily */}
         <SlotWithBias
-          label="Daily Projection"
+          label="D"
           image={entry.dailyImg}
           bias={entry.dailyBias}
           correct={entry.dailyCorrect}
@@ -115,7 +115,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             })}
           </div>
           <PasteSlot
-            label={`4H ${session}`}
+            label="4h"
             image={entry.h4[session]?.img}
             onChange={(u) => onUpdate({ ...entry, h4: { ...entry.h4, [session]: { ...entry.h4[session], img: u } } })}
             focused={isFocused(`h4-${session}` as SlotKind)}
