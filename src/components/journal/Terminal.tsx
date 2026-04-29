@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  Activity
+  Activity,
+  UserCircle
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -29,11 +30,12 @@ import { ReviewPage } from "@/components/review/ReviewPage";
 import { PlaybookPage } from "@/components/playbook/PlaybookPage";
 import { DashboardPage } from "@/components/dashboard/DashboardPage";
 import { DailyViewPage } from "@/components/dashboard/DailyViewPage";
+import { AccountSettings } from "./AccountSettings";
 import { WeekendReviewPrompt } from "@/components/review/WeekendReviewPrompt";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
 import { fetchTrades, type Trade } from "@/lib/trades";
 
-type Page = "dashboard" | "bias" | "trades" | "psychology" | "review" | "playbook" | "daily";
+type Page = "dashboard" | "bias" | "trades" | "psychology" | "review" | "playbook" | "daily" | "account";
 
 const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,11 +44,32 @@ const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: st
   { id: "trades", label: "Trade Log", icon: FileText },
   { id: "psychology", label: "Psychology", icon: Brain },
   { id: "review", label: "Review", icon: CalendarCheck },
+  { id: "account", label: "Account", icon: UserCircle },
 ];
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false } },
 });
+
+import { useQuery } from "@tanstack/react-query";
+import { fetchSettings } from "@/lib/settings";
+
+function ThemeApplier() {
+  const { data: settings } = useQuery({
+    queryKey: ["user_settings"],
+    queryFn: fetchSettings,
+  });
+
+  useEffect(() => {
+    if (settings?.primaryColor) {
+      document.documentElement.style.setProperty("--primary", settings.primaryColor);
+      // Optional: compute a lighter version for secondary if needed
+      // document.documentElement.style.setProperty("--secondary", `${settings.primaryColor}1a`);
+    }
+  }, [settings?.primaryColor]);
+
+  return null;
+}
 
 function Shell() {
   const [page, setPage] = useState<Page>("bias");
@@ -131,9 +154,16 @@ function Shell() {
                     w-full flex items-center gap-3 px-4 py-3.5 sm:py-3 rounded-xl text-sm font-semibold transition-all duration-200 
                     ${active ? "forest-gradient text-white soft-shadow" : "text-muted-foreground hover:text-foreground hover:bg-muted"}
                     ${isLeftCollapsed && !isMobileOpen ? "lg:justify-center lg:px-0" : ""}
+                    ${item.id === "account" ? "mt-4 border-t border-border/50 pt-6" : ""}
                   `}
                 >
-                  <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
+                  {item.id === "account" ? (
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border-2 ${active ? "border-white/50" : "border-primary/20 bg-primary/5"}`}>
+                      <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-primary"}`} />
+                    </div>
+                  ) : (
+                    <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
+                  )}
                   {(!isLeftCollapsed || isMobileOpen) && <span>{item.label}</span>}
                 </button>
               );
@@ -274,6 +304,7 @@ function Shell() {
             {page === "psychology" && <PsychologyView />}
             {page === "review" && <ReviewPage />}
             {page === "playbook" && <PlaybookPage />}
+            {page === "account" && <AccountSettings />}
           </div>
         </main>
       </div>
@@ -316,7 +347,12 @@ function UnderConstruction({ title }: { title: string }) {
 export function Terminal() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthGate>{() => <Shell />}</AuthGate>
+      <AuthGate>{() => (
+        <>
+          <ThemeApplier />
+          <Shell />
+        </>
+      )}</AuthGate>
     </QueryClientProvider>
   );
 }

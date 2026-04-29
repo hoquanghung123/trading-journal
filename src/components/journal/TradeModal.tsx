@@ -6,10 +6,12 @@ import { computeOutcome, outcomeStyle, type Trade } from "@/lib/trades";
 import { useSymbols } from "@/lib/symbols";
 import { fetchEntries, type DayEntry, ddmm } from "@/lib/journal";
 import { PasteSlot } from "./PasteSlot";
-import { Trash2, Save, FileText, AlertCircle } from "lucide-react";
+import { Trash2, Save, FileText, AlertCircle, X } from "lucide-react";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { fetchSettings } from "@/lib/settings";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +40,11 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const { data: symbols = [] } = useSymbols();
   const { models: playbookSetups } = usePlaybook();
   const SYMBOLS = symbols.map((s) => s.name);
+
+  const { data: settings } = useQuery({
+    queryKey: ["user_settings"],
+    queryFn: fetchSettings,
+  });
 
   useEffect(() => {
     setT(trade);
@@ -240,6 +247,39 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   ))}
                 </div>
               </Field>
+
+              {/* Trade Grade Section (Conditional) */}
+              {settings?.showTradeGrade && (
+                <Field label="Trade Grade">
+                  <div className="flex gap-2">
+                    {(["A+", "A", "B"] as const).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => update({ grade: g })}
+                        className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
+                          t.grade === g
+                            ? "forest-gradient text-white border-transparent scale-[1.02] shadow-primary/20"
+                            : "bg-white border-border text-muted-foreground hover:border-primary/30"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                    {/* Optional: Clear Grade Button */}
+                    <button
+                      onClick={() => update({ grade: undefined })}
+                      className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
+                        !t.grade 
+                          ? "bg-muted/50 border-muted-foreground/20 text-muted-foreground" 
+                          : "bg-white border-border text-muted-foreground/30 hover:border-destructive/30 hover:text-destructive"
+                      }`}
+                      title="Clear Grade"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </Field>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">

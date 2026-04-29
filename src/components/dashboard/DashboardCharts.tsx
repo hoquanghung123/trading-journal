@@ -17,8 +17,8 @@ import {
 } from "recharts";
 
 const COLORS = {
-  primary: "#4C763B", // Forest Green
-  primaryLight: "#B0CE88", // Sage Green
+  primary: "var(--primary)", // Dynamic Theme Color
+  primaryLight: "var(--primary)", // Fallback or could be color-mix
   emerald: "#10b981",
   red: "#f43f5e",
   grid: "rgba(0, 0, 0, 0.05)",
@@ -286,7 +286,7 @@ export function WinrateBarChart({ data, height = 250 }: ChartProps) {
 }
 
 const DISTRIBUTION_COLORS = [
-  "#4C763B", // Forest Green
+  "var(--primary)", // Dynamic Theme Color
   "#10b981", // Emerald
   "#3b82f6", // Blue
   "#f59e0b", // Amber

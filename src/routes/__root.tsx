@@ -46,6 +46,20 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const color = localStorage.getItem('tg_primary_color');
+                  if (color) {
+                    document.documentElement.style.setProperty('--primary', color);
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body>
         {children}

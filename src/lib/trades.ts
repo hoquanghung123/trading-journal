@@ -29,6 +29,7 @@ export interface Trade {
   missedConfluences?: string[];
   notes?: string;
   status: TradeStatus;
+  grade?: string;
 }
 
 type Row = {
@@ -57,6 +58,7 @@ type Row = {
   compliance_check: boolean;
   missed_confluences: any;
   notes: string | null;
+  grade: string | null;
 };
 
 const fromRow = (r: Row): Trade => ({
@@ -85,6 +87,7 @@ const fromRow = (r: Row): Trade => ({
   missedConfluences: r.missed_confluences ?? [],
   notes: r.notes ?? undefined,
   status: (r.status as TradeStatus) ?? "Not Started",
+  grade: r.grade ?? undefined,
 });
 
 const toRow = (t: Trade, userId: string) => ({
@@ -114,6 +117,7 @@ const toRow = (t: Trade, userId: string) => ({
   missed_confluences: t.missedConfluences ?? [],
   status: t.status,
   notes: t.notes ?? null,
+  grade: t.grade ?? null,
 });
 
 export async function fetchTrades(): Promise<Trade[]> {

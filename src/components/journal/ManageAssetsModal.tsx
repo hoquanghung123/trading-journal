@@ -11,7 +11,9 @@ import {
   useSymbols,
   type Symbol,
 } from "@/lib/symbols";
+import { fetchSettings, updateSettings } from "@/lib/settings";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   AlertDialog,
@@ -66,6 +68,20 @@ export function ManageAssetsModal({ open, onClose }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ["user_settings"],
+    queryFn: fetchSettings,
+  });
+
+  const updateSettingsMut = useMutation({
+    mutationFn: (show: boolean) => updateSettings({ showTradeGrade: show }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["user_settings"] });
+      toast.success("Settings updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -93,6 +109,12 @@ export function ManageAssetsModal({ open, onClose }: Props) {
 
         <div className="p-8 space-y-6">
           <form onSubmit={submit} className="space-y-4">
+            <div className="flex items-center gap-3 mb-2 px-1">
+              <div className="h-4 w-1 bg-primary rounded-full" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-primary">
+                Add New Asset
+              </h3>
+            </div>
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <Input
@@ -127,7 +149,7 @@ export function ManageAssetsModal({ open, onClose }: Props) {
               />
               <div className="flex flex-col">
                 <span className="text-xs font-black uppercase tracking-widest text-foreground">Mark as Forex</span>
-                <span className="text-[10px] text-muted-foreground font-medium">Enables multi-timeframe image analysis (Monthly to M15)</span>
+                <span className="text-[10px] text-muted-foreground font-medium">Enables multi-timeframe image analysis</span>
               </div>
             </label>
           </form>
