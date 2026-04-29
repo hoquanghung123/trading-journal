@@ -4,18 +4,21 @@ export interface UserSettings {
   userId: string;
   showTradeGrade: boolean;
   primaryColor: string;
+  tradeLogView: "table" | "gallery";
 }
 
 type Row = {
   user_id: string;
   show_trade_grade: boolean;
   primary_color: string;
+  trade_log_view: string;
 };
 
 const fromRow = (r: Row): UserSettings => ({
   userId: r.user_id,
   showTradeGrade: !!r.show_trade_grade,
   primaryColor: r.primary_color || "#4C763B",
+  tradeLogView: (r.trade_log_view as "table" | "gallery") || "table",
 });
 
 export async function fetchSettings(): Promise<UserSettings> {
@@ -59,6 +62,7 @@ export async function updateSettings(patch: Partial<UserSettings>): Promise<void
     update.primary_color = patch.primaryColor;
     localStorage.setItem("tg_primary_color", patch.primaryColor);
   }
+  if (patch.tradeLogView !== undefined) update.trade_log_view = patch.tradeLogView;
   update.updated_at = new Date().toISOString();
 
   const { error } = await supabase
