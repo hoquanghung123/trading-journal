@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook";
+type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook" | "status";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
@@ -33,6 +33,7 @@ const COL_LABELS: Record<ColKey, string> = {
   images: "Images",
   compliance: "Follow Playbook",
   playbook: "Playbook",
+  status: "Status",
 };
 
 export function TradeLog() {
@@ -46,7 +47,7 @@ export function TradeLog() {
       const s = localStorage.getItem("trade-log-cols");
       if (s) return JSON.parse(s);
     } catch {}
-    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true };
+    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true, status: true };
   });
 
   useEffect(() => {
@@ -194,9 +195,18 @@ export function TradeLog() {
                         {t.side}
                       </span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${outcomeStyle[outcome.color]}`}>
-                      {outcome.label}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                        t.status === "Not Started" ? "bg-muted text-muted-foreground" :
+                        t.status === "Opened" ? "bg-sky-500/10 text-sky-500" :
+                        "bg-emerald-500/10 text-emerald-500"
+                      }`}>
+                        {t.status}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${outcomeStyle[outcome.color]}`}>
+                        {outcome.label}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex justify-between items-end">
@@ -242,6 +252,7 @@ export function TradeLog() {
                   {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
                   {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
                   {cols.compliance && <th className="text-left p-4 w-[200px]">Follow Playbook</th>}
+                  {cols.status && <th className="text-left p-4 w-[140px]">Status</th>}
                   <th className="text-left p-4">Trade Notes</th>
                 </tr>
               </thead>
@@ -372,6 +383,17 @@ export function TradeLog() {
                               <span className="text-[10px] font-black uppercase tracking-widest">Incomplete</span>
                             </div>
                           )}
+                        </td>
+                      )}
+                      {cols.status && (
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all ${
+                            t.status === "Not Started" ? "bg-muted/50 text-muted-foreground border-border/50" :
+                            t.status === "Opened" ? "bg-sky-50 text-sky-600 border-sky-100" :
+                            "bg-emerald-50 text-emerald-600 border-emerald-100"
+                          }`}>
+                            {t.status}
+                          </span>
                         </td>
                       )}
 

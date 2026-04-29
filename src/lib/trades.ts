@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type TradeSide = "buy" | "sell";
+export type TradeStatus = "Not Started" | "Opened" | "Closed";
 
 export interface Trade {
   id: string;
@@ -27,6 +28,7 @@ export interface Trade {
   complianceCheck: boolean;
   missedConfluences?: string[];
   notes?: string;
+  status: TradeStatus;
 }
 
 type Row = {
@@ -38,6 +40,7 @@ type Row = {
   gross_pnl: number;
   fees: number;
   net_pnl: number;
+  status: string;
   actual_rr: number;
   max_rr: number;
   before_img: string | null;
@@ -81,6 +84,7 @@ const fromRow = (r: Row): Trade => ({
   complianceCheck: !!r.compliance_check,
   missedConfluences: r.missed_confluences ?? [],
   notes: r.notes ?? undefined,
+  status: (r.status as TradeStatus) ?? "Not Started",
 });
 
 const toRow = (t: Trade, userId: string) => ({
@@ -108,6 +112,7 @@ const toRow = (t: Trade, userId: string) => ({
   setup_id: t.setupId ?? null,
   compliance_check: t.complianceCheck,
   missed_confluences: t.missedConfluences ?? [],
+  status: t.status,
   notes: t.notes ?? null,
 });
 
@@ -205,5 +210,6 @@ export function newTrade(): Trade {
     maxRr: 0,
     complianceCheck: true,
     missedConfluences: [],
+    status: "Not Started",
   };
 }

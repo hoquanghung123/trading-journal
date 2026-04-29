@@ -219,6 +219,27 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   ))}
                 </select>
               </Field>
+              <Field label="Trade Status">
+                <div className="flex gap-2">
+                  {(["Not Started", "Opened", "Closed"] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => update({ status: s })}
+                      className={`flex-1 h-12 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${
+                        t.status === s
+                          ? s === "Not Started"
+                            ? "bg-muted text-muted-foreground border-muted-foreground/30 scale-[1.02]"
+                            : s === "Opened"
+                              ? "bg-sky-500 text-white border-sky-500 shadow-sky-500/20 scale-[1.02]"
+                              : "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20 scale-[1.02]"
+                          : "bg-white border-border text-muted-foreground hover:border-primary/30"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </Field>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
