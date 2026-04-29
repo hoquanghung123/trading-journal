@@ -258,7 +258,11 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         onClick={() => update({ grade: g })}
                         className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
                           t.grade === g
-                            ? "forest-gradient text-white border-transparent scale-[1.02] shadow-primary/20"
+                            ? g === "A+"
+                              ? "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20 scale-[1.02]"
+                              : g === "A"
+                                ? "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
+                                : "bg-rose-500 text-white border-rose-500 shadow-rose-500/20 scale-[1.02]"
                             : "bg-white border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >

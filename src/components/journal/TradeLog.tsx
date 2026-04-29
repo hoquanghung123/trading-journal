@@ -24,8 +24,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { fetchSettings } from "@/lib/settings";
+import { useQuery } from "@tanstack/react-query";
 
-type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook" | "status";
+type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook" | "status" | "grade";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
@@ -34,6 +36,13 @@ const COL_LABELS: Record<ColKey, string> = {
   compliance: "Follow Playbook",
   playbook: "Playbook",
   status: "Status",
+  grade: "Grade",
+};
+
+const gradeStyle: Record<string, string> = {
+  "A+": "bg-emerald-500 text-white shadow-emerald-500/20",
+  "A": "bg-amber-500 text-white shadow-amber-500/20",
+  "B": "bg-rose-500 text-white shadow-rose-500/20",
 };
 
 export function TradeLog() {
@@ -42,12 +51,18 @@ export function TradeLog() {
   const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
+
+  const { data: settings } = useQuery({
+    queryKey: ["user_settings"],
+    queryFn: fetchSettings,
+  });
+
   const [cols, setCols] = useState<Record<ColKey, boolean>>(() => {
     try {
       const s = localStorage.getItem("trade-log-cols");
       if (s) return JSON.parse(s);
     } catch {}
-    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true, status: true };
+    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true, status: true, grade: true };
   });
 
   useEffect(() => {
@@ -130,16 +145,18 @@ export function TradeLog() {
                   Toggle Columns
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {(Object.keys(COL_LABELS) as ColKey[]).map((k) => (
-                  <DropdownMenuCheckboxItem
-                    key={k}
-                    checked={cols[k]}
-                    onCheckedChange={(v) => setCols((c) => ({ ...c, [k]: !!v }))}
-                    className="font-medium"
-                  >
-                    {COL_LABELS[k]}
-                  </DropdownMenuCheckboxItem>
-                ))}
+                {(Object.keys(COL_LABELS) as ColKey[])
+                  .filter((k) => k !== "grade" || settings?.showTradeGrade)
+                  .map((k) => (
+                    <DropdownMenuCheckboxItem
+                      key={k}
+                      checked={cols[k]}
+                      onCheckedChange={(v) => setCols((c) => ({ ...c, [k]: !!v }))}
+                      className="font-medium"
+                    >
+                      {COL_LABELS[k]}
+                    </DropdownMenuCheckboxItem>
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -206,6 +223,11 @@ export function TradeLog() {
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${outcomeStyle[outcome.color]}`}>
                         {outcome.label}
                       </span>
+                      {settings?.showTradeGrade && t.grade && (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm ${gradeStyle[t.grade]}`}>
+                          {t.grade}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -246,6 +268,9 @@ export function TradeLog() {
               <thead>
                 <tr className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
                   <th className="text-left p-4 w-[220px]">Outcome</th>
+                  {settings?.showTradeGrade && cols.grade && (
+                    <th className="text-left p-4 w-[100px]">Grade</th>
+                  )}
                   {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
                   <th className="text-left p-4 w-[160px]">Symbol / Side</th>
                   {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
@@ -289,6 +314,18 @@ export function TradeLog() {
                           </span>
                         </div>
                       </td>
+
+                      {settings?.showTradeGrade && cols.grade && (
+                        <td className="p-4">
+                          {t.grade ? (
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${gradeStyle[t.grade]}`}>
+                              {t.grade}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-muted-foreground/30">—</span>
+                          )}
+                        </td>
+                      )}
 
                       {cols.entryTime && (
                         <td className="p-4 text-xs font-semibold text-muted-foreground">
