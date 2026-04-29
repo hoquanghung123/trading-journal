@@ -71,7 +71,7 @@ export function DashboardPage() {
     const total = activeTrades.length;
     if (total === 0) return { total: 0, winRate: 0, totalPnl: 0, sqn: 0, totalR: 0, totalMaxR: 0, discipline: 0, disciplined: 0 };
 
-    const wins = activeTrades.filter((t) => t.netPnl > 0);
+    const wins = activeTrades.filter((t) => t.actualRr > 0);
     const winRate = (wins.length / total) * 100;
     const totalPnl = activeTrades.reduce((acc, t) => acc + t.netPnl, 0);
     

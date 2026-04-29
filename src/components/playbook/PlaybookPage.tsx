@@ -45,11 +45,12 @@ export function PlaybookPage() {
     const map: Record<string, { winRate: number; avgRr: number; count: number }> = {};
     models.forEach((m) => {
       const modelTrades = trades.filter((t) => t.setupId === m.id);
-      const wins = modelTrades.filter((t) => t.netPnl > 0).length;
-      const wr = modelTrades.length > 0 ? (wins / modelTrades.length) * 100 : 0;
-      const totalRr = modelTrades.reduce((acc, t) => acc + t.actualRr, 0);
-      const avgRr = modelTrades.length > 0 ? totalRr / modelTrades.length : 0;
-      map[m.id] = { winRate: wr, avgRr, count: modelTrades.length };
+      const followedTrades = modelTrades.filter((t) => t.complianceCheck);
+      const wins = followedTrades.filter((t) => t.actualRr > 0).length;
+      const wr = followedTrades.length > 0 ? (wins / followedTrades.length) * 100 : 0;
+      const totalRr = followedTrades.reduce((acc, t) => acc + t.actualRr, 0);
+      const avgRr = followedTrades.length > 0 ? totalRr / followedTrades.length : 0;
+      map[m.id] = { winRate: wr, avgRr, count: followedTrades.length };
     });
     return map;
   }, [models, trades]);
