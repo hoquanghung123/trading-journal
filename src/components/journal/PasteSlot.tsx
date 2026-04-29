@@ -96,16 +96,11 @@ export function PasteSlot({
     return () => window.removeEventListener("paste", handler);
   }, [focused]);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   return (
     <div
       ref={ref}
       tabIndex={0}
-      onClick={() => {
-        onFocus?.();
-        if (!displayUrl) fileInputRef.current?.click();
-      }}
+      onClick={() => onFocus?.()}
       onDoubleClick={() => displayUrl && setZoom(true)}
       onFocus={onFocus}
       onDragOver={(e) => {
@@ -121,16 +116,6 @@ export function PasteSlot({
       }}
       className={`relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none ${focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30"} ${className ?? ""}`}
     >
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="image/*"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (file) await handleFile(file);
-        }}
-      />
       {displayUrl ? (
         <>
           <img src={displayUrl} alt={label} loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -142,8 +127,8 @@ export function PasteSlot({
           </div>
           <span className="font-bold uppercase tracking-wider text-[10px] text-primary/80">{label}</span>
           <span className="flex flex-col items-center gap-1 opacity-60 text-[9px] font-bold text-center px-4">
-            <span className="flex items-center gap-1.5"><ClipboardPaste className="w-3.5 h-3.5" /> TAP TO UPLOAD</span>
-            <span className="hidden sm:inline">OR CTRL+V TO PASTE</span>
+            <span className="flex items-center gap-1.5">CLICK TO SELECT</span>
+            <span className="hidden sm:inline">THEN CTRL+V TO PASTE</span>
           </span>
         </div>
       )}
