@@ -66,6 +66,14 @@ export function PasteSlot({
     }
   };
 
+  const handleFileRef = useRef(handleFile);
+  const handleDataUrlRef = useRef(handleDataUrl);
+  
+  useEffect(() => {
+    handleFileRef.current = handleFile;
+    handleDataUrlRef.current = handleDataUrl;
+  });
+
   useEffect(() => {
     if (!focused) return;
     const handler = async (e: ClipboardEvent) => {
@@ -76,7 +84,7 @@ export function PasteSlot({
           const file = it.getAsFile();
           if (!file) continue;
           e.preventDefault();
-          await handleFile(file);
+          await handleFileRef.current(file);
           return;
         }
       }
@@ -87,7 +95,7 @@ export function PasteSlot({
         const tvUrl = resolveTradingViewUrl(text);
         if (tvUrl) {
           e.preventDefault();
-          await handleDataUrl(tvUrl);
+          await handleDataUrlRef.current(tvUrl);
           return;
         }
       }
