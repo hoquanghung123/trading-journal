@@ -25,6 +25,7 @@ const newEntry = (asset: string): DayEntry => ({
   id: uid(),
   date: new Date().toISOString().slice(0, 10),
   asset,
+  yearlyBias: "consolidation",
   weeklyBias: "consolidation",
   weeklyCorrect: false,
   monthlyBias: "consolidation",

@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { type DayEntry, monthKey, ddmm, weekdayOf } from "@/lib/journal";
+import { type DayEntry, type Bias, monthKey, ddmm, weekdayOf, biasStyle, biasLabel } from "@/lib/journal";
 import { PasteSlot } from "./PasteSlot";
+
+const BIASES: Bias[] = ["bullish", "bearish", "consolidation"];
 
 interface Props {
   entries: DayEntry[];
@@ -85,9 +87,35 @@ function MonthBox({
       <div className="p-6 space-y-8">
         {/* Yearly Frame (Top) */}
         <div>
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
-            Yearly Outlook
-          </h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              Yearly Outlook
+            </h4>
+            {firstEntry && (
+              <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
+                {BIASES.map((b) => {
+                  const active = firstEntry.yearlyBias === b;
+                  return (
+                    <button
+                      key={b}
+                      onClick={() => onUpdate({ ...firstEntry, yearlyBias: b })}
+                      className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
+                        active
+                          ? b === "bullish" 
+                            ? "bg-emerald-500 text-white shadow-sm" 
+                            : b === "bearish" 
+                              ? "bg-rose-500 text-white shadow-sm"
+                              : "bg-amber-500 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {biasLabel(b)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <PasteSlot
             label={`Yearly - ${monthLabel}`}
             image={yearlyImg}
@@ -99,7 +127,16 @@ function MonthBox({
               }
             }}
             className="h-[300px] rounded-2xl border border-border/50"
-          />
+          >
+            {firstEntry?.yearlyBias && (
+              <span
+                className="bias-tag absolute bottom-2 right-2 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
+                style={biasStyle(firstEntry.yearlyBias)}
+              >
+                {biasLabel(firstEntry.yearlyBias)}
+              </span>
+            )}
+          </PasteSlot>
         </div>
 
         {/* Monthly Frames (Bottom, Horizontal) */}
@@ -123,7 +160,14 @@ function MonthBox({
                     onFocus={() => setFocusedSlot(`monthly-${e.id}`)}
                     onChange={(u) => onUpdate({ ...e, monthlyImg: u })}
                     className="h-[180px] rounded-xl border border-border/50"
-                  />
+                  >
+                    <span
+                      className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
+                      style={biasStyle(e.monthlyBias)}
+                    >
+                      {biasLabel(e.monthlyBias)}
+                    </span>
+                  </PasteSlot>
                 </div>
               ))}
             </div>

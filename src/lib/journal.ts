@@ -14,6 +14,7 @@ export interface DayEntry {
   weeklyBias: Bias;
   weeklyCorrect: boolean;
   yearlyImg?: string;
+  yearlyBias: Bias;
   monthlyImg?: string;
   monthlyBias: Bias;
   monthlyCorrect: boolean;
@@ -35,6 +36,7 @@ type Row = {
   weekly_bias: Bias;
   weekly_correct: boolean;
   yearly_img: string | null;
+  yearly_bias: Bias;
   monthly_img: string | null;
   monthly_bias: Bias;
   monthly_correct: boolean;
@@ -64,6 +66,7 @@ const fromRow = (r: Row): DayEntry => ({
   weeklyBias: r.weekly_bias,
   weeklyCorrect: r.weekly_correct,
   yearlyImg: r.yearly_img ?? undefined,
+  yearlyBias: r.yearly_bias ?? "consolidation",
   monthlyImg: r.monthly_img ?? undefined,
   monthlyBias: r.monthly_bias,
   monthlyCorrect: r.monthly_correct,
@@ -83,6 +86,7 @@ const toRow = (e: DayEntry, userId: string) => ({
   weekly_bias: e.weeklyBias,
   weekly_correct: e.weeklyCorrect,
   yearly_img: e.yearlyImg ?? null,
+  yearly_bias: e.yearlyBias,
   monthly_img: e.monthlyImg ?? null,
   monthly_bias: e.monthlyBias,
   monthly_correct: e.monthlyCorrect,
