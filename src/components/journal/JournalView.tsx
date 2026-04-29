@@ -12,7 +12,7 @@ import {
   resolveTradingViewUrl,
   uploadChartImage,
 } from "@/lib/journal";
-import { useSymbols } from "@/lib/symbols";
+import { useSymbols, getAssetIconUrl } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
 import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
@@ -247,8 +247,17 @@ export function JournalView() {
                 <button
                   key={a}
                   onClick={() => setAsset(a)}
-                  className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
+                  {getAssetIconUrl(a) && (
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center">
+                      <img
+                        src={getAssetIconUrl(a)!}
+                        alt={a}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                   {a}
                 </button>
               ))}

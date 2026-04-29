@@ -11,6 +11,7 @@ import {
 } from "@/lib/trades";
 import { focusBiasEntry, focusPlaybookModel, navigateToPage } from "@/lib/nav-bus";
 import { CheckCircle2, ShieldAlert, BookOpen } from "lucide-react";
+import { getAssetIconUrl } from "@/lib/symbols";
 import { TradeModal } from "./TradeModal";
 import { TradeImageThumb } from "./TradeImageThumb";
 import { toast } from "sonner";
@@ -177,7 +178,18 @@ export function TradeLog() {
                       <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                         #{String(i + 1).padStart(2, "0")}
                       </span>
-                      <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                      <div className="flex items-center gap-1.5">
+                        {getAssetIconUrl(t.symbol) && (
+                          <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center">
+                            <img
+                              src={getAssetIconUrl(t.symbol)!}
+                              alt={t.symbol}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                      </div>
                       <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${t.side === "buy" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
                         {t.side}
                       </span>
@@ -275,7 +287,18 @@ export function TradeLog() {
 
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                          <div className="flex items-center gap-1.5">
+                            {getAssetIconUrl(t.symbol) && (
+                              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
+                                <img
+                                  src={getAssetIconUrl(t.symbol)!}
+                                  alt={t.symbol}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                          </div>
                           <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${t.side === "buy" ? "bg-primary/10 text-primary border border-primary/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>
                             {t.side}
                           </span>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Edit3, Check } from "lucide-react";
 import type { DayEntry, Session, SlotKind } from "@/lib/journal";
 import { biasStyle, biasLabel, ddmm, weekdayOf } from "@/lib/journal";
+import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
 interface Props {
@@ -31,7 +32,16 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{ddmm(entry.date)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">
+            {getAssetIconUrl(entry.asset) && (
+              <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center">
+                <img
+                  src={getAssetIconUrl(entry.asset)!}
+                  alt={entry.asset}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
             {entry.asset}
           </div>
           <button

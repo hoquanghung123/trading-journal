@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { type DayEntry, type Bias, monthKey, ddmm, weekdayOf, biasStyle, biasLabel } from "@/lib/journal";
+import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
 const BIASES: Bias[] = ["bullish", "bearish", "consolidation"];
@@ -76,8 +77,21 @@ function MonthBox({
     <div className="bg-white rounded-[24px] border border-border shadow-sm overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
-        <h3 className="text-lg font-black tracking-tight text-foreground">
-          {monthLabel} <span className="text-muted-foreground font-medium ml-2">/ {asset === "ALL" ? "All Assets" : asset}</span>
+        <h3 className="text-lg font-black tracking-tight text-foreground flex items-center">
+          {monthLabel} 
+          <span className="text-muted-foreground font-medium ml-2 flex items-center gap-1.5">
+            / 
+            {asset !== "ALL" && getAssetIconUrl(asset) && (
+              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
+                <img
+                  src={getAssetIconUrl(asset)!}
+                  alt={asset}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            {asset === "ALL" ? "All Assets" : asset}
+          </span>
         </h3>
         <div className="px-3 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs uppercase tracking-widest">
           Month View

@@ -95,3 +95,17 @@ export function useSymbols() {
     staleTime: 60_000,
   });
 }
+
+export function getAssetIconUrl(asset: string): string | null {
+  const symbol = asset.toUpperCase();
+  if (symbol.includes("BTC")) return "https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg";
+  if (symbol.includes("CL1!")) return "https://s3-symbol-logo.tradingview.com/crude-oil.svg";
+  if (symbol.includes("DXY")) return "https://s3-symbol-logo.tradingview.com/indices/u-s-dollar-index.svg";
+  if (symbol.includes("ES1!")) return "https://s3-symbol-logo.tradingview.com/indices/s-and-p-500.svg";
+  if (symbol.includes("FDAX1!")) return "https://s3-symbol-logo.tradingview.com/indices/dax.svg";
+  if (symbol.includes("GC1!")) return "https://s3-symbol-logo.tradingview.com/metal/gold.svg";
+  if (symbol.includes("NQ1!")) return "https://s3-symbol-logo.tradingview.com/indices/nasdaq-100.svg";
+  if (symbol.includes("SI1!")) return "https://s3-symbol-logo.tradingview.com/metal/silver.svg";
+  if (symbol.includes("YM1!")) return "https://s3-symbol-logo.tradingview.com/indices/dow-30.svg";
+  return null;
+}
