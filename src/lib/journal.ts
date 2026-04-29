@@ -13,6 +13,7 @@ export interface DayEntry {
   weeklyImg?: string;
   weeklyBias: Bias;
   weeklyCorrect: boolean;
+  yearlyImg?: string;
   monthlyImg?: string;
   monthlyBias: Bias;
   monthlyCorrect: boolean;
@@ -33,6 +34,7 @@ type Row = {
   weekly_img: string | null;
   weekly_bias: Bias;
   weekly_correct: boolean;
+  yearly_img: string | null;
   monthly_img: string | null;
   monthly_bias: Bias;
   monthly_correct: boolean;
@@ -61,6 +63,7 @@ const fromRow = (r: Row): DayEntry => ({
   weeklyImg: r.weekly_img ?? undefined,
   weeklyBias: r.weekly_bias,
   weeklyCorrect: r.weekly_correct,
+  yearlyImg: r.yearly_img ?? undefined,
   monthlyImg: r.monthly_img ?? undefined,
   monthlyBias: r.monthly_bias,
   monthlyCorrect: r.monthly_correct,
@@ -79,6 +82,7 @@ const toRow = (e: DayEntry, userId: string) => ({
   weekly_img: e.weeklyImg ?? null,
   weekly_bias: e.weeklyBias,
   weekly_correct: e.weeklyCorrect,
+  yearly_img: e.yearlyImg ?? null,
   monthly_img: e.monthlyImg ?? null,
   monthly_bias: e.monthlyBias,
   monthly_correct: e.monthlyCorrect,
@@ -109,7 +113,7 @@ export async function deleteEntry(id: string): Promise<void> {
   // Fetch the row first so we can clean up its images from Storage.
   const { data: row } = await supabase
     .from("journal_entries")
-    .select("weekly_img, daily_img, h4")
+    .select("yearly_img, monthly_img, weekly_img, daily_img, h4")
     .eq("id", id)
     .maybeSingle();
 
@@ -119,6 +123,7 @@ export async function deleteEntry(id: string): Promise<void> {
   if (row) {
     const h4 = (row.h4 ?? {}) as any;
     const paths = [
+      row.yearly_img,
       row.monthly_img, 
       row.weekly_img, 
       row.daily_img, 

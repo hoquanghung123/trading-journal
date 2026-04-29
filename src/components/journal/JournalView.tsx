@@ -16,6 +16,7 @@ import { useSymbols } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
 import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
+import { MonthView } from "./MonthView";
 import { onBiasFocus } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
@@ -39,6 +40,7 @@ export function JournalView() {
   const [entries, setEntries] = useState<DayEntry[]>([]);
   const [asset, setAsset] = useState<string>("TODAY");
   const [month, setMonth] = useState<string>("ALL");
+  const [viewMode, setViewMode] = useState<"timeline" | "month">("timeline");
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -267,6 +269,21 @@ export function JournalView() {
               </select>
             </label>
 
+            <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
+              <button
+                onClick={() => setViewMode("timeline")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "timeline" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Timeline
+              </button>
+              <button
+                onClick={() => setViewMode("month")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Month View
+              </button>
+            </div>
+
             <button
               onClick={jumpRight}
               className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-white rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap"
@@ -293,6 +310,8 @@ export function JournalView() {
       <main className="px-4 py-5">
         {filtered.length === 0 ? (
           <Empty onAdd={addEntry} />
+        ) : viewMode === "month" ? (
+          <MonthView entries={filtered} onUpdate={upsert} asset={asset} />
         ) : (
           <div ref={scrollerRef} data-slot-root className="overflow-x-auto scrollbar-terminal pb-4">
             <div className="flex gap-3 min-w-min items-start">
