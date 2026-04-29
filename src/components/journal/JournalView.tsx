@@ -235,12 +235,14 @@ export function JournalView() {
 
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Asset:</span>
-              <button
-                onClick={() => setAsset("TODAY")}
-                className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-              >
-                Today
-              </button>
+              {viewMode !== "month" && (
+                <button
+                  onClick={() => setAsset("TODAY")}
+                  className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                >
+                  Today
+                </button>
+              )}
               {ASSETS.map((a) => (
                 <button
                   key={a}
@@ -278,7 +280,10 @@ export function JournalView() {
                 Timeline
               </button>
               <button
-                onClick={() => setViewMode("month")}
+                onClick={() => {
+                  setViewMode("month");
+                  if (asset === "TODAY") setAsset("ALL");
+                }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Month View
