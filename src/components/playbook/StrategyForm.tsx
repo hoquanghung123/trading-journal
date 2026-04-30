@@ -55,9 +55,9 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       images: thumbnail 
         ? [
             { id: generateId(), url: thumbnail, type: "perfect" },
-            ...(initialData?.images.filter(img => img.type !== 'perfect') || [])
+            ...(initialData?.images?.filter(img => img.type !== 'perfect') || [])
           ]
-        : (initialData?.images.filter(img => img.type !== 'perfect') || []),
+        : (initialData?.images?.filter(img => img.type !== 'perfect') || []),
     };
 
     onSave(model);
