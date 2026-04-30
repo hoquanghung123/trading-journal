@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Edit3, Check } from "lucide-react";
 import type { DayEntry, Session, SlotKind } from "@/lib/journal";
 import { biasStyle, biasLabel, ddmm, weekdayOf } from "@/lib/journal";
@@ -13,10 +13,27 @@ interface Props {
   onEdit: (e: DayEntry) => void;
 }
 
+const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
+
 export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Props) {
   const [session, setSession] = useState<Session>("ASIA");
   const isFocused = (slot: SlotKind) => focusedSlot?.id === entry.id && focusedSlot?.slot === slot;
   const focus = (slot: SlotKind) => setFocus({ id: entry.id, slot });
+
+  const sessions = useMemo(() => {
+    if (SPLIT_NY_ASSETS.includes(entry.asset)) {
+      return ["ASIA", "LDN", "NY AM", "NY PM"] as Session[];
+    }
+    return ["ASIA", "LDN", "NY"] as Session[];
+  }, [entry.asset]);
+
+  // Adjust session if current one is not available for this asset
+  useEffect(() => {
+    if (!sessions.includes(session)) {
+      if (session === "NY AM" || session === "NY PM") setSession("NY");
+      else if (session === "NY") setSession("NY AM");
+    }
+  }, [sessions, session]);
 
   return (
     <div
@@ -104,7 +121,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
         {/* 4H */}
         <div className="space-y-2">
           <div className="flex gap-1.5 p-1 bg-muted rounded-xl">
-            {(["ASIA", "LDN", "NY"] as Session[]).map((s) => {
+            {sessions.map((s) => {
               const active = session === s;
               const has = !!entry.h4[s]?.img || !!entry.h4[s]?.bias;
               return (

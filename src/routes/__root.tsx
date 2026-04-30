@@ -136,9 +136,21 @@ function RootComponent() {
           updatedEntry.dailyImg = path;
         } else {
           const hour = new Date().getHours();
+          const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
           let session: Session = "ASIA";
-          if (hour >= 12 && hour < 18) session = "LDN";
-          else if (hour >= 18 || hour < 5) session = "NY";
+          
+          if (hour >= 12 && hour < 18) {
+            session = "LDN";
+          } else if (hour >= 18 || hour < 5) {
+            if (SPLIT_NY_ASSETS.includes(targetAsset)) {
+              // Split NY for Indices: 18h-23h (AM), 23h-5h (PM)
+              if (hour >= 18 && hour < 23) session = "NY AM";
+              else session = "NY PM";
+            } else {
+              session = "NY";
+            }
+          }
+          
           toast.info(`Đang lưu vào khung H4 (${session})...`);
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }

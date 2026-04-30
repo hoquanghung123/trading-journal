@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "./utils";
 
 export type Bias = "bullish" | "bearish" | "consolidation";
-export type Session = "ASIA" | "LDN" | "NY";
-export type SlotKind = "monthly" | "weekly" | "daily" | "h4-ASIA" | "h4-LDN" | "h4-NY";
+export type Session = "ASIA" | "LDN" | "NY" | "NY AM" | "NY PM";
+export type SlotKind = "monthly" | "weekly" | "daily" | "h4-ASIA" | "h4-LDN" | "h4-NY" | "h4-NY AM" | "h4-NY PM";
 
 export interface DayEntry {
   id: string;
@@ -21,7 +21,7 @@ export interface DayEntry {
   dailyImg?: string;
   dailyBias: Bias;
   dailyCorrect: boolean;
-  h4: { ASIA?: { img?: string; bias?: Bias }; LDN?: { img?: string; bias?: Bias }; NY?: { img?: string; bias?: Bias } };
+  h4: Record<string, { img?: string; bias?: Bias }>;
   notes?: string;
 }
 
@@ -50,7 +50,7 @@ type Row = {
 const parseH4 = (val: any) => {
   if (!val || typeof val !== "object") return {};
   const res: DayEntry["h4"] = {};
-  for (const s of ["ASIA", "LDN", "NY"] as const) {
+  for (const s of ["ASIA", "LDN", "NY", "NY AM", "NY PM"] as const) {
     const v = val[s];
     if (typeof v === "string") res[s] = { img: v };
     else if (v && typeof v === "object") res[s] = { img: v.img, bias: v.bias };
