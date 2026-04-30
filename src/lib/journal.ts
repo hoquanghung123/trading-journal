@@ -168,13 +168,13 @@ export function uid() {
 }
 
 export function biasBgHex(b: Bias) {
-  if (b === "bullish") return "var(--primary)";
+  if (b === "bullish") return "var(--bull)";
   if (b === "bearish") return "var(--destructive)";
   return "var(--warning)";
 }
 
 export function biasStyle(b: Bias): CSSProperties {
-  const fg = b === "bullish" ? "var(--primary-foreground)" : b === "bearish" ? "var(--destructive-foreground)" : "var(--warning-foreground)";
+  const fg = b === "bullish" ? "var(--bull-foreground)" : b === "bearish" ? "var(--destructive-foreground)" : "var(--warning-foreground)";
   return {
     backgroundColor: biasBgHex(b),
     color: fg,
