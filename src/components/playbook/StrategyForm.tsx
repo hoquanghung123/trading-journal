@@ -72,7 +72,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 lg:p-8 overflow-y-auto scrollbar-hide">
-      <div className="bg-white rounded-[48px] w-full max-w-5xl max-h-[92vh] overflow-hidden border border-border flex flex-col my-auto relative shadow-2xl animate-in zoom-in-95 duration-300">
+      <div className="bg-background rounded-[48px] w-full max-w-5xl max-h-[92vh] overflow-hidden border border-border flex flex-col my-auto relative shadow-2xl animate-in zoom-in-95 duration-300">
         
         {/* Header - Identical to TradeModal */}
         <div className="px-10 pt-10 pb-6 border-b border-border/50 shrink-0">
@@ -180,7 +180,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                 {confluences.map((item) => (
                   <div
                     key={item}
-                    className="group flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/10 hover:bg-white hover:border-primary/20 hover:shadow-md transition-all duration-300"
+                    className="group flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-muted/10 hover:bg-muted/20 hover:border-primary/20 hover:shadow-md transition-all duration-300"
                   >
                     <span className="text-xs font-bold uppercase tracking-widest text-foreground truncate">
                       {item}
@@ -255,7 +255,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
               <RichEditor
                 value={definition}
                 onChange={setDefinition}
-                className="min-h-[400px] bg-white p-6"
+                className="min-h-[400px] bg-muted/5 p-6"
                 placeholder="Provide detailed logic, rules, and examples..."
               />
             </div>
