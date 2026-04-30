@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Edit3, Check } from "lucide-react";
 import type { DayEntry, Session, SlotKind } from "@/lib/journal";
-import { biasStyle, biasLabel, ddmm, weekdayOf } from "@/lib/journal";
+import { biasStyle, biasLabel, ddmm, weekdayOf, getSessionsForAsset } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -13,19 +13,13 @@ interface Props {
   onEdit: (e: DayEntry) => void;
 }
 
-const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
 
 export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Props) {
   const [session, setSession] = useState<Session>("ASIA");
   const isFocused = (slot: SlotKind) => focusedSlot?.id === entry.id && focusedSlot?.slot === slot;
   const focus = (slot: SlotKind) => setFocus({ id: entry.id, slot });
 
-  const sessions = useMemo(() => {
-    if (SPLIT_NY_ASSETS.includes(entry.asset)) {
-      return ["ASIA", "LDN", "NY AM", "NY PM"] as Session[];
-    }
-    return ["ASIA", "LDN", "NY"] as Session[];
-  }, [entry.asset]);
+  const sessions = useMemo(() => getSessionsForAsset(entry.asset), [entry.asset]);
 
   const isMonday = useMemo(() => weekdayOf(entry.date) === "MON", [entry.date]);
   const isFirstOfMonth = useMemo(() => entry.date.endsWith("-01"), [entry.date]);

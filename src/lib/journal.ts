@@ -14,6 +14,15 @@ export type SlotKind =
   | "h4-NY AM"
   | "h4-NY PM";
 
+export const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
+
+export function getSessionsForAsset(asset: string): Session[] {
+  if (SPLIT_NY_ASSETS.includes(asset)) {
+    return ["ASIA", "LDN", "NY AM", "NY PM"];
+  }
+  return ["ASIA", "LDN", "NY"];
+}
+
 export interface DayEntry {
   id: string;
   date: string; // YYYY-MM-DD

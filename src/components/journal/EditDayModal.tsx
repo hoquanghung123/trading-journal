@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { X, Trash2, Save, Plus } from "lucide-react";
 import type { Bias, DayEntry, Session } from "@/lib/journal";
-import { biasStyle, biasLabel, weekdayOf } from "@/lib/journal";
+import { biasStyle, biasLabel, weekdayOf, getSessionsForAsset } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -20,6 +20,16 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const [draft, setDraft] = useState<DayEntry>(entry);
   const [focusKey, setFocusKey] = useState<string>("weekly");
   const [session, setSession] = useState<Session>("ASIA");
+
+  const sessions = useMemo(() => getSessionsForAsset(draft.asset), [draft.asset]);
+  
+  // Ensure session is valid when asset changes (e.g. from ES1! with NY AM to BTCUSD)
+  useEffect(() => {
+    if (!sessions.includes(session)) {
+      if (session === "NY AM" || session === "NY PM") setSession("NY");
+      else if (session === "NY") setSession("NY AM");
+    }
+  }, [sessions, session]);
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -144,7 +154,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
             {/* 4H Sessions */}
             <Section title="H4 Structure & Sessions">
               <div className="flex gap-3 mb-4">
-                {(["ASIA", "LDN", "NY"] as Session[]).map((s) => (
+                {sessions.map((s) => (
                   <button
                     key={s}
                     onClick={() => {
