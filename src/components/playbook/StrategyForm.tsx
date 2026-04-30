@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PlaybookModel, SetupConfluences, ExecutionRules } from "@/types/playbook";
-import { X, Save, Target, CheckSquare, Settings2, FileText, Clock, TrendingUp, Plus } from "lucide-react";
+import { X, Save, Target, CheckSquare, Settings2, FileText, Clock, TrendingUp, Plus, Image as ImageIcon, Trash2, Upload } from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,9 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
   const [killzones, setKillzones] = useState(initialData?.killzones || "");
   const [status, setStatus] = useState<"Approved" | "Testing" | "Under Review">(initialData?.status || "Testing");
   const [definition, setDefinition] = useState(initialData?.definition || "");
+  const [thumbnail, setThumbnail] = useState<string>(
+    initialData?.images.find((img) => img.type === "perfect")?.url || ""
+  );
 
   const [confluences, setConfluences] = useState<SetupConfluences>(
     initialData?.setupConfluences || []
@@ -49,7 +52,12 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       definition,
       setupConfluences: confluences,
       executionRules: execution,
-      images: initialData?.images || [],
+      images: thumbnail 
+        ? [
+            { id: generateId(), url: thumbnail, type: "perfect" },
+            ...(initialData?.images.filter(img => img.type !== 'perfect') || [])
+          ]
+        : (initialData?.images.filter(img => img.type !== 'perfect') || []),
     };
 
     onSave(model);
@@ -68,6 +76,39 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
 
   const handleExecutionChange = (key: keyof ExecutionRules, value: string) => {
     setExecution((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              setThumbnail(event.target.result as string);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setThumbnail(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -149,6 +190,49 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                     className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                     placeholder="e.g., London Open, New York AM..."
                   />
+                </Field>
+              </div>
+
+              {/* Feature Image Upload */}
+              <div className="md:col-span-2">
+                <Field label="Feature Visual (Thumbnail)">
+                  <div 
+                    onPaste={handlePaste}
+                    className="relative aspect-video w-full rounded-[32px] border-2 border-dashed border-border bg-muted/20 flex flex-col items-center justify-center overflow-hidden group transition-all hover:border-primary/50"
+                  >
+                    {thumbnail ? (
+                      <>
+                        <img src={thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4 backdrop-blur-[2px]">
+                          <label className="cursor-pointer p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-95">
+                            <Upload className="w-6 h-6" />
+                            <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                          </label>
+                          <button 
+                            type="button"
+                            onClick={() => setThumbnail("")}
+                            className="p-4 bg-rose-500/20 hover:bg-rose-500/40 rounded-2xl text-rose-500 transition-all active:scale-95"
+                          >
+                            <Trash2 className="w-6 h-6" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 p-8 text-center">
+                        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary">
+                          <ImageIcon className="w-10 h-10" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-widest text-foreground">Paste or Upload Image</p>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">Perfect execution example</p>
+                        </div>
+                        <label className="mt-4 px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                          Choose File
+                          <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </Field>
               </div>
             </div>
