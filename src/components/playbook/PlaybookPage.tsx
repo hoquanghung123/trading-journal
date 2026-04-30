@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import { PlaybookGrid } from "./PlaybookGrid";
 import { StrategyDetail } from "./StrategyDetail";
@@ -6,17 +6,23 @@ import { StrategyForm } from "./StrategyForm";
 import { TradeModal } from "../journal/TradeModal";
 import { PlaybookModel } from "@/types/playbook";
 import { toast } from "sonner";
-import { useEffect, useMemo } from "react";
+import { AlertTriangle, TrendingUp, Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { onPlaybookFocus } from "@/lib/nav-bus";
-import { fetchTrades, Trade, upsertTrade, deleteTrade } from "@/lib/trades";
-import { AlertTriangle, TrendingUp } from "lucide-react";
+import { fetchTrades, Trade, upsertTrade, deleteTrade, tradesQueryKey } from "@/lib/trades";
 
 export function PlaybookPage() {
-  const { models, isLoaded, addModel, updateModel, deleteModel } = usePlaybook();
+  const queryClient = useQueryClient();
+  const { models, isLoaded: isPlaybookLoaded, addModel, updateModel, deleteModel } = usePlaybook();
+  
+  const { data: trades = [], isLoading: isTradesLoading } = useQuery({
+    queryKey: tradesQueryKey,
+    queryFn: fetchTrades,
+  });
+
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<PlaybookModel | undefined>(undefined);
-  const [trades, setTrades] = useState<Trade[]>([]);
 
   // Trade Modal State
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
@@ -28,23 +34,19 @@ export function PlaybookPage() {
     });
   }, []);
 
-  const reloadTrades = async () => {
-    try {
-      const data = await fetchTrades();
-      setTrades(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    reloadTrades();
-  }, [isLoaded]);
-
   const stats = useMemo(() => {
+    // Optimization: Group trades by setupId once
+    const tradesBySetup: Record<string, Trade[]> = {};
+    trades.forEach(t => {
+      if (t.setupId) {
+        if (!tradesBySetup[t.setupId]) tradesBySetup[t.setupId] = [];
+        tradesBySetup[t.setupId].push(t);
+      }
+    });
+
     const map: Record<string, { winRate: number; avgRr: number; count: number }> = {};
     models.forEach((m) => {
-      const modelTrades = trades.filter((t) => t.setupId === m.id);
+      const modelTrades = tradesBySetup[m.id] || [];
       const followedTrades = modelTrades.filter((t) => t.complianceCheck);
       const wins = followedTrades.filter((t) => t.actualRr > 0).length;
       const wr = followedTrades.length > 0 ? (wins / followedTrades.length) * 100 : 0;
@@ -65,10 +67,15 @@ export function PlaybookPage() {
       }));
   }, [models, stats]);
 
-  if (!isLoaded) {
+  if (!isPlaybookLoaded || isTradesLoading) {
     return (
-      <div className="p-8 text-center text-muted-foreground tracking-widest">
-        LOADING PLAYBOOK...
+      <div className="h-[calc(100vh-32px)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">
+            Syncing Playbook Data...
+          </p>
+        </div>
       </div>
     );
   }
@@ -110,7 +117,7 @@ export function PlaybookPage() {
     try {
       await upsertTrade(trade);
       toast.success("Trade updated");
-      reloadTrades();
+      queryClient.invalidateQueries({ queryKey: tradesQueryKey });
       setIsTradeModalOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Failed to update trade");
@@ -121,7 +128,7 @@ export function PlaybookPage() {
     try {
       await deleteTrade(id);
       toast.success("Trade deleted");
-      reloadTrades();
+      queryClient.invalidateQueries({ queryKey: tradesQueryKey });
       setIsTradeModalOpen(false);
     } catch (err: any) {
       toast.error(err.message || "Failed to delete trade");

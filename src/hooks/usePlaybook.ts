@@ -1,61 +1,54 @@
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlaybookModel } from "@/types/playbook";
-import { fetchPlaybook, upsertSetup, deleteSetup } from "@/lib/playbook";
+import { fetchPlaybook, upsertSetup, deleteSetup, playbookQueryKey } from "@/lib/playbook";
 import { toast } from "sonner";
 
 export function usePlaybook() {
-  const [models, setModels] = useState<PlaybookModel[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const queryClient = useQueryClient();
 
-  const reload = async () => {
-    try {
-      const data = await fetchPlaybook();
-      setModels(data);
-    } catch (e: any) {
-      console.error("Failed to fetch playbook", e);
-      toast.error("Failed to load playbook");
-    } finally {
-      setIsLoaded(true);
-    }
-  };
+  const { data: models = [], isLoading: isLoaded } = useQuery({
+    queryKey: playbookQueryKey,
+    queryFn: fetchPlaybook,
+  });
 
-  useEffect(() => {
-    reload();
-  }, []);
-
-  const addModel = async (model: PlaybookModel) => {
-    try {
-      await upsertSetup(model);
-      await reload();
-    } catch (e: any) {
+  const addMutation = useMutation({
+    mutationFn: (model: PlaybookModel) => upsertSetup(model),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: playbookQueryKey });
+      toast.success("Strategy created");
+    },
+    onError: (e: any) => {
       toast.error(e.message || "Failed to add strategy");
-    }
-  };
+    },
+  });
 
-  const updateModel = async (updatedModel: PlaybookModel) => {
-    try {
-      await upsertSetup(updatedModel);
-      await reload();
-    } catch (e: any) {
+  const updateMutation = useMutation({
+    mutationFn: (updatedModel: PlaybookModel) => upsertSetup(updatedModel),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: playbookQueryKey });
+      toast.success("Strategy updated");
+    },
+    onError: (e: any) => {
       toast.error(e.message || "Failed to update strategy");
-    }
-  };
+    },
+  });
 
-  const deleteModel = async (id: string) => {
-    try {
-      await deleteSetup(id);
-      await reload();
-    } catch (e: any) {
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteSetup(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: playbookQueryKey });
+      toast.success("Strategy deleted");
+    },
+    onError: (e: any) => {
       toast.error(e.message || "Failed to delete strategy");
-    }
-  };
+    },
+  });
 
   return {
     models,
-    isLoaded,
-    addModel,
-    updateModel,
-    deleteModel,
-    reload,
+    isLoaded: !isLoaded, // Maintain legacy naming for compatibility
+    addModel: addMutation.mutateAsync,
+    updateModel: updateMutation.mutateAsync,
+    deleteModel: deleteMutation.mutateAsync,
   };
 }
