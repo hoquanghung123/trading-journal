@@ -16,6 +16,11 @@ import {
   History,
   Save,
   ExternalLink,
+  Shield,
+  Zap,
+  Target,
+  LayoutDashboard,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
@@ -55,6 +60,10 @@ export function StrategyDetail({
       .filter((t) => t.setupId === model.id)
       .sort((a, b) => +new Date(b.entryTime) - +new Date(a.entryTime));
   }, [trades, model.id]);
+
+  const groupedConfluences = useMemo(() => {
+    return model.setupConfluences;
+  }, [model.setupConfluences]);
 
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
@@ -100,156 +109,166 @@ export function StrategyDetail({
   const imagesForActiveType = model.images.filter((img) => img.type === activeImageType);
 
   return (
-    <div className="h-full flex flex-col space-y-4 mobile-pb" onPaste={handlePaste} tabIndex={0}>
-      {/* Header & Cover Section */}
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 border-b border-terminal-border pb-6 shrink-0">
-        {coverImage && (
-          <div className="w-full sm:w-64 aspect-video rounded-xl overflow-hidden border border-primary/20 shadow-lg shadow-primary/5 shrink-0 relative group">
-            <img
-              src={coverImage}
-              alt="Strategy Cover"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        )}
+    <div
+      className="h-full flex flex-col space-y-6 mobile-pb animate-in fade-in slide-in-from-bottom-2 duration-500"
+      onPaste={handlePaste}
+      tabIndex={0}
+    >
+      {/* Institutional Header Section */}
+      <div className="relative overflow-hidden bg-primary/[0.02] border border-primary/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px]" />
+        </div>
 
-        <div className="flex-1 flex flex-col justify-between min-w-0 py-1">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <button
-                onClick={onBack}
-                className="p-2 hover:bg-white/5 rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <h2 className="text-base sm:text-xl font-bold tracking-[0.1em] sm:tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase truncate">
+        <div className="relative flex flex-col sm:flex-row gap-8 items-start sm:items-center">
+          {/* Cover/Thumbnail */}
+          <div className="w-full sm:w-48 aspect-video rounded-xl overflow-hidden border border-primary/20 shadow-xl shadow-primary/5 group relative bg-black/5">
+            {coverImage ? (
+              <img
+                src={coverImage}
+                alt="Strategy Cover"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
+                <LayoutDashboard className="w-12 h-12" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <button
+                    onClick={onBack}
+                    className="p-2 hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all shrink-0 border border-transparent hover:border-primary/20"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground uppercase truncate">
                     {model.name}
                   </h2>
-                  <select
-                    value={model.status}
-                    onChange={(e) => onUpdate({ ...model, status: e.target.value as any })}
-                    className={`px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold tracking-widest uppercase border outline-none bg-transparent cursor-pointer transition-all ${
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
                       model.status === "Approved"
-                        ? "border-neon-green/30 text-neon-green"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
                         : model.status === "Testing"
-                          ? "border-neon-amber/30 text-neon-amber"
-                          : "border-indigo-500/30 text-indigo-400"
+                          ? "bg-amber-500/10 border-amber-500/30 text-amber-600"
+                          : "bg-indigo-500/10 border-indigo-500/30 text-indigo-600"
                     }`}
                   >
-                    <option value="Approved">Approved</option>
-                    <option value="Testing">Testing</option>
-                    <option value="Under Review">Under Review</option>
-                  </select>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-xs text-muted-foreground mt-1 tracking-wider sm:tracking-widest">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {model.timeframe}
+                    {model.status}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Activity className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {model.marketCondition}
-                  </span>
+                  <div className="h-4 w-[1px] bg-primary/10 hidden sm:block" />
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground/80 font-medium uppercase tracking-wider">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" /> {model.timeframe}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5" /> {model.marketCondition}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onEdit}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-[10px] sm:text-xs font-bold hover:bg-white/10 transition-all uppercase"
-              >
-                <Edit className="w-3.5 h-3.5" /> Edit
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm("Are you sure?")) onDelete();
-                }}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-neon-red/10 border border-neon-red/30 text-neon-red rounded-md text-[10px] sm:text-xs font-bold hover:bg-neon-red/20 transition-all uppercase"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete
-              </button>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={onEdit}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-xl text-xs font-bold text-foreground transition-all uppercase tracking-widest"
+                >
+                  <Edit className="w-4 h-4" /> Edit Model
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("Permanently delete this strategy?")) onDelete();
+                  }}
+                  className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-transparent hover:border-rose-500/20"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <Tabs defaultValue="definition" className="flex-1 flex flex-col min-h-0">
-        <div className="overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-          <TabsList className="w-max sm:w-fit bg-primary/5 border border-primary/20 p-1 mb-4 flex">
-            <TabsTrigger
-              value="definition"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 px-4 sm:px-6 text-[10px] sm:text-xs font-bold tracking-widest uppercase whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all rounded-md"
-            >
-              <FileText className="w-3.5 h-3.5 mr-2" /> Definition
-            </TabsTrigger>
-            <TabsTrigger
-              value="logic"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 px-4 sm:px-6 text-[10px] sm:text-xs font-bold tracking-widest uppercase whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all rounded-md"
-            >
-              <CheckSquare className="w-3.5 h-3.5 mr-2" /> Logic
-            </TabsTrigger>
-            <TabsTrigger
-              value="visuals"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 px-4 sm:px-6 text-[10px] sm:text-xs font-bold tracking-widest uppercase whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all rounded-md"
-            >
-              <ImageIcon className="w-3.5 h-3.5 mr-2" /> Visuals
-            </TabsTrigger>
-            <TabsTrigger
-              value="trades"
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 px-4 sm:px-6 text-[10px] sm:text-xs font-bold tracking-widest uppercase whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-primary/10 transition-all rounded-md"
-            >
-              <History className="w-3.5 h-3.5 mr-2" /> History
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs defaultValue="narrative" className="flex-1 flex flex-col min-h-0">
+        <TabsList className="bg-primary/5 border border-primary/10 p-1 mb-8 self-start rounded-xl">
+          <TabsTrigger
+            value="narrative"
+            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
+          >
+            <FileText className="w-4 h-4 mr-2" /> DEFINITION
+          </TabsTrigger>
+          <TabsTrigger
+            value="logic"
+            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
+          >
+            <Zap className="w-4 h-4 mr-2" /> LOGIC
+          </TabsTrigger>
+          <TabsTrigger
+            value="visuals"
+            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
+          >
+            <ImageIcon className="w-4 h-4 mr-2" /> CHART STUDIES
+          </TabsTrigger>
+          <TabsTrigger
+            value="trades"
+            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
+          >
+            <History className="w-4 h-4 mr-2" /> PERFORMANCE LOG
+          </TabsTrigger>
+        </TabsList>
 
-        <TabsContent value="definition" className="flex-1 min-h-0 overflow-hidden pb-4">
-          {/* Definition & Confluences - Full Width */}
-          <div className="h-full overflow-y-auto pr-2 space-y-6 scrollbar-terminal">
-            {/* Definition Editor */}
-            <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl p-5 border border-primary/20 group relative">
-              <div className="flex items-center justify-between border-b border-primary/20 pb-3 mb-3">
-                <h3 className="text-sm font-bold tracking-widest text-foreground flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-neon-amber" /> DEFINITION
-                </h3>
+        <TabsContent value="narrative" className="flex-1 min-h-0 overflow-hidden outline-none">
+          <div className="h-full overflow-y-auto pr-2 space-y-6 scrollbar-thin">
+            <div className="bg-white border border-primary/10 rounded-2xl p-8 shadow-sm group relative">
+              <div className="flex items-center justify-between border-b border-primary/5 pb-6 mb-8">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-black tracking-[0.2em] text-foreground uppercase">
+                    Institutional Definition
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+                    Framework for Bias & HTF Context
+                  </p>
+                </div>
                 {isEditingDefinition ? (
                   <button
                     onClick={saveDefinition}
-                    className="flex items-center gap-1.5 px-2 py-1 bg-neon-green/20 text-neon-green border border-neon-green/30 rounded text-[10px] font-bold uppercase hover:bg-neon-green/30 transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
                   >
-                    <Save className="w-3.5 h-3.5" /> Save
+                    <Save className="w-4 h-4" /> Save Definition
                   </button>
                 ) : (
                   <button
                     onClick={() => setIsEditingDefinition(true)}
-                    className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-2 py-1 bg-white/5 text-muted-foreground border border-white/10 rounded text-[10px] font-bold uppercase hover:text-foreground hover:bg-white/10 transition-all"
+                    className="opacity-0 group-hover:opacity-100 flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 transition-all"
                   >
-                    <Edit className="w-3.5 h-3.5" /> Edit
+                    <Edit className="w-4 h-4" /> Edit Framework
                   </button>
                 )}
               </div>
 
               {isEditingDefinition ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <RichEditor
                     value={definition}
                     onChange={setDefinition}
-                    className="min-h-[400px]"
-                    placeholder="Enter strategy definition, rules, and logic..."
+                    className="min-h-[500px]"
+                    placeholder="Establish the HTF narrative, daily bias rules, and situational context..."
                   />
-                  <p className="text-[10px] text-muted-foreground italic">
-                    Tip: You can now use <b>Bold</b>, <i>Italic</i>, Bullet points, and Paste images
-                    directly!
-                  </p>
                 </div>
               ) : (
                 <div
-                  className="text-sm text-muted-foreground rich-content max-w-none min-h-[150px] cursor-pointer hover:text-foreground transition-colors"
+                  className="text-sm text-muted-foreground/90 rich-content max-w-none min-h-[300px] leading-relaxed cursor-pointer hover:text-foreground transition-colors"
                   onClick={() => setIsEditingDefinition(true)}
                   dangerouslySetInnerHTML={{
-                    __html: model.definition || "No definition provided. Click to add one.",
+                    __html: model.definition || "Establish your institutional framework here.",
                   }}
                 />
               )}
@@ -259,104 +278,163 @@ export function StrategyDetail({
 
         <TabsContent
           value="logic"
-          className="flex-1 overflow-y-auto space-y-8 animate-in fade-in duration-500 pb-8"
+          className="flex-1 overflow-y-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 outline-none pb-12"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Setup Confluences */}
-            <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl p-8 border border-primary/20">
-              <h3 className="text-sm font-bold tracking-widest text-foreground flex items-center gap-3 border-b border-primary/20 pb-5 mb-6">
-                <CheckSquare className="w-5 h-5 text-emerald-500" /> SETUP CONFLUENCES
-              </h3>
-              <div className="grid grid-cols-1 gap-4">
-                {model.setupConfluences.map((label) => (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Definition Group */}
+            <div className="bg-white border border-primary/10 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-primary/5 pb-4 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-indigo-500" />
+                </div>
+                <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase">
+                  HTF Analyst
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {groupedConfluences.narrative.map((label) => (
                   <div
                     key={label}
-                    className="flex items-center gap-4 text-sm font-bold text-foreground bg-primary/5 p-4 rounded-xl border border-primary/10"
+                    className="flex items-center gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5"
                   >
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                     {label}
                   </div>
                 ))}
-                {model.setupConfluences.length === 0 && (
-                  <div className="text-sm text-muted-foreground/50 italic py-8 text-center border-2 border-dashed border-primary/10 rounded-xl bg-primary/5">
-                    No verification rules defined.
-                  </div>
+                {groupedConfluences.narrative.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground/50 italic py-4 text-center">
+                    No narrative confluences defined.
+                  </p>
                 )}
               </div>
             </div>
 
-            {/* Execution Rules */}
-            <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl p-8 border border-primary/20">
-              <h3 className="text-sm font-bold tracking-widest text-foreground flex items-center gap-3 border-b border-primary/20 pb-5 mb-6">
-                <Settings2 className="w-5 h-5 text-blue-500" /> EXECUTION PROTOCOLS
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Entry Trigger
-                  </div>
-                  <div className="text-sm font-bold text-foreground">
-                    {model.executionRules.entry || "NOT_DEFINED"}
-                  </div>
+            {/* Context Area Group */}
+            <div className="bg-white border border-primary/10 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-primary/5 pb-4 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-amber-500" />
                 </div>
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Capital Exposure
+                <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase">
+                  Context Area
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {groupedConfluences.liquidity.map((label) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    {label}
                   </div>
-                  <div className="text-sm font-bold text-foreground">
-                    {model.executionRules.riskPercent || "NOT_DEFINED"}
-                  </div>
+                ))}
+                {groupedConfluences.liquidity.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground/50 italic py-4 text-center">
+                    No context area defined.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Logic Group */}
+            <div className="bg-white border border-primary/10 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-3 border-b border-primary/5 pb-4 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Target className="w-4 h-4 text-emerald-500" />
                 </div>
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Defensive Stop
+                <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase">
+                  Confirmation (LTF)
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {groupedConfluences.confirmation.map((label) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {label}
                   </div>
-                  <div className="text-sm font-bold text-foreground">
-                    {model.executionRules.stopLoss || "NOT_DEFINED"}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Primary Target
-                  </div>
-                  <div className="text-sm font-bold text-foreground">
-                    {model.executionRules.takeProfit || "NOT_DEFINED"}
-                  </div>
-                </div>
-                <div className="sm:col-span-2 space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Management Rules
-                  </div>
-                  <div className="text-sm font-bold text-foreground">
-                    {model.executionRules.breakEven || "NOT_DEFINED"}
-                  </div>
-                </div>
+                ))}
+                {groupedConfluences.confirmation.length === 0 && (
+                  <p className="text-[10px] text-muted-foreground/50 italic py-4 text-center">
+                    No entry triggers defined.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Execution Protocol Grid */}
+          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-8">
+            <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase mb-8 flex items-center gap-3">
+              <Settings2 className="w-4 h-4 text-primary" /> Execution Protocol
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+              <div className="space-y-2">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+                  Primary Entry
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {model.executionRules.entry || "PROTOCOL_UNDEFINED"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+                  Defensive Stop
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {model.executionRules.stopLoss || "PROTOCOL_UNDEFINED"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+                  Take Profit
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {model.executionRules.takeProfit || "PROTOCOL_UNDEFINED"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+                  Risk Allocation
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {model.executionRules.riskPercent || "PROTOCOL_UNDEFINED"}
+                </p>
+              </div>
+              <div className="sm:col-span-4 space-y-2 pt-6 border-t border-primary/10">
+                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+                  Trade Management & Break Even
+                </p>
+                <p className="text-sm font-bold text-foreground leading-relaxed">
+                  {model.executionRules.breakEven || "PROTOCOL_UNDEFINED"}
+                </p>
               </div>
             </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="visuals" className="flex-1 min-h-0 overflow-hidden pb-4">
-          <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl border border-primary/20 h-full flex flex-col overflow-hidden relative">
-            <div className="p-3 sm:p-4 border-b border-primary/20 shrink-0 bg-primary/5">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="text-[10px] sm:text-sm font-bold tracking-widest text-foreground flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-neon-cyan" /> STRATEGY GALLERY
-                </h3>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
+        <TabsContent value="visuals" className="flex-1 min-h-0 overflow-hidden outline-none pb-8">
+          <div className="bg-white border border-primary/10 rounded-2xl h-full flex flex-col overflow-hidden shadow-sm relative">
+            <div className="px-6 py-4 border-b border-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" /> Strategy Visuals
+              </h3>
+              <div className="flex gap-2">
                 {[
-                  { id: "perfect", label: "Perfect" },
-                  { id: "loss", label: "Loss" },
-                  { id: "mistake", label: "Mistake" },
+                  { id: "perfect", label: "Model A+" },
+                  { id: "loss", label: "Model Loss" },
+                  { id: "mistake", label: "Compliance Failure" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveImageType(tab.id as any)}
-                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-[9px] sm:text-[10px] font-bold tracking-widest transition-all uppercase ${
+                    onClick={() => setActiveImageType(tab.id as "perfect" | "loss" | "mistake")}
+                    className={`px-4 py-2 rounded-lg text-[9px] font-bold tracking-widest transition-all uppercase border ${
                       activeImageType === tab.id
-                        ? "bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/50 text-glow-cyan"
-                        : "bg-white/5 text-muted-foreground border border-transparent hover:bg-white/10 hover:text-foreground"
+                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                        : "bg-primary/5 text-muted-foreground border-transparent hover:bg-primary/10 hover:text-foreground"
                     }`}
                   >
                     {tab.label}
@@ -365,48 +443,44 @@ export function StrategyDetail({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-terminal relative bg-terminal-bg/50">
+            <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
               {imagesForActiveType.length === 0 ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/30 border-2 border-dashed border-primary/10 rounded-xl m-4 sm:m-8 p-8 sm:p-12 text-center">
-                  <ImageIcon className="w-12 h-12 sm:w-16 sm:h-16 mb-4 opacity-20" />
-                  <p className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em]">
-                    No {activeImageType} visuals
+                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-muted-foreground/30 border-2 border-dashed border-primary/10 rounded-2xl p-12 text-center">
+                  <ImageIcon className="w-16 h-16 mb-6 opacity-10" />
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
+                    No studies captured
                   </p>
-                  <p className="text-[9px] sm:text-xs mt-2 opacity-60">
-                    Paste image to add (Cmd+V)
+                  <p className="text-[9px] font-medium uppercase tracking-widest opacity-60">
+                    Paste image (Cmd+V) to build your visual library
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   {imagesForActiveType.map((img) => (
                     <div
                       key={img.id}
-                      className="relative group rounded-xl overflow-hidden border border-primary/20 bg-black/40 shadow-xl"
+                      className="relative group rounded-2xl overflow-hidden border border-primary/10 bg-black/5 shadow-md aspect-video"
                     >
-                      <img src={img.url} alt="Setup" className="w-full aspect-video object-cover" />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 sm:group-hover:opacity-100 transition-all flex items-center justify-center gap-3 backdrop-blur-[2px]">
+                      <img
+                        src={img.url}
+                        alt="Study"
+                        className="w-full h-full object-contain bg-black/20"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-[2px]">
                         <button
                           onClick={() => removeImage(img.id)}
-                          className="p-2.5 sm:p-3 bg-neon-red/20 text-neon-red border border-neon-red/50 rounded-xl hover:bg-neon-red hover:text-white transition-all transform scale-90 sm:group-hover:scale-100"
-                          title="Remove Image"
+                          className="p-4 bg-rose-500 text-white rounded-2xl hover:bg-rose-600 transition-all transform scale-90 group-hover:scale-100 shadow-xl"
                         >
-                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <Trash2 className="w-6 h-6" />
                         </button>
                       </div>
-                      {/* Mobile delete button */}
-                      <button
-                        onClick={() => removeImage(img.id)}
-                        className="sm:hidden absolute top-2 right-2 p-2 bg-black/60 text-neon-red rounded-lg border border-neon-red/30"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   ))}
 
-                  <div className="border-2 border-dashed border-primary/10 rounded-xl flex flex-col items-center justify-center p-6 sm:p-8 bg-primary/5 text-muted-foreground/30">
-                    <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-20" />
-                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">
-                      Paste more
+                  <div className="border-2 border-dashed border-primary/10 rounded-2xl flex flex-col items-center justify-center p-8 bg-primary/[0.02] text-muted-foreground/40 hover:bg-primary/[0.04] transition-all cursor-pointer">
+                    <Plus className="w-8 h-8 mb-3 opacity-20" />
+                    <p className="text-[9px] font-bold uppercase tracking-widest">
+                      Add more studies
                     </p>
                   </div>
                 </div>
@@ -415,137 +489,98 @@ export function StrategyDetail({
           </div>
         </TabsContent>
 
-        <TabsContent value="trades" className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
-          <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl border border-primary/20 flex-1 flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-primary/20 flex items-center justify-between shrink-0">
-              <h3 className="text-sm font-bold tracking-widest text-foreground flex items-center gap-2">
-                <History className="w-4 h-4 text-neon-cyan" /> PLAYBOOK HISTORY
-              </h3>
-              <span className="text-[10px] font-bold text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10 uppercase tracking-widest">
-                {filteredTrades.length} Trades Found
-              </span>
+        <TabsContent
+          value="trades"
+          className="flex-1 min-h-0 flex flex-col gap-6 overflow-hidden outline-none pb-8"
+        >
+          <div className="bg-white border border-primary/10 rounded-2xl flex-1 flex flex-col overflow-hidden shadow-sm">
+            <div className="px-8 py-6 border-b border-primary/5 flex items-center justify-between shrink-0">
+              <div className="space-y-1">
+                <h3 className="text-sm font-black tracking-[0.2em] text-foreground uppercase">
+                  Performance History
+                </h3>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+                  Historical Execution Records
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 uppercase tracking-widest">
+                  {filteredTrades.length} Samples
+                </span>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-terminal">
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
               {filteredTrades.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-12 text-center">
-                  <History className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-sm font-medium uppercase tracking-widest">
-                    No trades recorded yet
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30 p-20 text-center">
+                  <History className="w-16 h-16 mb-6 opacity-10" />
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]">
+                    Log currently empty
                   </p>
                 </div>
               ) : (
-                <>
-                  {/* Mobile View */}
-                  <div className="sm:hidden divide-y divide-terminal-border/20">
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 bg-white/95 backdrop-blur-md z-10 border-b border-primary/10">
+                    <tr className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                      <th className="p-6">Execution Date</th>
+                      <th className="p-6">Outcome Status</th>
+                      <th className="p-6">Asset Symbol</th>
+                      <th className="p-6 text-right">Net PnL</th>
+                      <th className="p-6 text-right">RR Ratio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-primary/5">
                     {filteredTrades.map((t) => {
                       const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
                       return (
-                        <div
+                        <tr
                           key={t.id}
                           onClick={() => onTradeClick?.(t)}
-                          className="p-4 active:bg-white/5 space-y-3"
+                          className="hover:bg-primary/[0.02] transition-all group cursor-pointer"
                         >
-                          <div className="flex justify-between items-start">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground text-sm">{t.symbol}</span>
+                          <td className="p-6 text-xs font-bold text-muted-foreground/70">
+                            {new Date(t.entryTime).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "2-digit",
+                            })}
+                          </td>
+                          <td className="p-6">
+                            <span
+                              className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${outcomeStyle[outcome.color]}`}
+                            >
+                              {outcome.label}
+                            </span>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-black text-foreground">{t.symbol}</span>
                               <span
-                                className={`text-[9px] font-bold uppercase tracking-widest ${t.side === "buy" ? "text-neon-cyan" : "text-neon-red"}`}
+                                className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
+                                  t.side === "buy"
+                                    ? "bg-indigo-500/10 text-indigo-500"
+                                    : "bg-rose-500/10 text-rose-500"
+                                }`}
                               >
                                 {t.side}
                               </span>
                             </div>
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${outcomeStyle[outcome.color]}`}
-                            >
-                              {outcome.label}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-end">
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(t.entryTime).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "2-digit",
-                              })}
-                            </span>
-                            <div className="text-right">
-                              <div
-                                className={`text-sm font-bold ${t.netPnl >= 0 ? "text-neon-green" : "text-neon-red"}`}
-                              >
-                                {t.netPnl >= 0 ? "+" : ""}
-                                {t.netPnl.toFixed(2)}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground">
-                                RR {t.actualRr} / {t.maxRr}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                          </td>
+                          <td
+                            className={`p-6 text-sm font-black text-right tabular-nums ${t.netPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                          >
+                            {t.netPnl >= 0 ? "+" : ""}
+                            {t.netPnl.toFixed(2)}
+                          </td>
+                          <td className="p-6 text-xs font-bold text-muted-foreground/60 text-right tabular-nums">
+                            {t.actualRr.toFixed(2)} <span className="opacity-30">/</span>{" "}
+                            {t.maxRr.toFixed(2)}
+                          </td>
+                        </tr>
                       );
                     })}
-                  </div>
-
-                  {/* Desktop View */}
-                  <table className="hidden sm:table w-full text-left border-collapse">
-                    <thead className="sticky top-0 bg-terminal-bg/90 backdrop-blur-md z-10">
-                      <tr className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-terminal-border">
-                        <th className="p-4">Date</th>
-                        <th className="p-4">Outcome</th>
-                        <th className="p-4">Symbol</th>
-                        <th className="p-4 text-right">Net PnL</th>
-                        <th className="p-4 text-right">RR</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-terminal-border/30">
-                      {filteredTrades.map((t) => {
-                        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
-                        return (
-                          <tr
-                            key={t.id}
-                            onClick={() => onTradeClick?.(t)}
-                            className="hover:bg-white/5 transition-colors group cursor-pointer"
-                          >
-                            <td className="p-4 text-xs font-medium text-muted-foreground">
-                              {new Date(t.entryTime).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "2-digit",
-                              })}
-                            </td>
-                            <td className="p-4">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${outcomeStyle[outcome.color]}`}
-                              >
-                                {outcome.label}
-                              </span>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-foreground">
-                                  {t.symbol}
-                                </span>
-                                <span
-                                  className={`text-[9px] font-bold uppercase tracking-widest ${t.side === "buy" ? "text-neon-cyan" : "text-neon-red"}`}
-                                >
-                                  {t.side}
-                                </span>
-                              </div>
-                            </td>
-                            <td
-                              className={`p-4 text-xs font-bold text-right ${t.netPnl >= 0 ? "text-neon-green" : "text-neon-red"}`}
-                            >
-                              {t.netPnl >= 0 ? "+" : ""}
-                              {t.netPnl.toFixed(2)}
-                            </td>
-                            <td className="p-4 text-[10px] font-medium text-muted-foreground text-right tabular-nums">
-                              {t.actualRr} / {t.maxRr}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </>
+                  </tbody>
+                </table>
               )}
             </div>
           </div>

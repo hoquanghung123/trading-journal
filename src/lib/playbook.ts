@@ -17,21 +17,37 @@ type Row = {
   updated_at: string;
 };
 
-const fromRow = (r: Row): PlaybookModel => ({
-  id: r.id,
-  user_id: r.user_id,
-  name: r.name,
-  timeframe: r.timeframe ?? "",
-  marketCondition: r.market_condition ?? "",
-  killzones: r.killzones ?? "",
-  setupConfluences: r.setup_confluences ?? {},
-  executionRules: r.execution_rules ?? {},
-  images: r.images ?? [],
-  status: r.status,
-  definition: r.definition ?? "",
-  createdAt: r.created_at,
-  updatedAt: r.updated_at,
-});
+const fromRow = (r: Row): PlaybookModel => {
+  const rawConfluences = r.setup_confluences;
+  let setupConfluences: SetupConfluences = { narrative: [], liquidity: [], confirmation: [] };
+
+  if (Array.isArray(rawConfluences)) {
+    // Legacy support: if it's just a flat array, put everything into narrative
+    setupConfluences.narrative = rawConfluences;
+  } else if (rawConfluences && typeof rawConfluences === "object") {
+    setupConfluences = {
+      narrative: rawConfluences.narrative ?? [],
+      liquidity: rawConfluences.liquidity ?? [],
+      confirmation: rawConfluences.confirmation ?? [],
+    };
+  }
+
+  return {
+    id: r.id,
+    user_id: r.user_id,
+    name: r.name,
+    timeframe: r.timeframe ?? "",
+    marketCondition: r.market_condition ?? "",
+    killzones: r.killzones ?? "",
+    setupConfluences,
+    executionRules: r.execution_rules ?? {},
+    images: r.images ?? [],
+    status: r.status,
+    definition: r.definition ?? "",
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+};
 
 const toRow = (m: PlaybookModel, userId: string) => ({
   id: m.id,

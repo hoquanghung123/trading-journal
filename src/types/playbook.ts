@@ -5,7 +5,11 @@ export interface PlaybookImage {
   description?: string;
 }
 
-export type SetupConfluences = string[];
+export interface SetupConfluences {
+  narrative: string[];
+  liquidity: string[];
+  confirmation: string[];
+}
 
 export interface ExecutionRules {
   entry: string;
