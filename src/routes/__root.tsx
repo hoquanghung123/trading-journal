@@ -126,8 +126,16 @@ function RootComponent() {
         const updatedEntry = { ...entry };
         
         if (tf === "M" || tf === "MONTH" || tf === "1M") {
-          toast.info("Đang lưu vào khung MONTHLY...");
-          updatedEntry.monthlyImg = path;
+          const isMonday = weekdayOf(updatedEntry.date) === "MON";
+          const isFirstOfMonth = updatedEntry.date.endsWith("-01");
+          
+          if (isMonday || isFirstOfMonth) {
+            toast.info("Đang lưu vào khung MONTHLY...");
+            updatedEntry.monthlyImg = path;
+          } else {
+            toast.error("Chỉ hỗ trợ lưu khung Monthly vào Thứ 2 hoặc Ngày 1 đầu tháng!", { id: toastId });
+            return;
+          }
         } else if (tf === "W" || tf === "WEEK") {
           toast.info("Đang lưu vào khung WEEKLY...");
           updatedEntry.weeklyImg = path;

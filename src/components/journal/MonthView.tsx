@@ -58,8 +58,12 @@ function MonthBox({
   const firstEntry = entries[0];
   const yearlyImg = firstEntry?.yearlyImg;
 
-  // Find all Monday entries for the Monthly frames
-  const mondayEntries = entries.filter((e) => weekdayOf(e.date) === "MON");
+  // Find all Monday and 1st-of-month entries for the Monthly frames
+  const monthlyOutlookEntries = useMemo(() => {
+    return entries
+      .filter((e) => weekdayOf(e.date) === "MON" || e.date.endsWith("-01"))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [entries]);
 
   const [focusedSlot, setFocusedSlot] = useState<string | null>(null);
 
@@ -156,16 +160,16 @@ function MonthBox({
         {/* Monthly Frames (Bottom, Horizontal) */}
         <div>
           <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
-            Monthly Outlooks (Mondays)
+            Monthly Outlooks (Mon / 1st)
           </h4>
           
-          {mondayEntries.length === 0 ? (
+          {monthlyOutlookEntries.length === 0 ? (
             <div className="h-32 rounded-2xl border border-dashed border-border flex items-center justify-center bg-muted/30">
-              <span className="text-xs text-muted-foreground font-semibold">No Mondays logged in this month.</span>
+              <span className="text-xs text-muted-foreground font-semibold">No Monday or 1st-of-month entries logged.</span>
             </div>
           ) : (
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
-              {mondayEntries.map((e) => (
+              {monthlyOutlookEntries.map((e) => (
                 <div key={e.id} className="w-[280px] shrink-0">
                   <PasteSlot
                     label={`Monthly - ${ddmm(e.date)}`}

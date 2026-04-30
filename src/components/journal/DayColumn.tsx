@@ -27,6 +27,10 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
     return ["ASIA", "LDN", "NY"] as Session[];
   }, [entry.asset]);
 
+  const isMonday = useMemo(() => weekdayOf(entry.date) === "MON", [entry.date]);
+  const isFirstOfMonth = useMemo(() => entry.date.endsWith("-01"), [entry.date]);
+  const showMonthly = isMonday || isFirstOfMonth;
+
   // Adjust session if current one is not available for this asset
   useEffect(() => {
     if (!sessions.includes(session)) {
@@ -72,7 +76,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
 
       <div className="p-3 space-y-4">
         {/* Monthly Outlook Area - Fixed Height for Alignment */}
-        {weekdayOf(entry.date) === "MON" ? (
+        {showMonthly ? (
           <SlotWithBias
             label="Monthly Outlook"
             image={entry.monthlyImg}
@@ -84,12 +88,12 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
           />
         ) : (
-          /* Spacer for Tue-Fri to maintain horizontal alignment */
+          /* Spacer for other days to maintain horizontal alignment */
           <div className="h-44 rounded-xl border border-terminal-border/10 bg-black/5 flex items-center justify-center relative group/spacer">
             <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/20 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/20 font-black border border-white/5">
               Monthly Outlook
             </div>
-            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/10 font-bold">MONDAY ONLY</span>
+            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/10 font-bold">MON OR 1ST ONLY</span>
           </div>
         )}
 
