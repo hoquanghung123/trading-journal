@@ -149,7 +149,10 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
         {/* Days of week */}
         <div className="grid grid-cols-7 border-b border-border bg-muted/10">
           {WEEKDAYS.map((w) => (
-            <div key={w} className="py-4 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+            <div
+              key={w}
+              className="py-4 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]"
+            >
               {w}
             </div>
           ))}
@@ -165,7 +168,7 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                 const isSelected = k === selectedDate;
                 const isToday = k === today;
                 const s = stats.get(k);
-                
+
                 return (
                   <div
                     key={k}
@@ -179,41 +182,45 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                   >
                     {/* Day number */}
                     <div className="flex justify-between items-start">
-                      <span className={`text-sm font-black ${inMonth ? "text-foreground group-hover:text-primary" : "text-muted-foreground/30"}`}>
+                      <span
+                        className={`text-sm font-black ${inMonth ? "text-foreground group-hover:text-primary" : "text-muted-foreground/30"}`}
+                      >
                         {d.getDate()}
                       </span>
                       {s && s.tradeCount > 0 && (
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
-                           {s.tradeCount}T
+                          {s.tradeCount}T
                         </span>
                       )}
                     </div>
 
                     {/* Mood / Center Content */}
                     <div className="flex-1 flex items-center justify-center py-2">
-                       {s?.mood && (
-                         <span className="text-2xl drop-shadow-sm transition-transform duration-300 group-hover:scale-125">
-                           {s.mood}
-                         </span>
-                       )}
+                      {s?.mood && (
+                        <span className="text-2xl drop-shadow-sm transition-transform duration-300 group-hover:scale-125">
+                          {s.mood}
+                        </span>
+                      )}
                     </div>
 
                     {/* Bottom Stats */}
                     <div className="flex flex-col items-center">
-                       {s && s.tradeCount > 0 && (
-                         <span className={`text-[11px] font-black ${s.netPnl >= 0 ? "text-primary" : "text-destructive"}`}>
-                           {s.netPnl >= 0 ? "+" : ""}${Math.abs(s.netPnl).toFixed(0)}
-                         </span>
-                       )}
-                       {/* Indicators */}
-                       <div className="flex items-center gap-1.5 mt-1.5">
-                          {s?.hasDaily && (
-                            <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-primary" />
-                          )}
-                          {s && s.tradeLogCount > 0 && (
-                            <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-amber-500" />
-                          )}
-                       </div>
+                      {s && s.tradeCount > 0 && (
+                        <span
+                          className={`text-[11px] font-black ${s.netPnl >= 0 ? "text-primary" : "text-destructive"}`}
+                        >
+                          {s.netPnl >= 0 ? "+" : ""}${Math.abs(s.netPnl).toFixed(0)}
+                        </span>
+                      )}
+                      {/* Indicators */}
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        {s?.hasDaily && (
+                          <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-primary" />
+                        )}
+                        {s && s.tradeLogCount > 0 && (
+                          <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-amber-500" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -227,11 +234,15 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
       <div className="px-8 py-6 border-t border-border bg-white flex items-center gap-8 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Daily Check-in</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Daily Check-in
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-amber-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trade Evaluation</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Trade Evaluation
+          </span>
         </div>
       </div>
     </section>

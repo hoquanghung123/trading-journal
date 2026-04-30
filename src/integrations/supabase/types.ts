@@ -1,11 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5";
-  };
   public: {
     Tables: {
       journal_entries: {
@@ -18,15 +13,17 @@ export type Database = {
           date: string;
           h4: Json;
           id: string;
+          monthly_bias: Database["public"]["Enums"]["bias_type"] | null;
+          monthly_correct: boolean | null;
+          monthly_img: string | null;
           notes: string | null;
           updated_at: string;
           user_id: string;
           weekly_bias: Database["public"]["Enums"]["bias_type"];
           weekly_correct: boolean;
           weekly_img: string | null;
-          monthly_bias: Database["public"]["Enums"]["bias_type"];
-          monthly_correct: boolean;
-          monthly_img: string | null;
+          yearly_bias: string;
+          yearly_img: string | null;
         };
         Insert: {
           asset: string;
@@ -37,15 +34,17 @@ export type Database = {
           date: string;
           h4?: Json;
           id?: string;
+          monthly_bias?: Database["public"]["Enums"]["bias_type"] | null;
+          monthly_correct?: boolean | null;
+          monthly_img?: string | null;
           notes?: string | null;
           updated_at?: string;
           user_id: string;
           weekly_bias?: Database["public"]["Enums"]["bias_type"];
           weekly_correct?: boolean;
           weekly_img?: string | null;
-          monthly_bias?: Database["public"]["Enums"]["bias_type"];
-          monthly_correct?: boolean;
-          monthly_img?: string | null;
+          yearly_bias?: string;
+          yearly_img?: string | null;
         };
         Update: {
           asset?: string;
@@ -56,22 +55,153 @@ export type Database = {
           date?: string;
           h4?: Json;
           id?: string;
+          monthly_bias?: Database["public"]["Enums"]["bias_type"] | null;
+          monthly_correct?: boolean | null;
+          monthly_img?: string | null;
           notes?: string | null;
           updated_at?: string;
           user_id?: string;
           weekly_bias?: Database["public"]["Enums"]["bias_type"];
           weekly_correct?: boolean;
           weekly_img?: string | null;
-          monthly_bias?: Database["public"]["Enums"]["bias_type"];
-          monthly_correct?: boolean;
-          monthly_img?: string | null;
+          yearly_bias?: string;
+          yearly_img?: string | null;
         };
         Relationships: [];
+      };
+      monthly_funding: {
+        Row: {
+          amount: number;
+          created_at: string | null;
+          id: string;
+          month_key: string;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          amount?: number;
+          created_at?: string | null;
+          id?: string;
+          month_key: string;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string | null;
+          id?: string;
+          month_key?: string;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      playbook_setups: {
+        Row: {
+          created_at: string | null;
+          definition: string | null;
+          execution_rules: Json | null;
+          id: string;
+          images: Json | null;
+          killzones: string | null;
+          market_condition: string | null;
+          name: string;
+          setup_confluences: Json | null;
+          status: string | null;
+          timeframe: string | null;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          definition?: string | null;
+          execution_rules?: Json | null;
+          id?: string;
+          images?: Json | null;
+          killzones?: string | null;
+          market_condition?: string | null;
+          name: string;
+          setup_confluences?: Json | null;
+          status?: string | null;
+          timeframe?: string | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          definition?: string | null;
+          execution_rules?: Json | null;
+          id?: string;
+          images?: Json | null;
+          killzones?: string | null;
+          market_condition?: string | null;
+          name?: string;
+          setup_confluences?: Json | null;
+          status?: string | null;
+          timeframe?: string | null;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      psychology_logs: {
+        Row: {
+          created_at: string;
+          date: string;
+          entry_rationale: string | null;
+          exit_assessment: string | null;
+          id: string;
+          morning_mood: string | null;
+          morning_notes: string | null;
+          post_trade_emotion: string | null;
+          pre_trade_emotion: string | null;
+          trade_id: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          date: string;
+          entry_rationale?: string | null;
+          exit_assessment?: string | null;
+          id?: string;
+          morning_mood?: string | null;
+          morning_notes?: string | null;
+          post_trade_emotion?: string | null;
+          pre_trade_emotion?: string | null;
+          trade_id?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          date?: string;
+          entry_rationale?: string | null;
+          exit_assessment?: string | null;
+          id?: string;
+          morning_mood?: string | null;
+          morning_notes?: string | null;
+          post_trade_emotion?: string | null;
+          pre_trade_emotion?: string | null;
+          trade_id?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "psychology_logs_trade_id_fkey";
+            columns: ["trade_id"];
+            isOneToOne: false;
+            referencedRelation: "trades";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       symbols: {
         Row: {
           created_at: string;
           id: string;
+          is_forex: boolean;
           name: string;
           updated_at: string;
           user_id: string;
@@ -79,6 +209,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           id?: string;
+          is_forex?: boolean;
           name: string;
           updated_at?: string;
           user_id: string;
@@ -86,6 +217,7 @@ export type Database = {
         Update: {
           created_at?: string;
           id?: string;
+          is_forex?: boolean;
           name?: string;
           updated_at?: string;
           user_id?: string;
@@ -98,53 +230,169 @@ export type Database = {
           after_img: string | null;
           before_img: string | null;
           bias_entry_id: string | null;
+          compliance_check: boolean | null;
           created_at: string;
+          daily_img: string | null;
           entry_time: string;
+          exit_time: string | null;
           fees: number;
+          grade: string | null;
           gross_pnl: number;
+          h1_img: string | null;
+          h4_img: string | null;
           id: string;
+          m15_img: string | null;
+          m5_img: string | null;
           max_rr: number;
+          missed_confluences: Json | null;
+          monthly_img: string | null;
           net_pnl: number;
           notes: string | null;
+          setup_id: string | null;
           side: Database["public"]["Enums"]["trade_side"];
+          status: string | null;
           symbol: string;
           updated_at: string;
           user_id: string;
+          weekly_img: string | null;
         };
         Insert: {
           actual_rr?: number;
           after_img?: string | null;
           before_img?: string | null;
           bias_entry_id?: string | null;
+          compliance_check?: boolean | null;
           created_at?: string;
+          daily_img?: string | null;
           entry_time?: string;
+          exit_time?: string | null;
           fees?: number;
+          grade?: string | null;
           gross_pnl?: number;
+          h1_img?: string | null;
+          h4_img?: string | null;
           id?: string;
+          m15_img?: string | null;
+          m5_img?: string | null;
           max_rr?: number;
+          missed_confluences?: Json | null;
+          monthly_img?: string | null;
           net_pnl?: number;
           notes?: string | null;
+          setup_id?: string | null;
           side?: Database["public"]["Enums"]["trade_side"];
+          status?: string | null;
           symbol: string;
           updated_at?: string;
           user_id: string;
+          weekly_img?: string | null;
         };
         Update: {
           actual_rr?: number;
           after_img?: string | null;
           before_img?: string | null;
           bias_entry_id?: string | null;
+          compliance_check?: boolean | null;
           created_at?: string;
+          daily_img?: string | null;
           entry_time?: string;
+          exit_time?: string | null;
           fees?: number;
+          grade?: string | null;
           gross_pnl?: number;
+          h1_img?: string | null;
+          h4_img?: string | null;
           id?: string;
+          m15_img?: string | null;
+          m5_img?: string | null;
           max_rr?: number;
+          missed_confluences?: Json | null;
+          monthly_img?: string | null;
           net_pnl?: number;
           notes?: string | null;
+          setup_id?: string | null;
           side?: Database["public"]["Enums"]["trade_side"];
+          status?: string | null;
           symbol?: string;
           updated_at?: string;
+          user_id?: string;
+          weekly_img?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "trades_setup_id_fkey";
+            columns: ["setup_id"];
+            isOneToOne: false;
+            referencedRelation: "playbook_setups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      trading_reviews: {
+        Row: {
+          action_plan: Json;
+          created_at: string;
+          environmental_reflection: string | null;
+          id: string;
+          period: string;
+          psychological_reflection: string | null;
+          technical_reflection: string | null;
+          top_mistakes: Json;
+          type: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          action_plan?: Json;
+          created_at?: string;
+          environmental_reflection?: string | null;
+          id?: string;
+          period: string;
+          psychological_reflection?: string | null;
+          technical_reflection?: string | null;
+          top_mistakes?: Json;
+          type: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          action_plan?: Json;
+          created_at?: string;
+          environmental_reflection?: string | null;
+          id?: string;
+          period?: string;
+          psychological_reflection?: string | null;
+          technical_reflection?: string | null;
+          top_mistakes?: Json;
+          type?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      user_settings: {
+        Row: {
+          created_at: string | null;
+          primary_color: string | null;
+          show_trade_grade: boolean | null;
+          trade_log_view: string | null;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          primary_color?: string | null;
+          show_trade_grade?: boolean | null;
+          trade_log_view?: string | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          primary_color?: string | null;
+          show_trade_grade?: boolean | null;
+          trade_log_view?: string | null;
+          updated_at?: string | null;
           user_id?: string;
         };
         Relationships: [];

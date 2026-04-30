@@ -1,5 +1,13 @@
 import { useMemo, useState } from "react";
-import { type DayEntry, type Bias, monthKey, ddmm, weekdayOf, biasStyle, biasLabel } from "@/lib/journal";
+import {
+  type DayEntry,
+  type Bias,
+  monthKey,
+  ddmm,
+  weekdayOf,
+  biasStyle,
+  biasLabel,
+} from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -31,12 +39,12 @@ export function MonthView({ entries, onUpdate, asset }: Props) {
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-8">
       {grouped.map(([month, monthEntries]) => (
-        <MonthBox 
-          key={month} 
-          month={month} 
-          asset={asset} 
-          entries={monthEntries} 
-          onUpdate={onUpdate} 
+        <MonthBox
+          key={month}
+          month={month}
+          asset={asset}
+          entries={monthEntries}
+          onUpdate={onUpdate}
         />
       ))}
     </div>
@@ -82,9 +90,9 @@ function MonthBox({
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
         <h3 className="text-lg font-black tracking-tight text-foreground flex items-center">
-          {monthLabel} 
+          {monthLabel}
           <span className="text-muted-foreground font-medium ml-2 flex items-center gap-1.5">
-            / 
+            /
             {asset !== "ALL" && getAssetIconUrl(asset) && (
               <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
                 <img
@@ -119,9 +127,9 @@ function MonthBox({
                       onClick={() => onUpdate({ ...firstEntry, yearlyBias: b })}
                       className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
                         active
-                          ? b === "bullish" 
-                            ? "bg-primary text-primary-foreground shadow-sm" 
-                            : b === "bearish" 
+                          ? b === "bullish"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : b === "bearish"
                               ? "bg-destructive text-destructive-foreground shadow-sm"
                               : "bg-warning text-warning-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
@@ -162,10 +170,12 @@ function MonthBox({
           <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
             Monthly Outlooks (Mon / 1st)
           </h4>
-          
+
           {monthlyOutlookEntries.length === 0 ? (
             <div className="h-32 rounded-2xl border border-dashed border-border flex items-center justify-center bg-muted/30">
-              <span className="text-xs text-muted-foreground font-semibold">No Monday or 1st-of-month entries logged.</span>
+              <span className="text-xs text-muted-foreground font-semibold">
+                No Monday or 1st-of-month entries logged.
+              </span>
             </div>
           ) : (
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">

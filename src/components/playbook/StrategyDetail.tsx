@@ -32,10 +32,23 @@ interface StrategyDetailProps {
   onTradeClick?: (trade: Trade) => void;
 }
 
-export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpdate, onTradeClick }: StrategyDetailProps) {
+export function StrategyDetail({
+  model,
+  trades,
+  onBack,
+  onEdit,
+  onDelete,
+  onUpdate,
+  onTradeClick,
+}: StrategyDetailProps) {
   const [activeImageType, setActiveImageType] = useState<"perfect" | "loss" | "mistake">("perfect");
   const [definition, setDefinition] = useState(model.definition || "");
   const [isEditingDefinition, setIsEditingDefinition] = useState(false);
+
+  const coverImage = useMemo(
+    () => model.images.find((img) => img.type === "perfect")?.url,
+    [model.images],
+  );
 
   const filteredTrades = useMemo(() => {
     return trades
@@ -88,62 +101,77 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
 
   return (
     <div className="h-full flex flex-col space-y-4 mobile-pb" onPaste={handlePaste} tabIndex={0}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-terminal-border pb-4 gap-4 shrink-0">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-white/5 rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h2 className="text-base sm:text-xl font-bold tracking-[0.1em] sm:tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase truncate max-w-[150px] sm:max-w-none">
-                {model.name}
-              </h2>
-              <select
-                value={model.status}
-                onChange={(e) => onUpdate({ ...model, status: e.target.value as any })}
-                className={`px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold tracking-widest uppercase border outline-none bg-transparent cursor-pointer transition-all ${
-                  model.status === "Approved"
-                    ? "border-neon-green/30 text-neon-green"
-                    : model.status === "Testing"
-                    ? "border-neon-amber/30 text-neon-amber"
-                    : "border-indigo-500/30 text-indigo-400"
-                }`}
+      {/* Header & Cover Section */}
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 border-b border-terminal-border pb-6 shrink-0">
+        {coverImage && (
+          <div className="w-full sm:w-64 aspect-video rounded-xl overflow-hidden border border-primary/20 shadow-lg shadow-primary/5 shrink-0 relative group">
+            <img
+              src={coverImage}
+              alt="Strategy Cover"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        )}
+
+        <div className="flex-1 flex flex-col justify-between min-w-0 py-1">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-white/5 rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
-                <option value="Approved">Approved</option>
-                <option value="Testing">Testing</option>
-                <option value="Under Review">Under Review</option>
-              </select>
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <h2 className="text-base sm:text-xl font-bold tracking-[0.1em] sm:tracking-[0.2em] text-neon-cyan text-glow-cyan uppercase truncate">
+                    {model.name}
+                  </h2>
+                  <select
+                    value={model.status}
+                    onChange={(e) => onUpdate({ ...model, status: e.target.value as any })}
+                    className={`px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold tracking-widest uppercase border outline-none bg-transparent cursor-pointer transition-all ${
+                      model.status === "Approved"
+                        ? "border-neon-green/30 text-neon-green"
+                        : model.status === "Testing"
+                          ? "border-neon-amber/30 text-neon-amber"
+                          : "border-indigo-500/30 text-indigo-400"
+                    }`}
+                  >
+                    <option value="Approved">Approved</option>
+                    <option value="Testing">Testing</option>
+                    <option value="Under Review">Under Review</option>
+                  </select>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-xs text-muted-foreground mt-1 tracking-wider sm:tracking-widest">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {model.timeframe}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Activity className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {model.marketCondition}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-xs text-muted-foreground mt-1 tracking-wider sm:tracking-widest">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {model.timeframe}
-              </span>
-              <span className="flex items-center gap-1">
-                <Activity className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> {model.marketCondition}
-              </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onEdit}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-[10px] sm:text-xs font-bold hover:bg-white/10 transition-all uppercase"
+              >
+                <Edit className="w-3.5 h-3.5" /> Edit
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm("Are you sure?")) onDelete();
+                }}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-neon-red/10 border border-neon-red/30 text-neon-red rounded-md text-[10px] sm:text-xs font-bold hover:bg-neon-red/20 transition-all uppercase"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 sm:self-center">
-          <button
-            onClick={onEdit}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-[10px] sm:text-xs font-bold hover:bg-white/10 transition-all uppercase"
-          >
-            <Edit className="w-3.5 h-3.5" /> Edit
-          </button>
-          <button
-            onClick={() => {
-              if (confirm("Are you sure?")) onDelete();
-            }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-neon-red/10 border border-neon-red/30 text-neon-red rounded-md text-[10px] sm:text-xs font-bold hover:bg-neon-red/20 transition-all uppercase"
-          >
-            <Trash2 className="w-3.5 h-3.5" /> Delete
-          </button>
         </div>
       </div>
 
@@ -202,7 +230,7 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
                   </button>
                 )}
               </div>
-              
+
               {isEditingDefinition ? (
                 <div className="space-y-3">
                   <RichEditor
@@ -212,21 +240,27 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
                     placeholder="Enter strategy definition, rules, and logic..."
                   />
                   <p className="text-[10px] text-muted-foreground italic">
-                    Tip: You can now use <b>Bold</b>, <i>Italic</i>, Bullet points, and Paste images directly!
+                    Tip: You can now use <b>Bold</b>, <i>Italic</i>, Bullet points, and Paste images
+                    directly!
                   </p>
                 </div>
               ) : (
-                <div 
+                <div
                   className="text-sm text-muted-foreground rich-content max-w-none min-h-[150px] cursor-pointer hover:text-foreground transition-colors"
                   onClick={() => setIsEditingDefinition(true)}
-                  dangerouslySetInnerHTML={{ __html: model.definition || "No definition provided. Click to add one." }}
+                  dangerouslySetInnerHTML={{
+                    __html: model.definition || "No definition provided. Click to add one.",
+                  }}
                 />
               )}
             </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="logic" className="flex-1 overflow-y-auto space-y-8 animate-in fade-in duration-500 pb-8">
+        <TabsContent
+          value="logic"
+          className="flex-1 overflow-y-auto space-y-8 animate-in fade-in duration-500 pb-8"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Setup Confluences */}
             <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl p-8 border border-primary/20">
@@ -258,24 +292,44 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Entry Trigger</div>
-                  <div className="text-sm font-bold text-foreground">{model.executionRules.entry || "NOT_DEFINED"}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Entry Trigger
+                  </div>
+                  <div className="text-sm font-bold text-foreground">
+                    {model.executionRules.entry || "NOT_DEFINED"}
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Capital Exposure</div>
-                  <div className="text-sm font-bold text-foreground">{model.executionRules.riskPercent || "NOT_DEFINED"}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Capital Exposure
+                  </div>
+                  <div className="text-sm font-bold text-foreground">
+                    {model.executionRules.riskPercent || "NOT_DEFINED"}
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Defensive Stop</div>
-                  <div className="text-sm font-bold text-foreground">{model.executionRules.stopLoss || "NOT_DEFINED"}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Defensive Stop
+                  </div>
+                  <div className="text-sm font-bold text-foreground">
+                    {model.executionRules.stopLoss || "NOT_DEFINED"}
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Primary Target</div>
-                  <div className="text-sm font-bold text-foreground">{model.executionRules.takeProfit || "NOT_DEFINED"}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Primary Target
+                  </div>
+                  <div className="text-sm font-bold text-foreground">
+                    {model.executionRules.takeProfit || "NOT_DEFINED"}
+                  </div>
                 </div>
                 <div className="sm:col-span-2 space-y-2">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Management Rules</div>
-                  <div className="text-sm font-bold text-foreground">{model.executionRules.breakEven || "NOT_DEFINED"}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Management Rules
+                  </div>
+                  <div className="text-sm font-bold text-foreground">
+                    {model.executionRules.breakEven || "NOT_DEFINED"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -315,22 +369,29 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
               {imagesForActiveType.length === 0 ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground/30 border-2 border-dashed border-primary/10 rounded-xl m-4 sm:m-8 p-8 sm:p-12 text-center">
                   <ImageIcon className="w-12 h-12 sm:w-16 sm:h-16 mb-4 opacity-20" />
-                  <p className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em]">No {activeImageType} visuals</p>
-                  <p className="text-[9px] sm:text-xs mt-2 opacity-60">Paste image to add (Cmd+V)</p>
+                  <p className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em]">
+                    No {activeImageType} visuals
+                  </p>
+                  <p className="text-[9px] sm:text-xs mt-2 opacity-60">
+                    Paste image to add (Cmd+V)
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {imagesForActiveType.map((img) => (
-                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-primary/20 bg-black/40 shadow-xl">
+                    <div
+                      key={img.id}
+                      className="relative group rounded-xl overflow-hidden border border-primary/20 bg-black/40 shadow-xl"
+                    >
                       <img src={img.url} alt="Setup" className="w-full aspect-video object-cover" />
                       <div className="absolute inset-0 bg-black/60 opacity-0 sm:group-hover:opacity-100 transition-all flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                         <button
-                            onClick={() => removeImage(img.id)}
-                            className="p-2.5 sm:p-3 bg-neon-red/20 text-neon-red border border-neon-red/50 rounded-xl hover:bg-neon-red hover:text-white transition-all transform scale-90 sm:group-hover:scale-100"
-                            title="Remove Image"
-                         >
-                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                         </button>
+                        <button
+                          onClick={() => removeImage(img.id)}
+                          className="p-2.5 sm:p-3 bg-neon-red/20 text-neon-red border border-neon-red/50 rounded-xl hover:bg-neon-red hover:text-white transition-all transform scale-90 sm:group-hover:scale-100"
+                          title="Remove Image"
+                        >
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
                       </div>
                       {/* Mobile delete button */}
                       <button
@@ -341,10 +402,12 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
                       </button>
                     </div>
                   ))}
-                  
+
                   <div className="border-2 border-dashed border-primary/10 rounded-xl flex flex-col items-center justify-center p-6 sm:p-8 bg-primary/5 text-muted-foreground/30">
-                     <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-20" />
-                     <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Paste more</p>
+                    <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-2 opacity-20" />
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">
+                      Paste more
+                    </p>
                   </div>
                 </div>
               )}
@@ -354,114 +417,137 @@ export function StrategyDetail({ model, trades, onBack, onEdit, onDelete, onUpda
 
         <TabsContent value="trades" className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
           <div className="bg-primary/[0.03] backdrop-blur-md rounded-xl border border-primary/20 flex-1 flex flex-col overflow-hidden">
-             <div className="p-4 border-b border-primary/20 flex items-center justify-between shrink-0">
-                <h3 className="text-sm font-bold tracking-widest text-foreground flex items-center gap-2">
-                  <History className="w-4 h-4 text-neon-cyan" /> PLAYBOOK HISTORY
-                </h3>
-                <span className="text-[10px] font-bold text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10 uppercase tracking-widest">
-                  {filteredTrades.length} Trades Found
-                </span>
-             </div>
-             
-              <div className="flex-1 overflow-y-auto scrollbar-terminal">
-                {filteredTrades.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-12 text-center">
-                    <History className="w-12 h-12 mb-4 opacity-20" />
-                    <p className="text-sm font-medium uppercase tracking-widest">No trades recorded yet</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Mobile View */}
-                    <div className="sm:hidden divide-y divide-terminal-border/20">
-                      {filteredTrades.map((t) => {
-                        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
-                        return (
-                          <div
-                            key={t.id}
-                            onClick={() => onTradeClick?.(t)}
-                            className="p-4 active:bg-white/5 space-y-3"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-foreground text-sm">{t.symbol}</span>
-                                <span className={`text-[9px] font-bold uppercase tracking-widest ${t.side === "buy" ? "text-neon-cyan" : "text-neon-red"}`}>
-                                  {t.side}
-                                </span>
-                              </div>
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${outcomeStyle[outcome.color]}`}>
-                                {outcome.label}
+            <div className="p-4 border-b border-primary/20 flex items-center justify-between shrink-0">
+              <h3 className="text-sm font-bold tracking-widest text-foreground flex items-center gap-2">
+                <History className="w-4 h-4 text-neon-cyan" /> PLAYBOOK HISTORY
+              </h3>
+              <span className="text-[10px] font-bold text-muted-foreground bg-primary/5 px-2 py-0.5 rounded border border-primary/10 uppercase tracking-widest">
+                {filteredTrades.length} Trades Found
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto scrollbar-terminal">
+              {filteredTrades.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-12 text-center">
+                  <History className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="text-sm font-medium uppercase tracking-widest">
+                    No trades recorded yet
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Mobile View */}
+                  <div className="sm:hidden divide-y divide-terminal-border/20">
+                    {filteredTrades.map((t) => {
+                      const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => onTradeClick?.(t)}
+                          className="p-4 active:bg-white/5 space-y-3"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-foreground text-sm">{t.symbol}</span>
+                              <span
+                                className={`text-[9px] font-bold uppercase tracking-widest ${t.side === "buy" ? "text-neon-cyan" : "text-neon-red"}`}
+                              >
+                                {t.side}
                               </span>
                             </div>
-                            <div className="flex justify-between items-end">
-                              <span className="text-[10px] text-muted-foreground">
-                                {new Date(t.entryTime).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit" })}
-                              </span>
-                              <div className="text-right">
-                                <div className={`text-sm font-bold ${t.netPnl >= 0 ? "text-neon-green" : "text-neon-red"}`}>
-                                  {t.netPnl >= 0 ? "+" : ""}{t.netPnl.toFixed(2)}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">RR {t.actualRr} / {t.maxRr}</div>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${outcomeStyle[outcome.color]}`}
+                            >
+                              {outcome.label}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-end">
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(t.entryTime).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "2-digit",
+                              })}
+                            </span>
+                            <div className="text-right">
+                              <div
+                                className={`text-sm font-bold ${t.netPnl >= 0 ? "text-neon-green" : "text-neon-red"}`}
+                              >
+                                {t.netPnl >= 0 ? "+" : ""}
+                                {t.netPnl.toFixed(2)}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                RR {t.actualRr} / {t.maxRr}
                               </div>
                             </div>
                           </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop View */}
+                  <table className="hidden sm:table w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-terminal-bg/90 backdrop-blur-md z-10">
+                      <tr className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-terminal-border">
+                        <th className="p-4">Date</th>
+                        <th className="p-4">Outcome</th>
+                        <th className="p-4">Symbol</th>
+                        <th className="p-4 text-right">Net PnL</th>
+                        <th className="p-4 text-right">RR</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-terminal-border/30">
+                      {filteredTrades.map((t) => {
+                        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+                        return (
+                          <tr
+                            key={t.id}
+                            onClick={() => onTradeClick?.(t)}
+                            className="hover:bg-white/5 transition-colors group cursor-pointer"
+                          >
+                            <td className="p-4 text-xs font-medium text-muted-foreground">
+                              {new Date(t.entryTime).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "2-digit",
+                              })}
+                            </td>
+                            <td className="p-4">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${outcomeStyle[outcome.color]}`}
+                              >
+                                {outcome.label}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground">
+                                  {t.symbol}
+                                </span>
+                                <span
+                                  className={`text-[9px] font-bold uppercase tracking-widest ${t.side === "buy" ? "text-neon-cyan" : "text-neon-red"}`}
+                                >
+                                  {t.side}
+                                </span>
+                              </div>
+                            </td>
+                            <td
+                              className={`p-4 text-xs font-bold text-right ${t.netPnl >= 0 ? "text-neon-green" : "text-neon-red"}`}
+                            >
+                              {t.netPnl >= 0 ? "+" : ""}
+                              {t.netPnl.toFixed(2)}
+                            </td>
+                            <td className="p-4 text-[10px] font-medium text-muted-foreground text-right tabular-nums">
+                              {t.actualRr} / {t.maxRr}
+                            </td>
+                          </tr>
                         );
                       })}
-                    </div>
-
-                    {/* Desktop View */}
-                    <table className="hidden sm:table w-full text-left border-collapse">
-                      <thead className="sticky top-0 bg-terminal-bg/90 backdrop-blur-md z-10">
-                        <tr className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-terminal-border">
-                          <th className="p-4">Date</th>
-                          <th className="p-4">Outcome</th>
-                          <th className="p-4">Symbol</th>
-                          <th className="p-4 text-right">Net PnL</th>
-                          <th className="p-4 text-right">RR</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-terminal-border/30">
-                        {filteredTrades.map((t) => {
-                          const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
-                          return (
-                            <tr
-                              key={t.id}
-                              onClick={() => onTradeClick?.(t)}
-                              className="hover:bg-white/5 transition-colors group cursor-pointer"
-                            >
-                              <td className="p-4 text-xs font-medium text-muted-foreground">
-                                {new Date(t.entryTime).toLocaleDateString("en-GB", {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "2-digit",
-                                })}
-                              </td>
-                              <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${outcomeStyle[outcome.color]}`}>
-                                  {outcome.label}
-                                </span>
-                              </td>
-                              <td className="p-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-foreground">{t.symbol}</span>
-                                  <span className={`text-[9px] font-bold uppercase tracking-widest ${t.side === "buy" ? "text-neon-cyan" : "text-neon-red"}`}>
-                                    {t.side}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className={`p-4 text-xs font-bold text-right ${t.netPnl >= 0 ? "text-neon-green" : "text-neon-red"}`}>
-                                {t.netPnl >= 0 ? "+" : ""}{t.netPnl.toFixed(2)}
-                              </td>
-                              <td className="p-4 text-[10px] font-medium text-muted-foreground text-right tabular-nums">
-                                {t.actualRr} / {t.maxRr}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </>
-                )}
-              </div>
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </div>
           </div>
         </TabsContent>
       </Tabs>

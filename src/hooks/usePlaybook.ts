@@ -56,6 +56,6 @@ export function usePlaybook() {
     addModel,
     updateModel,
     deleteModel,
-    reload
+    reload,
   };
 }

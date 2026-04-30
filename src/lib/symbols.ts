@@ -46,10 +46,7 @@ export async function insertSymbol(name: string, isForex = false): Promise<Symbo
 }
 
 export async function toggleForexSymbol(id: string, isForex: boolean): Promise<void> {
-  const { error } = await supabase
-    .from("symbols")
-    .update({ is_forex: isForex })
-    .eq("id", id);
+  const { error } = await supabase.from("symbols").update({ is_forex: isForex }).eq("id", id);
   if (error) throw error;
 }
 
@@ -100,12 +97,19 @@ export function getAssetIconUrl(asset: string): string | null {
   const symbol = asset.toUpperCase();
   if (symbol.startsWith("BTC")) return "https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg";
   if (symbol.startsWith("CL")) return "https://s3-symbol-logo.tradingview.com/crude-oil.svg";
-  if (symbol.startsWith("DXY") || symbol.startsWith("DX")) return "https://s3-symbol-logo.tradingview.com/indices/u-s-dollar-index.svg";
-  if (symbol.startsWith("ES") || symbol.includes("SPX")) return "https://s3-symbol-logo.tradingview.com/indices/s-and-p-500.svg";
-  if (symbol.startsWith("FDAX") || symbol.startsWith("DAX")) return "https://s3-symbol-logo.tradingview.com/indices/dax.svg";
-  if (symbol.startsWith("GC") || symbol.startsWith("XAU")) return "https://s3-symbol-logo.tradingview.com/metal/gold.svg";
-  if (symbol.startsWith("NQ") || symbol.startsWith("NAS") || symbol.startsWith("US100")) return "https://s3-symbol-logo.tradingview.com/indices/nasdaq-100.svg";
-  if (symbol.startsWith("SI") || symbol.startsWith("XAG")) return "https://s3-symbol-logo.tradingview.com/metal/silver.svg";
-  if (symbol.startsWith("YM") || symbol.startsWith("US30")) return "https://s3-symbol-logo.tradingview.com/indices/dow-30.svg";
+  if (symbol.startsWith("DXY") || symbol.startsWith("DX"))
+    return "https://s3-symbol-logo.tradingview.com/indices/u-s-dollar-index.svg";
+  if (symbol.startsWith("ES") || symbol.includes("SPX"))
+    return "https://s3-symbol-logo.tradingview.com/indices/s-and-p-500.svg";
+  if (symbol.startsWith("FDAX") || symbol.startsWith("DAX"))
+    return "https://s3-symbol-logo.tradingview.com/indices/dax.svg";
+  if (symbol.startsWith("GC") || symbol.startsWith("XAU"))
+    return "https://s3-symbol-logo.tradingview.com/metal/gold.svg";
+  if (symbol.startsWith("NQ") || symbol.startsWith("NAS") || symbol.startsWith("US100"))
+    return "https://s3-symbol-logo.tradingview.com/indices/nasdaq-100.svg";
+  if (symbol.startsWith("SI") || symbol.startsWith("XAG"))
+    return "https://s3-symbol-logo.tradingview.com/metal/silver.svg";
+  if (symbol.startsWith("YM") || symbol.startsWith("US30"))
+    return "https://s3-symbol-logo.tradingview.com/indices/dow-30.svg";
   return null;
 }

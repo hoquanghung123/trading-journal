@@ -2,7 +2,15 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import appCss from "../styles.css?url";
 import { useEffect } from "react";
 import { toast, Toaster } from "sonner";
-import { resolveTradingViewUrl, uploadChartImage, upsertEntry, fetchEntries, Session, weekdayOf } from "../lib/journal";
+import {
+  resolveTradingViewUrl,
+  uploadChartImage,
+  upsertEntry,
+  fetchEntries,
+  Session,
+  weekdayOf,
+  type DayEntry,
+} from "../lib/journal";
 
 function NotFoundComponent() {
   return (
@@ -73,19 +81,19 @@ function RootComponent() {
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       // Listen for our specific extension message
-      if (event.data?.source !== 'JOURNAL_EXTENSION') return;
-      
+      if (event.data?.source !== "JOURNAL_EXTENSION") return;
+
       const data = event.data.payload;
-      
-      if ((window as any).__JOURNAL_SYNC_IN_PROGRESS__) return;
-      (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = true;
+
+      if (window.__JOURNAL_SYNC_IN_PROGRESS__) return;
+      window.__JOURNAL_SYNC_IN_PROGRESS__ = true;
 
       const { asset: targetAsset, timeframe, url } = data;
       const tvUrl = resolveTradingViewUrl(url);
-      
+
       if (!tvUrl) {
-        toast.error('Link TradingView không hợp lệ');
-        (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+        toast.error("Link TradingView không hợp lệ");
+        window.__JOURNAL_SYNC_IN_PROGRESS__ = false;
         return;
       }
 
@@ -93,9 +101,13 @@ function RootComponent() {
       const tf = timeframe.toUpperCase();
 
       // Early validation for Monthly
-      if ((tf === "M" || tf === "MONTH" || tf === "1M") && weekdayOf(today) !== "MON" && !today.endsWith("-01")) {
+      if (
+        (tf === "M" || tf === "MONTH" || tf === "1M") &&
+        weekdayOf(today) !== "MON" &&
+        !today.endsWith("-01")
+      ) {
         toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2 hoặc Ngày 1 đầu tháng!");
-        (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+        window.__JOURNAL_SYNC_IN_PROGRESS__ = false;
         return;
       }
 
@@ -105,8 +117,8 @@ function RootComponent() {
 
       try {
         const currentEntries = await fetchEntries();
-        let entry = currentEntries.find(e => e.date === today && e.asset === targetAsset);
-        
+        let entry = currentEntries.find((e) => e.date === today && e.asset === targetAsset);
+
         if (!entry) {
           entry = {
             id: crypto.randomUUID(),
@@ -118,22 +130,25 @@ function RootComponent() {
             monthlyCorrect: false,
             dailyBias: "consolidation",
             dailyCorrect: false,
+            yearlyBias: "consolidation",
             h4: {},
           };
         }
 
         const path = await uploadChartImage(tvUrl);
         const updatedEntry = { ...entry };
-        
+
         if (tf === "M" || tf === "MONTH" || tf === "1M") {
           const isMonday = weekdayOf(updatedEntry.date) === "MON";
           const isFirstOfMonth = updatedEntry.date.endsWith("-01");
-          
+
           if (isMonday || isFirstOfMonth) {
             toast.info("Đang lưu vào khung MONTHLY...");
             updatedEntry.monthlyImg = path;
           } else {
-            toast.error("Chỉ hỗ trợ lưu khung Monthly vào Thứ 2 hoặc Ngày 1 đầu tháng!", { id: toastId });
+            toast.error("Chỉ hỗ trợ lưu khung Monthly vào Thứ 2 hoặc Ngày 1 đầu tháng!", {
+              id: toastId,
+            });
             return;
           }
         } else if (tf === "W" || tf === "WEEK") {
@@ -146,7 +161,7 @@ function RootComponent() {
           const hour = new Date().getHours();
           const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
           let session: Session = "ASIA";
-          
+
           if (hour >= 12 && hour < 18) {
             session = "LDN";
           } else if (hour >= 18 || hour < 5) {
@@ -158,14 +173,14 @@ function RootComponent() {
               session = "NY";
             }
           }
-          
+
           toast.info(`Đang lưu vào khung H4 (${session})...`);
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }
-        
-        await upsertEntry(updatedEntry);
+
+        await upsertEntry(updatedEntry as DayEntry);
         toast.success(`Đã lưu ${targetAsset} thành công!`, { id: toastId });
-        
+
         // Reload faster
         setTimeout(() => {
           window.location.reload();
@@ -173,12 +188,12 @@ function RootComponent() {
       } catch (err: any) {
         toast.error("Lỗi: " + err.message, { id: toastId });
       } finally {
-        (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
+        window.__JOURNAL_SYNC_IN_PROGRESS__ = false;
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   return (

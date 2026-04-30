@@ -45,22 +45,24 @@ export function MetricCard({
         <p className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase font-bold">
           {label}
         </p>
-        <h3 className="text-2xl font-bold tracking-tight text-white font-mono">
-          {value}
-        </h3>
+        <h3 className="text-2xl font-bold tracking-tight text-white font-mono">{value}</h3>
         {subValue && (
           <div className="flex items-center gap-1.5 mt-1">
-            {isPositive !== undefined && (
-              isPositive ? (
+            {isPositive !== undefined &&
+              (isPositive ? (
                 <TrendingUp className="w-3 h-3 text-emerald-400" />
               ) : (
                 <TrendingDown className="w-3 h-3 text-red-400" />
-              )
-            )}
-            <span className={`text-xs font-mono font-medium ${
-              isPositive === undefined ? "text-muted-foreground" : 
-              isPositive ? "text-emerald-400" : "text-red-400"
-            }`}>
+              ))}
+            <span
+              className={`text-xs font-mono font-medium ${
+                isPositive === undefined
+                  ? "text-muted-foreground"
+                  : isPositive
+                    ? "text-emerald-400"
+                    : "text-red-400"
+              }`}
+            >
               {subValue}
             </span>
           </div>

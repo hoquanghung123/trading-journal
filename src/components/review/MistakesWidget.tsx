@@ -13,7 +13,13 @@ interface MistakesWidgetProps {
   readOnly?: boolean;
 }
 
-export function MistakesWidget({ review, previousReview, onChange, onUpdatePrevious, readOnly = false }: MistakesWidgetProps) {
+export function MistakesWidget({
+  review,
+  previousReview,
+  onChange,
+  onUpdatePrevious,
+  readOnly = false,
+}: MistakesWidgetProps) {
   const handleMistakeChange = (index: number, text: string) => {
     const newMistakes = [...review.topMistakes];
     newMistakes[index] = { ...newMistakes[index], text };
@@ -27,7 +33,8 @@ export function MistakesWidget({ review, previousReview, onChange, onUpdatePrevi
     onUpdatePrevious({ ...previousReview, topMistakes: newMistakes });
   };
 
-  const hasPreviousMistakes = previousReview && previousReview.topMistakes.some(m => m.text.trim() !== "");
+  const hasPreviousMistakes =
+    previousReview && previousReview.topMistakes.some((m) => m.text.trim() !== "");
 
   return (
     <Card className="bg-white border-destructive/20 shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
@@ -40,7 +47,6 @@ export function MistakesWidget({ review, previousReview, onChange, onUpdatePrevi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8 pt-8 flex-1">
-        
         {/* Previous Period Reminder */}
         {hasPreviousMistakes && (
           <div className="space-y-4 bg-amber-500/5 p-5 rounded-2xl border border-amber-500/10">
@@ -49,30 +55,36 @@ export function MistakesWidget({ review, previousReview, onChange, onUpdatePrevi
               From Previous Period ({previousReview.period})
             </h4>
             <div className="space-y-3">
-              {previousReview.topMistakes.filter(m => m.text.trim() !== "").map((mistake, index) => (
-                <div key={mistake.id} className="flex items-start space-x-3 group">
-                  <Checkbox 
-                    id={`prev-mistake-${index}`} 
-                    checked={mistake.fixed}
-                    onCheckedChange={(checked) => handlePreviousFixedToggle(index, checked as boolean)}
-                    disabled={readOnly}
-                    className="border-amber-500/50 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600 mt-1 rounded-md"
-                  />
-                  <Label 
-                    htmlFor={`prev-mistake-${index}`}
-                    className={`text-sm font-semibold leading-relaxed transition-all ${mistake.fixed ? 'text-muted-foreground line-through opacity-50' : 'text-amber-900 group-hover:text-amber-700'}`}
-                  >
-                    {mistake.text}
-                  </Label>
-                </div>
-              ))}
+              {previousReview.topMistakes
+                .filter((m) => m.text.trim() !== "")
+                .map((mistake, index) => (
+                  <div key={mistake.id} className="flex items-start space-x-3 group">
+                    <Checkbox
+                      id={`prev-mistake-${index}`}
+                      checked={mistake.fixed}
+                      onCheckedChange={(checked) =>
+                        handlePreviousFixedToggle(index, checked as boolean)
+                      }
+                      disabled={readOnly}
+                      className="border-amber-500/50 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600 mt-1 rounded-md"
+                    />
+                    <Label
+                      htmlFor={`prev-mistake-${index}`}
+                      className={`text-sm font-semibold leading-relaxed transition-all ${mistake.fixed ? "text-muted-foreground line-through opacity-50" : "text-amber-900 group-hover:text-amber-700"}`}
+                    >
+                      {mistake.text}
+                    </Label>
+                  </div>
+                ))}
             </div>
           </div>
         )}
 
         {/* Current Period Mistakes */}
         <div className="space-y-6">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Identify Current Mistakes</h4>
+          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Identify Current Mistakes
+          </h4>
           <div className="space-y-4">
             {review.topMistakes.map((mistake, index) => (
               <div key={mistake.id} className="flex items-center gap-4 group">
@@ -88,7 +100,6 @@ export function MistakesWidget({ review, previousReview, onChange, onUpdatePrevi
             ))}
           </div>
         </div>
-
       </CardContent>
     </Card>
   );

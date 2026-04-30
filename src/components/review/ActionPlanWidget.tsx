@@ -12,15 +12,18 @@ interface ActionPlanWidgetProps {
 }
 
 export function ActionPlanWidget({ review, onChange, readOnly = false }: ActionPlanWidgetProps) {
-  
-  const handleItemChange = (category: keyof Review["actionPlan"], index: number, updates: Partial<ActionPlanItem>) => {
+  const handleItemChange = (
+    category: keyof Review["actionPlan"],
+    index: number,
+    updates: Partial<ActionPlanItem>,
+  ) => {
     const newCategoryList = [...review.actionPlan[category]];
     newCategoryList[index] = { ...newCategoryList[index], ...updates };
     onChange({
       actionPlan: {
         ...review.actionPlan,
         [category]: newCategoryList,
-      }
+      },
     });
   };
 
@@ -30,7 +33,7 @@ export function ActionPlanWidget({ review, onChange, readOnly = false }: ActionP
       actionPlan: {
         ...review.actionPlan,
         [category]: [...review.actionPlan[category], newItem],
-      }
+      },
     });
   };
 
@@ -41,24 +44,31 @@ export function ActionPlanWidget({ review, onChange, readOnly = false }: ActionP
       actionPlan: {
         ...review.actionPlan,
         [category]: newCategoryList,
-      }
+      },
     });
   };
 
-  const renderCategory = (title: string, category: keyof Review["actionPlan"], colorClass: string, dotColor: string) => {
+  const renderCategory = (
+    title: string,
+    category: keyof Review["actionPlan"],
+    colorClass: string,
+    dotColor: string,
+  ) => {
     const items = review.actionPlan[category] || [];
-    
+
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b border-border/50 pb-2">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${dotColor}`} />
-            <h4 className={`text-xs font-black uppercase tracking-widest ${colorClass}`}>{title}</h4>
+            <h4 className={`text-xs font-black uppercase tracking-widest ${colorClass}`}>
+              {title}
+            </h4>
           </div>
           {!readOnly && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => handleAddItem(category)}
               className="h-7 w-7 p-0 hover:bg-muted text-muted-foreground rounded-lg transition-all"
             >
@@ -66,13 +76,18 @@ export function ActionPlanWidget({ review, onChange, readOnly = false }: ActionP
             </Button>
           )}
         </div>
-        
+
         <div className="space-y-3">
           {items.map((item, index) => (
-            <div key={item.id} className="flex items-start gap-4 group animate-in fade-in slide-in-from-left-2 duration-300">
-              <Checkbox 
+            <div
+              key={item.id}
+              className="flex items-start gap-4 group animate-in fade-in slide-in-from-left-2 duration-300"
+            >
+              <Checkbox
                 checked={item.checked}
-                onCheckedChange={(c) => handleItemChange(category, index, { checked: c as boolean })}
+                onCheckedChange={(c) =>
+                  handleItemChange(category, index, { checked: c as boolean })
+                }
                 disabled={readOnly}
                 className="mt-1.5 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-md"
               />
@@ -81,7 +96,7 @@ export function ActionPlanWidget({ review, onChange, readOnly = false }: ActionP
                 onChange={(e) => handleItemChange(category, index, { text: e.target.value })}
                 disabled={readOnly}
                 placeholder="Task description..."
-                className={`bg-transparent border-transparent hover:border-border focus-visible:border-primary/50 focus-visible:ring-0 shadow-none px-0 h-9 transition-all text-sm font-medium ${item.checked ? 'text-muted-foreground/50 line-through' : 'text-foreground'}`}
+                className={`bg-transparent border-transparent hover:border-border focus-visible:border-primary/50 focus-visible:ring-0 shadow-none px-0 h-9 transition-all text-sm font-medium ${item.checked ? "text-muted-foreground/50 line-through" : "text-foreground"}`}
               />
               {!readOnly && (
                 <Button

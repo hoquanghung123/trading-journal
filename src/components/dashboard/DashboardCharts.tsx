@@ -42,7 +42,12 @@ export function EquityCurveChart({ data, height = 300 }: ChartProps) {
               <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} className="dark:stroke-white/5" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke={COLORS.grid}
+            className="dark:stroke-white/5"
+          />
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
@@ -88,7 +93,12 @@ export function MonthlyPnlBarChart({ data, height = 300 }: ChartProps) {
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} className="dark:stroke-white/5" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke={COLORS.grid}
+            className="dark:stroke-white/5"
+          />
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
@@ -114,10 +124,10 @@ export function MonthlyPnlBarChart({ data, height = 300 }: ChartProps) {
           />
           <Bar dataKey="value" radius={[4, 4, 0, 0]} animationDuration={1000}>
             {data.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.value >= 0 ? COLORS.primary : COLORS.red} 
-                fillOpacity={0.8} 
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.value >= 0 ? COLORS.primary : COLORS.red}
+                fillOpacity={0.8}
               />
             ))}
           </Bar>
@@ -142,7 +152,11 @@ export function WinLossDonutChart({ data, height = 200 }: ChartProps) {
             animationDuration={1000}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={index === 0 ? COLORS.primary : COLORS.red} fillOpacity={0.8} />
+              <Cell
+                key={`cell-${index}`}
+                fill={index === 0 ? COLORS.primary : COLORS.red}
+                fillOpacity={0.8}
+              />
             ))}
           </Pie>
           <Tooltip />
@@ -157,7 +171,12 @@ export function SetupPerformanceChart({ data, height = 250 }: ChartProps) {
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={COLORS.grid} className="dark:stroke-white/5" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            horizontal={false}
+            stroke={COLORS.grid}
+            className="dark:stroke-white/5"
+          />
           <XAxis
             type="number"
             stroke={COLORS.text}
@@ -186,7 +205,11 @@ export function SetupPerformanceChart({ data, height = 250 }: ChartProps) {
           />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={1000}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.value >= 0 ? COLORS.primary : COLORS.red} fillOpacity={0.8} />
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.value >= 0 ? COLORS.primary : COLORS.red}
+                fillOpacity={0.8}
+              />
             ))}
           </Bar>
         </BarChart>
@@ -200,7 +223,12 @@ export function DayPerformanceChart({ data, height = 250 }: ChartProps) {
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} className="dark:stroke-white/5" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke={COLORS.grid}
+            className="dark:stroke-white/5"
+          />
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
@@ -226,7 +254,11 @@ export function DayPerformanceChart({ data, height = 250 }: ChartProps) {
           />
           <Bar dataKey="value" radius={[4, 4, 0, 0]} animationDuration={1000}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.value >= 0 ? COLORS.primary : COLORS.red} fillOpacity={0.8} />
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.value >= 0 ? COLORS.primary : COLORS.red}
+                fillOpacity={0.8}
+              />
             ))}
           </Bar>
         </BarChart>
@@ -235,13 +267,17 @@ export function DayPerformanceChart({ data, height = 250 }: ChartProps) {
   );
 }
 
-
 export function WinrateBarChart({ data, height = 250 }: ChartProps) {
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 30, right: 30 }}>
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={COLORS.grid} className="dark:stroke-white/5" />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            horizontal={false}
+            stroke={COLORS.grid}
+            className="dark:stroke-white/5"
+          />
           <XAxis
             type="number"
             domain={[0, 100]}
@@ -272,10 +308,10 @@ export function WinrateBarChart({ data, height = 250 }: ChartProps) {
           />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={1000}>
             {data.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.value >= 50 ? COLORS.primary : COLORS.red} 
-                fillOpacity={0.8} 
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.value >= 50 ? COLORS.primary : COLORS.red}
+                fillOpacity={0.8}
               />
             ))}
           </Bar>
@@ -313,23 +349,25 @@ export function DistributionDonutChart({ data, height = 250 }: ChartProps) {
             animationDuration={1000}
           >
             {data.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]} 
-                fillOpacity={0.8} 
+              <Cell
+                key={`cell-${index}`}
+                fill={DISTRIBUTION_COLORS[index % DISTRIBUTION_COLORS.length]}
+                fillOpacity={0.8}
               />
             ))}
           </Pie>
-          <Tooltip 
+          <Tooltip
             formatter={(value: number, name: string) => [
-              `${value} trades (${((value / total) * 100).toFixed(1)}%)`, 
-              name
+              `${value} trades (${((value / total) * 100).toFixed(1)}%)`,
+              name,
             ]}
           />
         </PieChart>
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Total
+        </span>
         <span className="text-xl font-black text-slate-900 dark:text-white">{total}</span>
       </div>
     </div>

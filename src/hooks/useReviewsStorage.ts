@@ -21,7 +21,9 @@ export function useReviewsStorage() {
       }
     };
     load();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const saveReview = async (review: Review) => {
@@ -84,13 +86,13 @@ export function useReviewsStorage() {
     updatedAt: Date.now(),
   });
 
-  return { 
-    reviews, 
-    saveReview, 
+  return {
+    reviews,
+    saveReview,
     removeReview,
-    getReviewByPeriod, 
-    getPreviousReview, 
+    getReviewByPeriod,
+    getPreviousReview,
     createEmptyReview,
-    isLoaded 
+    isLoaded,
   };
 }

@@ -87,7 +87,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   if (!t) return null;
 
-  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.outcome);
+  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
 
   const toNyLocal = (iso: string) => {
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -99,13 +99,12 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
       minute: "2-digit",
       hour12: false,
     });
-    const parts = formatter.formatToParts(new Date(iso)).reduce<Record<string, string>>(
-      (acc, p) => {
+    const parts = formatter
+      .formatToParts(new Date(iso))
+      .reduce<Record<string, string>>((acc, p) => {
         if (p.type !== "literal") acc[p.type] = p.value;
         return acc;
-      },
-      {},
-    );
+      }, {});
     const hh = parts.hour === "24" ? "00" : parts.hour;
     return `${parts.year}-${parts.month}-${parts.day}T${hh}:${parts.minute}`;
   };
@@ -118,7 +117,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
     const [y, m, d] = datePart.split("-").map(Number);
     const [hh, mm] = timePart.split(":").map(Number);
     const date = new Date(Date.UTC(y, m - 1, d, hh, mm));
-    
+
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/New_York",
       year: "numeric",
@@ -130,7 +129,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
     });
 
     const p = formatter.formatToParts(date).reduce<Record<string, number>>((acc, part) => {
-      if (part.type !== "literal" && !isNaN(Number(part.value))) acc[part.type] = Number(part.value);
+      if (part.type !== "literal" && !isNaN(Number(part.value)))
+        acc[part.type] = Number(part.value);
       return acc;
     }, {});
 
@@ -180,8 +180,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   Trade Execution
                 </DialogTitle>
                 <div className="flex items-center gap-3 mt-1">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status:</span>
-                   <span
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Status:
+                  </span>
+                  <span
                     className={`px-3 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm ${outcomeStyle[outcome.color]}`}
                   >
                     {outcome.label}
@@ -273,8 +275,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     <button
                       onClick={() => update({ grade: undefined })}
                       className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
-                        !t.grade 
-                          ? "bg-muted/50 border-muted-foreground/20 text-muted-foreground" 
+                        !t.grade
+                          ? "bg-muted/50 border-muted-foreground/20 text-muted-foreground"
                           : "bg-white border-border text-muted-foreground/30 hover:border-destructive/30 hover:text-destructive"
                       }`}
                       title="Clear Grade"
@@ -328,10 +330,12 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               <Field label="Setup / Strategy">
                 <select
                   value={t.setupId ?? ""}
-                  onChange={(e) => update({ 
-                    setupId: e.target.value || undefined,
-                    missedConfluences: []
-                  })}
+                  onChange={(e) =>
+                    update({
+                      setupId: e.target.value || undefined,
+                      missedConfluences: [],
+                    })
+                  }
                   className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
                 >
                   <option value="">— Select Setup —</option>
@@ -349,20 +353,20 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               </Field>
               <div className="flex flex-col justify-end">
                 <div className="flex items-center gap-3 bg-primary/5 px-6 h-12 rounded-xl border border-primary/10 transition-all hover:bg-primary/10 w-full mb-1">
-                  <Checkbox 
-                    id="compliance" 
+                  <Checkbox
+                    id="compliance"
                     checked={t.complianceCheck}
                     onCheckedChange={(v) => {
                       const checked = !!v;
-                      update({ 
+                      update({
                         complianceCheck: checked,
-                        missedConfluences: checked ? [] : t.missedConfluences 
+                        missedConfluences: checked ? [] : t.missedConfluences,
                       });
                     }}
                     className="w-5 h-5 border-2 border-primary data-[state=checked]:bg-primary"
                   />
-                  <label 
-                    htmlFor="compliance" 
+                  <label
+                    htmlFor="compliance"
                     className="text-[10px] font-black uppercase tracking-widest text-primary cursor-pointer select-none"
                   >
                     Follow Playbook
@@ -389,39 +393,46 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {playbookSetups.find(s => s.id === t.setupId)?.setupConfluences.map((c) => {
-                    const isMissed = t.missedConfluences?.includes(c);
-                    return (
-                      <div 
-                        key={c}
-                        onClick={() => {
-                          const current = t.missedConfluences ?? [];
-                          const next = isMissed 
-                            ? current.filter(x => x !== c)
-                            : [...current, c];
-                          update({ missedConfluences: next });
-                        }}
-                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer select-none ${
-                          isMissed 
-                            ? "bg-white border-rose-200 shadow-sm shadow-rose-100" 
-                            : "bg-white/50 border-transparent hover:border-rose-100"
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                          isMissed 
-                            ? "bg-rose-500 border-rose-500" 
-                            : "bg-white border-muted"
-                        }`}>
-                          {isMissed && <div className="w-2 h-2 rounded-full bg-white animate-in zoom-in duration-200" />}
+                  {playbookSetups
+                    .find((s) => s.id === t.setupId)
+                    ?.setupConfluences.map((c) => {
+                      const isMissed = t.missedConfluences?.includes(c);
+                      return (
+                        <div
+                          key={c}
+                          onClick={() => {
+                            const current = t.missedConfluences ?? [];
+                            const next = isMissed
+                              ? current.filter((x) => x !== c)
+                              : [...current, c];
+                            update({ missedConfluences: next });
+                          }}
+                          className={`flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                            isMissed
+                              ? "bg-white border-rose-200 shadow-sm shadow-rose-100"
+                              : "bg-white/50 border-transparent hover:border-rose-100"
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              isMissed ? "bg-rose-500 border-rose-500" : "bg-white border-muted"
+                            }`}
+                          >
+                            {isMissed && (
+                              <div className="w-2 h-2 rounded-full bg-white animate-in zoom-in duration-200" />
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs font-bold ${isMissed ? "text-rose-600" : "text-muted-foreground"}`}
+                          >
+                            {c}
+                          </span>
                         </div>
-                        <span className={`text-xs font-bold ${isMissed ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {c}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {(!playbookSetups.find(s => s.id === t.setupId)?.setupConfluences || 
-                    playbookSetups.find(s => s.id === t.setupId)?.setupConfluences.length === 0) && (
+                      );
+                    })}
+                  {(!playbookSetups.find((s) => s.id === t.setupId)?.setupConfluences ||
+                    playbookSetups.find((s) => s.id === t.setupId)?.setupConfluences.length ===
+                      0) && (
                     <p className="col-span-2 text-xs font-medium text-muted-foreground italic p-4 text-center">
                       No confluences defined for this playbook.
                     </p>
@@ -454,8 +465,11 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 />
               </Field>
               <Field label="Net PnL (Calculated)">
-                <div className={`h-12 w-full rounded-xl flex items-center px-4 text-sm font-black border transition-all ${t.netPnl > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-600" : t.netPnl < 0 ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-muted/30 border-border"}`}>
-                  {t.netPnl > 0 ? "+" : ""}{t.netPnl.toFixed(2)}
+                <div
+                  className={`h-12 w-full rounded-xl flex items-center px-4 text-sm font-black border transition-all ${t.netPnl > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-600" : t.netPnl < 0 ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-muted/30 border-border"}`}
+                >
+                  {t.netPnl > 0 ? "+" : ""}
+                  {t.netPnl.toFixed(2)}
                 </div>
               </Field>
             </div>
@@ -487,27 +501,29 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
             <div className="space-y-6">
               <SectionHeader title="Core Evidence" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
-                  <PasteSlot
-                    label="BEFORE ENTRY"
-                    image={t.beforeImg}
-                    onChange={(p) => update({ beforeImg: p })}
-                    focused={focused === "before"}
-                    onFocus={() => setFocused("before")}
-                    className="h-48 sm:h-64"
-                  />
-                  <PasteSlot
-                    label="AFTER EXIT"
-                    image={t.afterImg}
-                    onChange={(p) => update({ afterImg: p })}
-                    focused={focused === "after"}
-                    onFocus={() => setFocused("after")}
-                    className="h-48 sm:h-64"
-                  />
+                <PasteSlot
+                  label="BEFORE ENTRY"
+                  image={t.beforeImg}
+                  onChange={(p) => update({ beforeImg: p })}
+                  focused={focused === "before"}
+                  onFocus={() => setFocused("before")}
+                  className="h-48 sm:h-64"
+                />
+                <PasteSlot
+                  label="AFTER EXIT"
+                  image={t.afterImg}
+                  onChange={(p) => update({ afterImg: p })}
+                  focused={focused === "after"}
+                  onFocus={() => setFocused("after")}
+                  className="h-48 sm:h-64"
+                />
               </div>
             </div>
 
             <div className="space-y-6">
-              <SectionHeader title={isForexPair ? "Multi-Timeframe Analysis (Forex)" : "Technical Analysis"} />
+              <SectionHeader
+                title={isForexPair ? "Multi-Timeframe Analysis (Forex)" : "Technical Analysis"}
+              />
               {isForexPair ? (
                 <div className="space-y-6">
                   {/* Row 1: Monthly, Weekly, Daily */}
@@ -629,7 +645,9 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     Delete Execution?
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed">
-                    You are about to permanently remove this trade execution for <span className="font-bold text-primary">{t.symbol}</span>. This action cannot be reversed.
+                    You are about to permanently remove this trade execution for{" "}
+                    <span className="font-bold text-primary">{t.symbol}</span>. This action cannot
+                    be reversed.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex-col sm:flex-row gap-3 mt-10">
@@ -665,9 +683,7 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="h-4 w-1 bg-primary rounded-full" />
-      <h3 className="text-xs font-black uppercase tracking-widest text-primary">
-        {title}
-      </h3>
+      <h3 className="text-xs font-black uppercase tracking-widest text-primary">{title}</h3>
     </div>
   );
 }

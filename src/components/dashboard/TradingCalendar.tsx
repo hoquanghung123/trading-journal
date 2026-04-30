@@ -78,7 +78,7 @@ export function TradingCalendar() {
       const existing = map.get(dateStr) || { pnl: 0, count: 0 };
       map.set(dateStr, {
         pnl: existing.pnl + t.netPnl,
-        count: existing.count + 1
+        count: existing.count + 1,
       });
     });
     return map;
@@ -138,25 +138,30 @@ export function TradingCalendar() {
   return (
     <div className="w-full h-full flex flex-col p-4 sm:p-8 bg-transparent">
       <div className="w-full mx-auto flex flex-col h-full bg-white rounded-[24px] sm:rounded-[32px] shadow-sm border border-slate-100 text-slate-900 overflow-hidden">
-        
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 sm:px-8 py-4 sm:py-6 gap-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
             <h2 className="text-lg sm:text-2xl font-bold font-sans text-slate-900 min-w-[150px]">
               {viewMode === "day" && format(currentDate, "MMMM yyyy")}
               {viewMode === "month" && format(currentDate, "yyyy")}
-              {viewMode === "year" && `${format(subYears(currentDate, 5), "yyyy")} - ${format(addYears(currentDate, 6), "yyyy")}`}
+              {viewMode === "year" &&
+                `${format(subYears(currentDate, 5), "yyyy")} - ${format(addYears(currentDate, 6), "yyyy")}`}
             </h2>
             <div className="flex items-center gap-3">
               <div className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-slate-100 flex items-center gap-2">
-                <span className={`text-sm sm:text-lg font-bold ${periodTotal.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                <span
+                  className={`text-sm sm:text-lg font-bold ${periodTotal.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                >
                   {periodTotal.pnl >= 0 ? "+" : ""}${Math.abs(periodTotal.pnl).toLocaleString()}
                 </span>
-                <span className={`text-xs sm:text-sm font-bold opacity-60 ${periodTotal.actualRr >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {periodTotal.actualRr >= 0 ? "+" : ""}{periodTotal.actualRr.toFixed(1)}R
+                <span
+                  className={`text-xs sm:text-sm font-bold opacity-60 ${periodTotal.actualRr >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                >
+                  {periodTotal.actualRr >= 0 ? "+" : ""}
+                  {periodTotal.actualRr.toFixed(1)}R
                 </span>
               </div>
-              
+
               {/* View Toggle */}
               <div className="flex items-center bg-slate-100 p-1 rounded-full">
                 {(["day", "month", "year"] as const).map((mode) => (
@@ -164,7 +169,9 @@ export function TradingCalendar() {
                     key={mode}
                     onClick={() => setViewMode(mode)}
                     className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
-                      viewMode === mode ? "bg-white shadow-sm text-slate-900" : "text-slate-400 hover:text-slate-600"
+                      viewMode === mode
+                        ? "bg-white shadow-sm text-slate-900"
+                        : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
                     {mode}
@@ -176,7 +183,9 @@ export function TradingCalendar() {
 
           <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8">
             <div className="hidden md:flex items-center gap-3">
-              <span className="text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">News Importance</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
+                News Importance
+              </span>
               <div className="flex items-center gap-1">
                 {[1, 2, 3].map((star) => (
                   <button
@@ -196,10 +205,16 @@ export function TradingCalendar() {
                 <span>EN</span>
               </button>
               <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-full border border-slate-100">
-                <button onClick={handlePrev} className="p-1.5 rounded-full hover:bg-white hover:shadow-sm text-slate-400 transition-all">
+                <button
+                  onClick={handlePrev}
+                  className="p-1.5 rounded-full hover:bg-white hover:shadow-sm text-slate-400 transition-all"
+                >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button onClick={handleNext} className="p-1.5 rounded-full hover:bg-white hover:shadow-sm text-slate-400 transition-all">
+                <button
+                  onClick={handleNext}
+                  className="p-1.5 rounded-full hover:bg-white hover:shadow-sm text-slate-400 transition-all"
+                >
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
@@ -214,7 +229,10 @@ export function TradingCalendar() {
               {/* Days of week */}
               <div className="grid grid-cols-7 md:grid-cols-8 border-y border-slate-100 min-w-[600px] md:min-w-0">
                 {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((dayName) => (
-                  <div key={dayName} className="py-2 sm:py-4 text-center text-[9px] sm:text-[11px] font-bold tracking-[0.1em] sm:tracking-[0.2em] text-slate-400 uppercase border-r border-slate-100">
+                  <div
+                    key={dayName}
+                    className="py-2 sm:py-4 text-center text-[9px] sm:text-[11px] font-bold tracking-[0.1em] sm:tracking-[0.2em] text-slate-400 uppercase border-r border-slate-100"
+                  >
                     {dayName}
                   </div>
                 ))}
@@ -232,7 +250,10 @@ export function TradingCalendar() {
                   }, 0);
 
                   return (
-                    <div key={i} className="flex-1 grid grid-cols-7 md:grid-cols-8 divide-x divide-slate-100">
+                    <div
+                      key={i}
+                      className="flex-1 grid grid-cols-7 md:grid-cols-8 divide-x divide-slate-100"
+                    >
                       {row.map((day, j) => {
                         const dateStr = format(day, "yyyy-MM-dd");
                         const dayInfo = tradesByDay.get(dateStr);
@@ -249,17 +270,20 @@ export function TradingCalendar() {
                               ${!isCurrentMonth ? "opacity-30" : ""}
                             `}
                           >
-                            <span className={`text-sm font-bold ${pnl !== undefined ? "text-white/90" : "text-slate-900"}`}>
+                            <span
+                              className={`text-sm font-bold ${pnl !== undefined ? "text-white/90" : "text-slate-900"}`}
+                            >
                               {format(day, dateFormat)}
                             </span>
                             <div className="flex flex-col items-center justify-center flex-1">
                               {dayInfo ? (
                                 <div className="text-center text-white">
                                   <div className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-80 mb-0.5 sm:mb-1">
-                                    {dayInfo.count} {dayInfo.count === 1 ? 'Trade' : 'Trades'}
+                                    {dayInfo.count} {dayInfo.count === 1 ? "Trade" : "Trades"}
                                   </div>
                                   <div className="text-sm sm:text-lg font-black font-mono">
-                                    {pnl >= 0 ? "+" : ""}${Math.abs(pnl).toLocaleString()}
+                                    {dayInfo.pnl >= 0 ? "+" : ""}$
+                                    {Math.abs(dayInfo.pnl).toLocaleString()}
                                   </div>
                                 </div>
                               ) : (
@@ -275,7 +299,9 @@ export function TradingCalendar() {
                         );
                       })}
                       <div className="hidden md:flex flex-col items-center justify-center bg-slate-50/50">
-                        <span className={`text-sm font-bold font-mono ${weeklyPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                        <span
+                          className={`text-sm font-bold font-mono ${weeklyPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                        >
                           {weeklyPnl >= 0 ? "+" : ""}${Math.abs(weeklyPnl).toLocaleString()}
                         </span>
                       </div>
@@ -306,7 +332,9 @@ export function TradingCalendar() {
                     `}
                   >
                     <div className="flex justify-between items-start">
-                      <span className={`text-sm sm:text-lg font-bold ${stats ? "text-white" : "text-slate-900"}`}>
+                      <span
+                        className={`text-sm sm:text-lg font-bold ${stats ? "text-white" : "text-slate-900"}`}
+                      >
                         {format(monthDate, "MMMM")}
                       </span>
                       {isCurrent && !stats && <div className="w-2 h-2 rounded-full bg-primary" />}
@@ -316,13 +344,14 @@ export function TradingCalendar() {
                       {stats ? (
                         <div className="text-center text-white">
                           <div className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-80 mb-1">
-                            {stats.count} {stats.count === 1 ? 'Trade' : 'Trades'}
+                            {stats.count} {stats.count === 1 ? "Trade" : "Trades"}
                           </div>
                           <div className="text-lg sm:text-2xl font-black font-mono">
                             {stats.pnl >= 0 ? "+" : ""}${Math.abs(stats.pnl).toLocaleString()}
                           </div>
                           <div className="text-xs sm:text-sm font-bold opacity-90">
-                            {stats.actualRr >= 0 ? "+" : ""}{stats.actualRr.toFixed(1)}R
+                            {stats.actualRr >= 0 ? "+" : ""}
+                            {stats.actualRr.toFixed(1)}R
                           </div>
                         </div>
                       ) : (
@@ -358,7 +387,9 @@ export function TradingCalendar() {
                     `}
                   >
                     <div className="flex justify-between items-start">
-                      <span className={`text-sm sm:text-lg font-bold ${stats ? "text-white" : "text-slate-900"}`}>
+                      <span
+                        className={`text-sm sm:text-lg font-bold ${stats ? "text-white" : "text-slate-900"}`}
+                      >
                         {year}
                       </span>
                       {isCurrent && !stats && <div className="w-2 h-2 rounded-full bg-primary" />}
@@ -368,13 +399,14 @@ export function TradingCalendar() {
                       {stats ? (
                         <div className="text-center text-white">
                           <div className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-80 mb-1">
-                            {stats.count} {stats.count === 1 ? 'Trade' : 'Trades'}
+                            {stats.count} {stats.count === 1 ? "Trade" : "Trades"}
                           </div>
                           <div className="text-lg sm:text-2xl font-black font-mono">
                             {stats.pnl >= 0 ? "+" : ""}${Math.abs(stats.pnl).toLocaleString()}
                           </div>
                           <div className="text-xs sm:text-sm font-bold opacity-90">
-                            {stats.actualRr >= 0 ? "+" : ""}{stats.actualRr.toFixed(1)}R
+                            {stats.actualRr >= 0 ? "+" : ""}
+                            {stats.actualRr.toFixed(1)}R
                           </div>
                         </div>
                       ) : (
@@ -393,4 +425,3 @@ export function TradingCalendar() {
     </div>
   );
 }
-

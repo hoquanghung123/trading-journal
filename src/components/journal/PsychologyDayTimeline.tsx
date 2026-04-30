@@ -75,7 +75,9 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
               <h2 className="text-sm font-black tracking-[0.2em] text-primary uppercase">
                 Day Timeline
               </h2>
-              <p className="text-xl font-black text-foreground tracking-tight mt-0.5">{prettyDate}</p>
+              <p className="text-xl font-black text-foreground tracking-tight mt-0.5">
+                {prettyDate}
+              </p>
             </div>
           </div>
           <button
@@ -96,7 +98,11 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
           />
           <Stat
             label="Net P&L"
-            value={dayTrades.length ? `$${totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "—"}
+            value={
+              dayTrades.length
+                ? `$${totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                : "—"
+            }
             tone={totalPnl > 0 ? "pos" : totalPnl < 0 ? "neg" : "neutral"}
           />
         </div>
@@ -160,7 +166,8 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
                               : "bg-muted/30 text-muted-foreground border-border/50"
                         }`}
                       >
-                        {t.side.toUpperCase()} • {t.netPnl != null
+                        {t.side.toUpperCase()} •{" "}
+                        {t.netPnl != null
                           ? `${t.netPnl >= 0 ? "+" : ""}$${t.netPnl.toFixed(2)}`
                           : "—"}
                       </span>
@@ -169,7 +176,11 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
                     {tl ? (
                       <div className="grid grid-cols-1 gap-3 mt-4">
                         {tl.preTradeEmotion && (
-                          <Row icon={<Brain className="w-3.5 h-3.5" />} label="Pre-Trade" color="text-primary">
+                          <Row
+                            icon={<Brain className="w-3.5 h-3.5" />}
+                            label="Pre-Trade"
+                            color="text-primary"
+                          >
                             {tl.preTradeEmotion}
                           </Row>
                         )}
@@ -179,7 +190,11 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
                           </Row>
                         )}
                         {tl.postTradeEmotion && (
-                          <Row icon={<Activity className="w-3.5 h-3.5" />} label="Post-Trade" color="text-amber-600">
+                          <Row
+                            icon={<Activity className="w-3.5 h-3.5" />}
+                            label="Post-Trade"
+                            color="text-amber-600"
+                          >
                             {tl.postTradeEmotion}
                           </Row>
                         )}
@@ -218,7 +233,9 @@ function Stat({
     tone === "pos" ? "text-emerald-600" : tone === "neg" ? "text-rose-600" : "text-foreground";
   return (
     <div className="px-10 py-6 bg-white">
-      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{label}</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+        {label}
+      </div>
       <div className={`text-xl font-black tracking-tight mt-0.5 ${color}`}>{value}</div>
     </div>
   );
@@ -280,7 +297,9 @@ function Row({
         </div>
         <span className="font-black uppercase tracking-widest text-[9px]">{label}</span>
       </div>
-      <div className="flex-1 text-xs font-medium text-foreground/80 leading-relaxed whitespace-pre-wrap">{children}</div>
+      <div className="flex-1 text-xs font-medium text-foreground/80 leading-relaxed whitespace-pre-wrap">
+        {children}
+      </div>
     </div>
   );
 }

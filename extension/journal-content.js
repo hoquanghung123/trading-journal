@@ -3,11 +3,14 @@ function setupBridge() {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "SYNC_TO_JOURNAL") {
       // Forward to the React app via postMessage
-      window.postMessage({
-        source: 'JOURNAL_EXTENSION',
-        payload: message.data
-      }, "*");
-      
+      window.postMessage(
+        {
+          source: "JOURNAL_EXTENSION",
+          payload: message.data,
+        },
+        "*",
+      );
+
       if (sendResponse) sendResponse({ success: true });
     }
     return true;
@@ -16,8 +19,8 @@ function setupBridge() {
 }
 
 // Ensure we don't fail if document.body is missing
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupBridge);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupBridge);
 } else {
   setupBridge();
 }

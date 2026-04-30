@@ -59,7 +59,9 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
               <h3 className="text-sm font-black text-foreground flex items-center gap-2">
                 Morning Ritual <Sparkles className="w-3 h-3 text-primary animate-pulse" />
               </h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Hôm nay bạn thế nào?</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                Hôm nay bạn thế nào?
+              </p>
             </div>
           </div>
 
@@ -75,8 +77,8 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
                       setIsExpanded(true);
                     }}
                     className={`text-xl w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-300 ${
-                      active 
-                        ? "bg-white shadow-md scale-110 border border-primary/20" 
+                      active
+                        ? "bg-white shadow-md scale-110 border border-primary/20"
                         : "hover:bg-white/50 grayscale-[0.5] hover:grayscale-0"
                     }`}
                   >
@@ -86,7 +88,7 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
               })}
             </div>
 
-            <button 
+            <button
               onClick={onClose}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
@@ -108,13 +110,19 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
                 className="w-full bg-muted/20 border border-border/50 rounded-xl px-4 py-3 text-xs font-medium text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/10 transition-all resize-none"
               />
               <div className="flex justify-end items-center gap-4">
-                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">Tâm lý tốt, giao dịch tốt</p>
+                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">
+                  Tâm lý tốt, giao dịch tốt
+                </p>
                 <button
                   onClick={handleSave}
                   disabled={saving}
                   className="forest-gradient text-white px-6 py-2 rounded-xl font-bold text-[11px] uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
                 >
-                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  {saving ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3" />
+                  )}
                   Hoàn tất check-in
                 </button>
               </div>

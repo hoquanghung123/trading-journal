@@ -15,7 +15,14 @@ export function focusBiasEntry(entryId: string, asset?: string) {
 }
 
 // Page navigation bus
-export type PageId = "dashboard" | "bias" | "trades" | "psychology" | "playbook" | "daily" | "review";
+export type PageId =
+  | "dashboard"
+  | "bias"
+  | "trades"
+  | "psychology"
+  | "playbook"
+  | "daily"
+  | "review";
 type PageListener = (p: PageId) => void;
 const pageListeners = new Set<PageListener>();
 

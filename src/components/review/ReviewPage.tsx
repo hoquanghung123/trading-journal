@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+
 import { ReviewForm } from "@/components/review/ReviewForm";
 import { ActionPlanWidget } from "@/components/review/ActionPlanWidget";
 import { HistoryArchives } from "@/components/review/HistoryArchives";
@@ -9,40 +9,45 @@ import { Review } from "@/types/review";
 import { Button } from "@/components/ui/button";
 import { Save, AlertCircle, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-
-export const Route = createFileRoute("/review")({
-  head: () => ({
-    meta: [
-      { title: "Review & Analytics - Trading Journal" },
-      { name: "description", content: "Weekly and Monthly review for self-reflection and trading analysis." },
-    ],
-  }),
-  component: ReviewPage,
-});
 
 // Helper to get current week period, e.g., "2026-04-W3"
 const getCurrentWeekPeriod = () => {
   const d = new Date();
   const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+
   // Calculate week of the month (assuming week starts on Monday)
   const firstDayOfMonth = new Date(year, d.getMonth(), 1);
   const dayOffset = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0 ... Sun=6
   const weekOfMonth = Math.ceil((d.getDate() + dayOffset) / 7);
-  
+
   return `${year}-${month}-W${weekOfMonth}`;
 };
 
 export function ReviewPage() {
-  const { reviews, saveReview, removeReview, getReviewByPeriod, getPreviousReview, createEmptyReview, isLoaded } = useReviewsStorage();
-  
+  const {
+    reviews,
+    saveReview,
+    removeReview,
+    getReviewByPeriod,
+    getPreviousReview,
+    createEmptyReview,
+    isLoaded,
+  } = useReviewsStorage();
+
   const [currentPeriod, setCurrentPeriod] = useState(getCurrentWeekPeriod());
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
-  
+
   // The review currently being edited (the "current" week)
   const [draftReview, setDraftReview] = useState<Review | null>(null);
 
@@ -61,7 +66,7 @@ export function ReviewPage() {
 
   const handleDeleteReview = async (id: string) => {
     try {
-      const reviewToDelete = reviews.find(r => r.id === id);
+      const reviewToDelete = reviews.find((r) => r.id === id);
       await removeReview(id);
       if (selectedPeriod === reviewToDelete?.period) {
         setSelectedPeriod(null);
@@ -107,15 +112,23 @@ export function ReviewPage() {
   };
 
   if (!isLoaded || !draftReview) {
-    return <div className="min-h-screen bg-background text-primary flex items-center justify-center font-bold">Loading Storage...</div>;
+    return (
+      <div className="min-h-screen bg-background text-primary flex items-center justify-center font-bold">
+        Loading Storage...
+      </div>
+    );
   }
 
   // Determine what we are displaying: the active draft or a historical read-only view
   const isReadOnly = selectedPeriod !== null && selectedPeriod !== currentPeriod;
   const displayReview = isReadOnly ? getReviewByPeriod(selectedPeriod) : draftReview;
-  
+
   if (!displayReview) {
-    return <div className="min-h-screen bg-background text-destructive flex items-center justify-center font-bold">Error: Review data not found.</div>;
+    return (
+      <div className="min-h-screen bg-background text-destructive flex items-center justify-center font-bold">
+        Error: Review data not found.
+      </div>
+    );
   }
 
   const previousReviewForDraft = getPreviousReview(currentPeriod);
@@ -123,7 +136,6 @@ export function ReviewPage() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 lg:p-10">
       <div className="max-w-[1600px] mx-auto space-y-8">
-        
         <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -138,16 +150,18 @@ export function ReviewPage() {
               Deep self-reflection and systemic analysis of your trading behavior.
             </p>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Editing Period</div>
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                Editing Period
+              </div>
               <div className="text-2xl font-black text-primary flex items-center justify-end gap-3">
                 {currentPeriod}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <button 
-                      onClick={() => setTempPeriod(currentPeriod)} 
+                    <button
+                      onClick={() => setTempPeriod(currentPeriod)}
                       className="text-muted-foreground hover:text-primary transition-all p-1.5 rounded-lg hover:bg-muted"
                       title="Change Period"
                     >
@@ -156,22 +170,30 @@ export function ReviewPage() {
                   </DialogTrigger>
                   <DialogContent className="bg-white border-border text-foreground rounded-2xl shadow-xl">
                     <DialogHeader>
-                      <DialogTitle className="text-primary font-bold text-xl">Create / Edit Different Period</DialogTitle>
+                      <DialogTitle className="text-primary font-bold text-xl">
+                        Create / Edit Different Period
+                      </DialogTitle>
                     </DialogHeader>
                     <div className="py-6">
-                      <label className="text-sm font-semibold text-muted-foreground mb-3 block uppercase tracking-wider">Period Code (e.g., 2026-04-W2)</label>
-                      <Input 
-                        value={tempPeriod} 
-                        onChange={e => setTempPeriod(e.target.value)} 
+                      <label className="text-sm font-semibold text-muted-foreground mb-3 block uppercase tracking-wider">
+                        Period Code (e.g., 2026-04-W2)
+                      </label>
+                      <Input
+                        value={tempPeriod}
+                        onChange={(e) => setTempPeriod(e.target.value)}
                         className="bg-muted/30 border-border h-12 text-lg focus-visible:ring-primary/20 rounded-xl"
-                        onKeyDown={e => e.key === 'Enter' && handleConfirmPeriod()}
+                        onKeyDown={(e) => e.key === "Enter" && handleConfirmPeriod()}
                       />
                     </div>
                     <DialogFooter className="gap-3">
-                      <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-xl font-bold">
+                      <Button
+                        variant="ghost"
+                        onClick={() => setIsDialogOpen(false)}
+                        className="rounded-xl font-bold"
+                      >
                         Cancel
                       </Button>
-                      <Button 
+                      <Button
                         onClick={handleConfirmPeriod}
                         className="forest-gradient text-white rounded-xl font-bold px-8"
                       >
@@ -183,12 +205,16 @@ export function ReviewPage() {
               </div>
             </div>
             {!isReadOnly && (
-              <Button 
+              <Button
                 onClick={handleSave}
                 disabled={isSaving}
                 className="forest-gradient text-white font-bold gap-3 h-14 px-8 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
               >
-                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                {isSaving ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Save className="h-5 w-5" />
+                )}
                 {isSaving ? "Saving..." : "Save Review"}
               </Button>
             )}
@@ -198,7 +224,7 @@ export function ReviewPage() {
                   <AlertCircle className="h-5 w-5" />
                   Read-only History
                 </div>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => {
                     if (selectedPeriod) {
@@ -220,24 +246,22 @@ export function ReviewPage() {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
           {/* Left Column - Input Form */}
           <div className="xl:col-span-5 flex flex-col gap-8">
-            <ReviewForm 
-              review={displayReview} 
-              onChange={handleDraftChange} 
-              readOnly={isReadOnly}
-            />
+            <ReviewForm review={displayReview} onChange={handleDraftChange} readOnly={isReadOnly} />
           </div>
 
           {/* Right Column - Dashboards */}
           <div className="xl:col-span-7 flex flex-col gap-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-[600px]">
-              <MistakesWidget 
+              <MistakesWidget
                 review={displayReview}
-                previousReview={isReadOnly ? getPreviousReview(selectedPeriod) : previousReviewForDraft}
+                previousReview={
+                  isReadOnly ? getPreviousReview(selectedPeriod) : previousReviewForDraft
+                }
                 onChange={handleDraftChange}
                 onUpdatePrevious={saveReview}
                 readOnly={isReadOnly}
               />
-              <ActionPlanWidget 
+              <ActionPlanWidget
                 review={displayReview}
                 onChange={handleDraftChange}
                 readOnly={isReadOnly}
@@ -248,14 +272,13 @@ export function ReviewPage() {
 
         {/* Bottom Area - History Archives */}
         <div className="mt-12 pt-12 border-t border-border">
-           <HistoryArchives 
-              reviews={reviews}
-              selectedPeriod={selectedPeriod}
-              onSelectPeriod={setSelectedPeriod}
-              onDelete={handleDeleteReview}
-           />
+          <HistoryArchives
+            reviews={reviews}
+            selectedPeriod={selectedPeriod}
+            onSelectPeriod={setSelectedPeriod}
+            onDelete={handleDeleteReview}
+          />
         </div>
-        
       </div>
     </div>
   );

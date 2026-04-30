@@ -17,7 +17,7 @@ export function PlaybookPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<PlaybookModel | undefined>(undefined);
   const [trades, setTrades] = useState<Trade[]>([]);
-  
+
   // Trade Modal State
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
@@ -66,7 +66,11 @@ export function PlaybookPage() {
   }, [models, stats]);
 
   if (!isLoaded) {
-    return <div className="p-8 text-center text-muted-foreground tracking-widest">LOADING PLAYBOOK...</div>;
+    return (
+      <div className="p-8 text-center text-muted-foreground tracking-widest">
+        LOADING PLAYBOOK...
+      </div>
+    );
   }
 
   const handleSaveModel = (model: PlaybookModel) => {
@@ -146,12 +150,15 @@ export function PlaybookPage() {
                 <AlertTriangle className="w-6 h-6 text-amber-500" />
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-black text-amber-500 uppercase tracking-widest">Performance Warning</h4>
+                <h4 className="text-sm font-black text-amber-500 uppercase tracking-widest">
+                  Performance Warning
+                </h4>
                 <p className="text-xs font-medium text-muted-foreground mt-0.5">
-                  Low performance detected on some setups: 
+                  Low performance detected on some setups:
                   {warnings.map((w, i) => (
                     <span key={w.id} className="font-bold text-foreground">
-                      {" "}{w.name} ({w.wr.toFixed(0)}% WR){i < warnings.length - 1 ? "," : ""}
+                      {" "}
+                      {w.name} ({w.wr.toFixed(0)}% WR){i < warnings.length - 1 ? "," : ""}
                     </span>
                   ))}
                   . Consider moving them to "Under Review".
@@ -192,4 +199,3 @@ export function PlaybookPage() {
     </div>
   );
 }
-

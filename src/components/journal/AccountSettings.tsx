@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { UserCircle, Palette, ToggleLeft, Mail, CheckCircle2, Loader2, Sparkles, Save } from "lucide-react";
+import {
+  UserCircle,
+  Palette,
+  ToggleLeft,
+  Mail,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  Save,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings, type UserSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,9 +87,7 @@ export function AccountSettings() {
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <Mail className="w-3 h-3 text-muted-foreground" />
-                <p className="text-sm font-medium text-muted-foreground">
-                  {user.email}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">{user.email}</p>
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
@@ -103,12 +110,16 @@ export function AccountSettings() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-foreground">Interface Customization</h2>
-                <p className="text-xs text-muted-foreground font-medium">Personalize your trading dashboard</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Personalize your trading dashboard
+                </p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Primary Accent Color</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Primary Accent Color
+              </h3>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                 {PRESET_COLORS.map((color) => (
                   <button
@@ -132,10 +143,12 @@ export function AccountSettings() {
 
               <div className="flex items-center gap-4 pt-4 mt-4 border-t border-border/50">
                 <div className="flex-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Custom Hex Code</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                    Custom Hex Code
+                  </label>
                   <div className="flex gap-2">
-                    <div 
-                      className="w-10 h-10 rounded-lg border border-border shadow-inner" 
+                    <div
+                      className="w-10 h-10 rounded-lg border border-border shadow-inner"
                       style={{ backgroundColor: localSettings.primaryColor }}
                     />
                     <input
@@ -164,7 +177,9 @@ export function AccountSettings() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-foreground">Advanced Features</h2>
-                <p className="text-xs text-muted-foreground font-medium">Enable specialized journal tools</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Enable specialized journal tools
+                </p>
               </div>
             </div>
 
@@ -175,15 +190,21 @@ export function AccountSettings() {
                     <ToggleLeft className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="text-sm font-black uppercase tracking-widest text-foreground block">Enable Trade Grading</span>
-                    <span className="text-xs text-muted-foreground font-medium">Show A+, A, B options in execution modal</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-foreground block">
+                      Enable Trade Grading
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      Show A+, A, B options in execution modal
+                    </span>
                   </div>
                 </div>
                 <div className="relative">
                   <input
                     type="checkbox"
                     checked={localSettings.showTradeGrade ?? false}
-                    onChange={(e) => setLocalSettings({ ...localSettings, showTradeGrade: e.target.checked })}
+                    onChange={(e) =>
+                      setLocalSettings({ ...localSettings, showTradeGrade: e.target.checked })
+                    }
                     className="sr-only peer"
                   />
                   <div className="w-14 h-7 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>

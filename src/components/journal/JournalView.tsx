@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, ChevronsRight, Filter, Activity, Terminal as TerminalIcon, Sparkles } from "lucide-react";
+import {
+  Plus,
+  ChevronsRight,
+  Filter,
+  Activity,
+  Terminal as TerminalIcon,
+  Sparkles,
+} from "lucide-react";
 import {
   type DayEntry,
   type SlotKind,
@@ -37,7 +44,7 @@ const newEntry = (asset: string): DayEntry => ({
 
 export function JournalView() {
   const { data: assetList = [] } = useSymbols();
-  const ASSETS = useMemo(() => assetList.filter(s => !s.isForex).map((s) => s.name), [assetList]);
+  const ASSETS = useMemo(() => assetList.filter((s) => !s.isForex).map((s) => s.name), [assetList]);
   const [entries, setEntries] = useState<DayEntry[]>([]);
   const [asset, setAsset] = useState<string>("TODAY");
   const [month, setMonth] = useState<string>("ALL");
@@ -57,7 +64,7 @@ export function JournalView() {
         const today = toLocalDateStr(new Date());
         const logs = await fetchPsychologyForDate(today);
         const daily = logs.find((l) => l.tradeId === null);
-        
+
         const isTest = new URLSearchParams(window.location.search).get("test") === "psych";
 
         // If no daily log or no mood recorded, show prompt (or if in test mode)
@@ -69,10 +76,9 @@ export function JournalView() {
         console.error("Failed to check psychology status:", e);
       }
     };
-    
+
     checkPsych();
   }, []);
-
 
   useEffect(() => {
     fetchEntries()
@@ -136,17 +142,18 @@ export function JournalView() {
 
   const filtered = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const forexNames = new Set(assetList.filter(s => s.isForex).map(s => s.name));
+    const forexNames = new Set(assetList.filter((s) => s.isForex).map((s) => s.name));
     return [...entries]
       .filter((e) => !forexNames.has(e.asset))
       .filter((e) => {
         if (asset === "TODAY") return e.date === today;
         return asset === "ALL" ? true : e.asset === asset;
       })
-      .filter((e) => (asset === "TODAY" ? true : (month === "ALL" ? true : monthKey(e.date) === month)))
+      .filter((e) =>
+        asset === "TODAY" ? true : month === "ALL" ? true : monthKey(e.date) === month,
+      )
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [entries, asset, month, assetList]);
-
 
   const jumpRight = () => {
     const el = scrollerRef.current;
@@ -225,7 +232,9 @@ export function JournalView() {
             <div className="hidden lg:block h-8 w-px bg-border" />
 
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Asset:</span>
+              <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                Asset:
+              </span>
               {viewMode !== "month" && (
                 <button
                   onClick={() => setAsset("TODAY")}
@@ -298,7 +307,6 @@ export function JournalView() {
             </button>
           </div>
         </div>
-
       </header>
 
       <main className="px-4 py-5">
@@ -333,7 +341,7 @@ export function JournalView() {
         />
       )}
 
-      <MorningPsychologyPrompt 
+      <MorningPsychologyPrompt
         isOpen={showPsychPrompt}
         onClose={() => setShowPsychPrompt(false)}
         existingLog={todayLog}
@@ -342,16 +350,13 @@ export function JournalView() {
   );
 }
 
-
 function Empty({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="bg-white rounded-[32px] border border-border p-16 text-center max-w-xl mx-auto mt-20 shadow-xl">
       <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
         <Activity className="w-10 h-10 text-primary" />
       </div>
-      <h2 className="text-2xl font-black tracking-tight text-foreground">
-        Your Journal is Empty
-      </h2>
+      <h2 className="text-2xl font-black tracking-tight text-foreground">Your Journal is Empty</h2>
       <p className="text-sm font-medium text-muted-foreground mt-2 mb-8 leading-relaxed px-6">
         Initialize your trading journey by recording your first analysis and bias expectations.
       </p>

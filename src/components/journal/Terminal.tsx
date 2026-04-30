@@ -1,14 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
-import { 
-  LayoutDashboard, 
-  Crosshair, 
-  FileText, 
-  LogOut, 
-  Terminal as TerminalIcon, 
-  Construction, 
-  Settings, 
-  Brain, 
-  CalendarCheck, 
+import {
+  LayoutDashboard,
+  Crosshair,
+  FileText,
+  LogOut,
+  Terminal as TerminalIcon,
+  Construction,
+  Settings,
+  Brain,
+  CalendarCheck,
   BookOpen,
   Menu,
   X,
@@ -16,7 +16,7 @@ import {
   ChevronRight,
   TrendingUp,
   Activity,
-  UserCircle
+  UserCircle,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -35,7 +35,15 @@ import { WeekendReviewPrompt } from "@/components/review/WeekendReviewPrompt";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
 import { fetchTrades, type Trade } from "@/lib/trades";
 
-type Page = "dashboard" | "bias" | "trades" | "psychology" | "review" | "playbook" | "daily" | "account";
+type Page =
+  | "dashboard"
+  | "bias"
+  | "trades"
+  | "psychology"
+  | "review"
+  | "playbook"
+  | "daily"
+  | "account";
 
 const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -83,30 +91,34 @@ function Shell() {
       setPage(p as PageId as Page);
       setIsMobileOpen(false);
     });
-    
+
     fetchTrades().then(setTrades).catch(console.error);
   }, []);
 
   const stats = useMemo(() => {
     const total = trades.length;
-    const wins = trades.filter(t => t.netPnl > 0).length;
+    const wins = trades.filter((t) => t.netPnl > 0).length;
     const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
     const pnl = trades.reduce((acc, t) => acc + t.netPnl, 0);
     return { total, wr, pnl };
   }, [trades]);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex bg-background font-sans overflow-hidden"
-      style={{ 
-        "--sidebar-width": isMobileOpen ? "0px" : isLeftCollapsed ? "80px" : "260px" 
-      } as React.CSSProperties}
+      style={
+        {
+          "--sidebar-width": isMobileOpen ? "0px" : isLeftCollapsed ? "80px" : "260px",
+        } as React.CSSProperties
+      }
     >
       {/* Mobile Backdrop */}
       {isMobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setIsMobileOpen(false)}
         />
@@ -120,7 +132,9 @@ function Shell() {
           ${isLeftCollapsed ? "lg:w-[80px]" : "lg:w-[260px]"}
         `}
       >
-        <div className={`px-6 py-8 flex items-center justify-between gap-3 ${isLeftCollapsed ? "lg:justify-center lg:px-0" : ""}`}>
+        <div
+          className={`px-6 py-8 flex items-center justify-between gap-3 ${isLeftCollapsed ? "lg:justify-center lg:px-0" : ""}`}
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center forest-gradient soft-shadow shrink-0">
               <TerminalIcon className="w-5 h-5 text-white" />
@@ -128,14 +142,16 @@ function Shell() {
             {(!isLeftCollapsed || isMobileOpen) && (
               <div className="overflow-hidden whitespace-nowrap">
                 <div className="text-lg font-bold tracking-tight text-foreground">Chartmate</div>
-                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Trading Journal</div>
+                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                  Trading Journal
+                </div>
               </div>
             )}
           </div>
-          
+
           {/* Close button for mobile */}
           {isMobileOpen && (
-            <button 
+            <button
               onClick={() => setIsMobileOpen(false)}
               className="lg:hidden p-2 rounded-lg bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -163,11 +179,17 @@ function Shell() {
                   `}
                 >
                   {item.id === "account" ? (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border-2 ${active ? "border-white/50" : "border-primary/20 bg-primary/5"}`}>
-                      <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-primary"}`} />
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden border-2 ${active ? "border-white/50" : "border-primary/20 bg-primary/5"}`}
+                    >
+                      <Icon
+                        className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-primary"}`}
+                      />
                     </div>
                   ) : (
-                    <Icon className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`} />
+                    <Icon
+                      className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`}
+                    />
                   )}
                   {(!isLeftCollapsed || isMobileOpen) && <span>{item.label}</span>}
                 </button>
@@ -176,12 +198,8 @@ function Shell() {
               if (isLeftCollapsed && !isMobileOpen) {
                 return (
                   <Tooltip key={item.id}>
-                    <TooltipTrigger asChild>
-                      {button}
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      {item.label}
-                    </TooltipContent>
+                    <TooltipTrigger asChild>{button}</TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
                   </Tooltip>
                 );
               }
@@ -195,17 +213,25 @@ function Shell() {
             <div className="px-6 py-4 space-y-4">
               <div className="p-4 rounded-2xl bg-muted/50 border border-border/50">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Performance</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Performance
+                  </span>
                   <Activity className="w-3 h-3 text-primary" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <div className="text-[9px] font-bold text-muted-foreground uppercase">Win Rate</div>
+                    <div className="text-[9px] font-bold text-muted-foreground uppercase">
+                      Win Rate
+                    </div>
                     <div className="text-sm font-black text-foreground">{stats.wr}%</div>
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold text-muted-foreground uppercase">Net PnL</div>
-                    <div className={`text-sm font-black ${stats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                    <div className="text-[9px] font-bold text-muted-foreground uppercase">
+                      Net PnL
+                    </div>
+                    <div
+                      className={`text-sm font-black ${stats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                    >
                       ${stats.pnl.toLocaleString()}
                     </div>
                   </div>
@@ -214,7 +240,9 @@ function Shell() {
             </div>
           )}
 
-          <div className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed && !isMobileOpen ? "flex flex-col items-center" : ""}`}>
+          <div
+            className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed && !isMobileOpen ? "flex flex-col items-center" : ""}`}
+          >
             {isLeftCollapsed && !isMobileOpen ? (
               <>
                 <Tooltip>
@@ -257,13 +285,17 @@ function Shell() {
                 </button>
               </>
             )}
-            
+
             {/* Collapse Toggle Desktop */}
             <button
               onClick={() => setIsLeftCollapsed(!isLeftCollapsed)}
               className="hidden lg:flex w-full mt-4 items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
             >
-              {isLeftCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              {isLeftCollapsed ? (
+                <ChevronRight className="w-4 h-4" />
+              ) : (
+                <ChevronLeft className="w-4 h-4" />
+              )}
             </button>
           </div>
         </TooltipProvider>
@@ -273,7 +305,7 @@ function Shell() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Mobile Header */}
         <header className="lg:hidden h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-30">
-          <button 
+          <button
             onClick={() => setIsMobileOpen(true)}
             className="p-2 rounded-xl bg-muted text-foreground"
           >
@@ -320,19 +352,39 @@ function Shell() {
   );
 }
 
-function QuickStat({ label, value, icon, subValue, isPositive }: { label: string; value: string | number; icon: React.ReactNode; subValue?: string; isPositive?: boolean }) {
+function QuickStat({
+  label,
+  value,
+  icon,
+  subValue,
+  isPositive,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  subValue?: string;
+  isPositive?: boolean;
+}) {
   return (
     <div className="bg-muted/30 rounded-2xl p-4 border border-border/50 hover:border-primary/20 transition-all group">
       <div className="flex items-center gap-3 mb-2">
         <div className="p-2 rounded-lg bg-white shadow-sm group-hover:scale-110 transition-transform">
           {icon}
         </div>
-        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">{label}</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+          {label}
+        </span>
       </div>
-      <div className={`text-2xl font-black tracking-tight ${isPositive === undefined ? "text-foreground" : isPositive ? "text-emerald-600" : "text-rose-600"}`}>
+      <div
+        className={`text-2xl font-black tracking-tight ${isPositive === undefined ? "text-foreground" : isPositive ? "text-emerald-600" : "text-rose-600"}`}
+      >
         {value}
       </div>
-      {subValue && <div className="text-[10px] font-bold text-muted-foreground/60 mt-1 uppercase tracking-widest">{subValue}</div>}
+      {subValue && (
+        <div className="text-[10px] font-bold text-muted-foreground/60 mt-1 uppercase tracking-widest">
+          {subValue}
+        </div>
+      )}
     </div>
   );
 }
@@ -342,7 +394,9 @@ function UnderConstruction({ title }: { title: string }) {
     <div className="min-h-screen grid-bg flex items-center justify-center p-8">
       <div className="glass rounded-lg p-12 text-center max-w-md">
         <Construction className="w-12 h-12 mx-auto text-neon-amber mb-4" />
-        <h2 className="text-xl font-bold tracking-[0.3em] text-neon-amber text-glow-cyan">{title}</h2>
+        <h2 className="text-xl font-bold tracking-[0.3em] text-neon-amber text-glow-cyan">
+          {title}
+        </h2>
         <p className="text-xs text-muted-foreground mt-2 tracking-widest">// UNDER CONSTRUCTION</p>
       </div>
     </div>
@@ -352,12 +406,14 @@ function UnderConstruction({ title }: { title: string }) {
 export function Terminal() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthGate>{() => (
-        <>
-          <ThemeApplier />
-          <Shell />
-        </>
-      )}</AuthGate>
+      <AuthGate>
+        {() => (
+          <>
+            <ThemeApplier />
+            <Shell />
+          </>
+        )}
+      </AuthGate>
     </QueryClientProvider>
   );
 }

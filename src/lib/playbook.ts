@@ -59,9 +59,9 @@ export async function fetchPlaybook(): Promise<PlaybookModel[]> {
 export async function upsertSetup(m: PlaybookModel): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
-  
+
   const row = toRow(m, u.user.id);
-  const { error } = await supabase.from("playbook_setups").upsert(row);
+  const { error } = await supabase.from("playbook_setups").upsert([row as any]);
   if (error) throw error;
 }
 

@@ -8,12 +8,12 @@ import { navigateToPage } from "@/lib/nav-bus";
 const getCurrentWeekPeriod = () => {
   const d = new Date();
   const year = d.getFullYear();
-  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+
   const firstDayOfMonth = new Date(year, d.getMonth(), 1);
   const dayOffset = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0 ... Sun=6
   const weekOfMonth = Math.ceil((d.getDate() + dayOffset) / 7);
-  
+
   return `${year}-${month}-W${weekOfMonth}`;
 };
 
@@ -31,8 +31,8 @@ export function WeekendReviewPrompt() {
 
       if (isSaturday || isTest) {
         const period = getCurrentWeekPeriod();
-        const existing = reviews.find(r => r.period === period);
-        
+        const existing = reviews.find((r) => r.period === period);
+
         // Show if no review exists or if it's empty
         if (!existing || (!existing.technicalReflection && !existing.psychologicalReflection)) {
           setShow(true);
@@ -57,7 +57,9 @@ export function WeekendReviewPrompt() {
               <h3 className="text-sm font-black text-foreground flex items-center gap-2">
                 Weekend Review <Sparkles className="w-3 h-3 text-amber-500 animate-pulse" />
               </h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Hôm nay là Thứ 7 rồi, bạn đã review chưa?</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+                Hôm nay là Thứ 7 rồi, bạn đã review chưa?
+              </p>
             </div>
           </div>
 
@@ -72,7 +74,7 @@ export function WeekendReviewPrompt() {
               Đi đến Review <ArrowRight className="w-3 h-3" />
             </button>
 
-            <button 
+            <button
               onClick={() => setShow(false)}
               className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >

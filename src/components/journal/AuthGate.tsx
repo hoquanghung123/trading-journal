@@ -68,9 +68,7 @@ export function AuthGate({ children }: Props) {
             <div className="w-20 h-20 rounded-[28px] forest-gradient flex items-center justify-center shadow-xl shadow-primary/20 mb-6">
               <Brain className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-black text-foreground tracking-tight">
-              Chartmate
-            </h1>
+            <h1 className="text-3xl font-black text-foreground tracking-tight">Chartmate</h1>
             <p className="text-sm font-bold text-muted-foreground/60 uppercase tracking-[0.2em] mt-2">
               Trading Journal
             </p>
@@ -81,8 +79,8 @@ export function AuthGate({ children }: Props) {
               {mode === "signin" ? "Welcome back!" : "Join the community"}
             </h2>
             <p className="text-sm font-medium text-muted-foreground mt-2">
-              {mode === "signin" 
-                ? "Enter your credentials to access your journal" 
+              {mode === "signin"
+                ? "Enter your credentials to access your journal"
                 : "Create an account to start your trading journey"}
             </p>
           </div>
@@ -155,8 +153,8 @@ export function AuthGate({ children }: Props) {
               onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
               className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
             >
-              {mode === "signin" 
-                ? "Don't have an account? Create one" 
+              {mode === "signin"
+                ? "Don't have an account? Create one"
                 : "Already have an account? Sign in"}
             </button>
           </div>

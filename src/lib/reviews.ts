@@ -1,10 +1,15 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "../integrations/supabase/client";
 import { Review, ReviewType } from "@/types/review";
+import { Database } from "@/integrations/supabase/types";
+
+type ReviewInsert = Database["public"]["Tables"]["trading_reviews"]["Insert"];
 
 export const reviewsQueryKey = ["reviews"] as const;
 
 export const fetchReviews = async (): Promise<Review[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -30,7 +35,9 @@ export const fetchReviews = async (): Promise<Review[]> => {
 };
 
 export const upsertReview = async (review: Review): Promise<Review> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   const payload = {
@@ -40,8 +47,8 @@ export const upsertReview = async (review: Review): Promise<Review> => {
     technical_reflection: review.technicalReflection,
     psychological_reflection: review.psychologicalReflection,
     environmental_reflection: review.environmentalReflection,
-    top_mistakes: review.topMistakes,
-    action_plan: review.actionPlan,
+    top_mistakes: review.topMistakes as any,
+    action_plan: review.actionPlan as any,
     updated_at: new Date().toISOString(),
   };
 
@@ -59,7 +66,7 @@ export const upsertReview = async (review: Review): Promise<Review> => {
     const { data, error } = await supabase
       .from("trading_reviews")
       .update(payload)
-      .eq("id", existing.id)
+      .eq("id", (existing as any).id)
       .select()
       .single();
     if (error) throw error;
@@ -67,23 +74,26 @@ export const upsertReview = async (review: Review): Promise<Review> => {
   } else {
     const { data, error } = await supabase
       .from("trading_reviews")
-      .insert({ ...payload, created_at: new Date().toISOString() })
+      .insert({ ...payload, created_at: new Date().toISOString() } as ReviewInsert)
       .select()
       .single();
     if (error) throw error;
     result = data;
   }
 
+  const r = result as any;
   return {
     ...review,
-    id: result.id,
-    createdAt: new Date(result.created_at).getTime(),
-    updatedAt: new Date(result.updated_at).getTime(),
+    id: r.id,
+    createdAt: new Date(r.created_at).getTime(),
+    updatedAt: new Date(r.updated_at).getTime(),
   };
 };
 
 export const deleteReview = async (id: string): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
   const { error } = await supabase

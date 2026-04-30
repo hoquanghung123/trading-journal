@@ -22,11 +22,15 @@ export function ReviewForm({ review, onChange, readOnly = false }: ReviewFormPro
       </CardHeader>
       <CardContent className="space-y-10">
         <div className="space-y-4">
-          <Label htmlFor="tech" className="text-muted-foreground font-bold uppercase tracking-wider text-xs block">
+          <Label
+            htmlFor="tech"
+            className="text-muted-foreground font-bold uppercase tracking-wider text-xs block"
+          >
             Technical Assessment
           </Label>
           <p className="text-sm font-semibold text-foreground leading-relaxed mb-2">
-            "In your losing trades, is there a common pattern (e.g., entering too early without MSS)?"
+            "In your losing trades, is there a common pattern (e.g., entering too early without
+            MSS)?"
           </p>
           <Textarea
             id="tech"
@@ -39,7 +43,10 @@ export function ReviewForm({ review, onChange, readOnly = false }: ReviewFormPro
         </div>
 
         <div className="space-y-4">
-          <Label htmlFor="psycho" className="text-muted-foreground font-bold uppercase tracking-wider text-xs block">
+          <Label
+            htmlFor="psycho"
+            className="text-muted-foreground font-bold uppercase tracking-wider text-xs block"
+          >
             Psychological Assessment
           </Label>
           <p className="text-sm font-semibold text-foreground leading-relaxed mb-2">
@@ -56,7 +63,10 @@ export function ReviewForm({ review, onChange, readOnly = false }: ReviewFormPro
         </div>
 
         <div className="space-y-4">
-          <Label htmlFor="env" className="text-muted-foreground font-bold uppercase tracking-wider text-xs block">
+          <Label
+            htmlFor="env"
+            className="text-muted-foreground font-bold uppercase tracking-wider text-xs block"
+          >
             External Factors
           </Label>
           <p className="text-sm font-semibold text-foreground leading-relaxed mb-2">

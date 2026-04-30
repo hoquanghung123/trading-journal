@@ -54,8 +54,8 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center transition-all text-muted-foreground hover:text-foreground"
           >
             <X className="w-6 h-6" />
@@ -103,7 +103,10 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                     onFocus={() => setFocusKey("monthly")}
                     className="h-48"
                   />
-                  <BiasPicker value={draft.monthlyBias} onChange={(v) => update("monthlyBias", v)} />
+                  <BiasPicker
+                    value={draft.monthlyBias}
+                    onChange={(v) => update("monthlyBias", v)}
+                  />
                 </div>
               </Section>
             )}
@@ -158,14 +161,18 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                 <PasteSlot
                   label={`H4 · ${session} SESSION`}
                   image={draft.h4[session]?.img}
-                  onChange={(u) => update("h4", { ...draft.h4, [session]: { ...draft.h4[session], img: u } })}
+                  onChange={(u) =>
+                    update("h4", { ...draft.h4, [session]: { ...draft.h4[session], img: u } })
+                  }
                   focused={focusKey === `h4-${session}`}
                   onFocus={() => setFocusKey(`h4-${session}`)}
                   className="h-56"
                 />
-                <BiasPicker 
-                  value={draft.h4[session]?.bias as Bias} 
-                  onChange={(v) => update("h4", { ...draft.h4, [session]: { ...draft.h4[session], bias: v } })} 
+                <BiasPicker
+                  value={draft.h4[session]?.bias as Bias}
+                  onChange={(v) =>
+                    update("h4", { ...draft.h4, [session]: { ...draft.h4[session], bias: v } })
+                  }
                 />
               </div>
             </Section>
@@ -218,9 +225,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <div className="h-4 w-1 bg-primary rounded-full" />
-        <h3 className="text-sm font-black uppercase tracking-widest text-primary">
-          {title}
-        </h3>
+        <h3 className="text-sm font-black uppercase tracking-widest text-primary">{title}</h3>
       </div>
       {children}
     </div>
@@ -246,9 +251,9 @@ function BiasPicker({ value, onChange }: { value: Bias; onChange: (v: Bias) => v
             onClick={() => onChange(b)}
             className={`px-3 py-3 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all flex items-center justify-center text-center leading-none h-full ${
               active
-                ? b === "bullish" 
-                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                  : b === "bearish" 
+                ? b === "bullish"
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                  : b === "bearish"
                     ? "bg-destructive text-destructive-foreground border-destructive shadow-lg shadow-destructive/20"
                     : "bg-warning text-warning-foreground border-warning shadow-lg shadow-warning/20"
                 : "bg-white border-border text-muted-foreground hover:border-primary/30"

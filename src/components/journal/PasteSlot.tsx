@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ImageIcon, ClipboardPaste, Loader2, Maximize2 } from "lucide-react";
-import { deleteChartImage, getChartUrl, uploadChartImage, resolveTradingViewUrl } from "@/lib/journal";
+import {
+  deleteChartImage,
+  getChartUrl,
+  uploadChartImage,
+  resolveTradingViewUrl,
+} from "@/lib/journal";
 import { toast } from "sonner";
 import { Lightbox } from "./Lightbox";
 
@@ -68,7 +73,7 @@ export function PasteSlot({
 
   const handleFileRef = useRef(handleFile);
   const handleDataUrlRef = useRef(handleDataUrl);
-  
+
   useEffect(() => {
     handleFileRef.current = handleFile;
     handleDataUrlRef.current = handleDataUrl;
@@ -126,14 +131,22 @@ export function PasteSlot({
     >
       {displayUrl ? (
         <>
-          <img src={displayUrl} alt={label} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          <img
+            src={displayUrl}
+            alt={label}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
         </>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground font-medium text-xs">
           <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center mb-1">
             <ImageIcon className="w-5 h-5 text-primary/60" />
           </div>
-          <span className="font-bold uppercase tracking-wider text-[10px] text-primary/80">{label}</span>
+          <span className="font-bold uppercase tracking-wider text-[10px] text-primary/80">
+            {label}
+          </span>
           <span className="flex flex-col items-center gap-1 opacity-60 text-[9px] font-bold text-center px-4">
             <span className="flex items-center gap-1.5">CLICK TO SELECT</span>
             <span className="hidden sm:inline">THEN CTRL+V TO PASTE</span>

@@ -4,7 +4,15 @@ import { generateId } from "./utils";
 
 export type Bias = "bullish" | "bearish" | "consolidation";
 export type Session = "ASIA" | "LDN" | "NY" | "NY AM" | "NY PM";
-export type SlotKind = "monthly" | "weekly" | "daily" | "h4-ASIA" | "h4-LDN" | "h4-NY" | "h4-NY AM" | "h4-NY PM";
+export type SlotKind =
+  | "monthly"
+  | "weekly"
+  | "daily"
+  | "h4-ASIA"
+  | "h4-LDN"
+  | "h4-NY"
+  | "h4-NY AM"
+  | "h4-NY PM";
 
 export interface DayEntry {
   id: string;
@@ -128,15 +136,13 @@ export async function deleteEntry(id: string): Promise<void> {
     const h4 = (row.h4 ?? {}) as any;
     const paths = [
       row.yearly_img,
-      row.monthly_img, 
-      row.weekly_img, 
-      row.daily_img, 
+      row.monthly_img,
+      row.weekly_img,
+      row.daily_img,
       typeof h4?.ASIA === "string" ? h4.ASIA : h4?.ASIA?.img,
       typeof h4?.LDN === "string" ? h4.LDN : h4?.LDN?.img,
       typeof h4?.NY === "string" ? h4.NY : h4?.NY?.img,
-    ].filter(
-      (p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"),
-    );
+    ].filter((p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"));
     if (paths.length) {
       await supabase.storage
         .from(BUCKET)
@@ -174,7 +180,12 @@ export function biasBgHex(b: Bias) {
 }
 
 export function biasStyle(b: Bias): CSSProperties {
-  const fg = b === "bullish" ? "var(--bull-foreground)" : b === "bearish" ? "var(--destructive-foreground)" : "var(--warning-foreground)";
+  const fg =
+    b === "bullish"
+      ? "var(--bull-foreground)"
+      : b === "bearish"
+        ? "var(--destructive-foreground)"
+        : "var(--warning-foreground)";
   return {
     backgroundColor: biasBgHex(b),
     color: fg,

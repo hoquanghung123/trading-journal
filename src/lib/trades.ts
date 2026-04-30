@@ -141,7 +141,9 @@ export async function upsertTrade(t: Trade): Promise<void> {
 export async function deleteTrade(id: string): Promise<void> {
   const { data: row } = await supabase
     .from("trades")
-    .select("before_img, after_img, monthly_img, weekly_img, daily_img, h4_img, h1_img, m15_img, m5_img")
+    .select(
+      "before_img, after_img, monthly_img, weekly_img, daily_img, h4_img, h1_img, m15_img, m5_img",
+    )
     .eq("id", id)
     .maybeSingle();
 

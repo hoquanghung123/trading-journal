@@ -60,7 +60,8 @@ export function ManageAssetsModal({ open, onClose }: Props) {
   });
 
   const toggleMut = useMutation({
-    mutationFn: ({ id, isForex }: { id: string; isForex: boolean }) => toggleForexSymbol(id, isForex),
+    mutationFn: ({ id, isForex }: { id: string; isForex: boolean }) =>
+      toggleForexSymbol(id, isForex),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: symbolsQueryKey });
       toast.success("Configuration updated");
@@ -148,8 +149,12 @@ export function ManageAssetsModal({ open, onClose }: Props) {
                 className="w-5 h-5 rounded-md border-border text-primary focus:ring-primary/20 accent-primary"
               />
               <div className="flex flex-col">
-                <span className="text-xs font-black uppercase tracking-widest text-foreground">Mark as Forex</span>
-                <span className="text-[10px] text-muted-foreground font-medium">Enables multi-timeframe image analysis</span>
+                <span className="text-xs font-black uppercase tracking-widest text-foreground">
+                  Mark as Forex
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  Enables multi-timeframe image analysis
+                </span>
               </div>
             </label>
           </form>
@@ -178,7 +183,7 @@ export function ManageAssetsModal({ open, onClose }: Props) {
                   {symbols.map((s) => {
                     const isDeleting = delMut.isPending && delMut.variables?.id === s.id;
                     const isToggling = toggleMut.isPending && toggleMut.variables?.id === s.id;
-                    
+
                     return (
                       <li
                         key={s.id}
@@ -192,11 +197,15 @@ export function ManageAssetsModal({ open, onClose }: Props) {
                             onClick={() => toggleMut.mutate({ id: s.id, isForex: !s.isForex })}
                             disabled={isToggling}
                             className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-all ${
-                              s.isForex 
-                                ? "bg-primary text-white shadow-sm shadow-primary/20" 
+                              s.isForex
+                                ? "bg-primary text-white shadow-sm shadow-primary/20"
                                 : "bg-muted text-muted-foreground/40 hover:bg-muted/50"
                             } ${isToggling ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                            title={s.isForex ? "Forex Active (Click to disable)" : "Click to mark as Forex"}
+                            title={
+                              s.isForex
+                                ? "Forex Active (Click to disable)"
+                                : "Click to mark as Forex"
+                            }
                           >
                             {s.isForex ? "Forex" : "FX?"}
                           </button>
@@ -225,7 +234,10 @@ export function ManageAssetsModal({ open, onClose }: Props) {
                                 Delete Asset?
                               </AlertDialogTitle>
                               <AlertDialogDescription className="text-xs font-medium text-muted-foreground">
-                                Are you sure you want to remove <span className="font-bold text-primary">{s.name}</span>? This will not delete existing trades but the symbol will no longer be selectable.
+                                Are you sure you want to remove{" "}
+                                <span className="font-bold text-primary">{s.name}</span>? This will
+                                not delete existing trades but the symbol will no longer be
+                                selectable.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="flex-col sm:flex-row gap-3 mt-8">

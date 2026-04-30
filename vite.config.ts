@@ -11,7 +11,8 @@ export default defineConfig({
     server: {
       proxy: {
         "/storage": {
-          target: "https://mlyowmvrpjtqruramrhp.supabase.co/storage/v1/object/public/journal-charts",
+          target:
+            "https://mlyowmvrpjtqruramrhp.supabase.co/storage/v1/object/public/journal-charts",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/storage/, ""),
         },

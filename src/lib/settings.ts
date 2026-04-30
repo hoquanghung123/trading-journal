@@ -39,6 +39,7 @@ export async function fetchSettings(): Promise<UserSettings> {
       user_id: u.user.id,
       show_trade_grade: false,
       primary_color: "#4C763B",
+      trade_log_view: "table",
     };
     const { error: insError } = await supabase.from("user_settings").insert(defaultSettings);
     if (insError) throw insError;
@@ -65,10 +66,7 @@ export async function updateSettings(patch: Partial<UserSettings>): Promise<void
   if (patch.tradeLogView !== undefined) update.trade_log_view = patch.tradeLogView;
   update.updated_at = new Date().toISOString();
 
-  const { error } = await supabase
-    .from("user_settings")
-    .update(update)
-    .eq("user_id", u.user.id);
+  const { error } = await supabase.from("user_settings").update(update).eq("user_id", u.user.id);
 
   if (error) throw error;
 }

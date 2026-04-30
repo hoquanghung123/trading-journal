@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, ExternalLink, Settings2, Loader2, FileText, LayoutGrid, List, Clock } from "lucide-react";
+import {
+  Plus,
+  ExternalLink,
+  Settings2,
+  Loader2,
+  FileText,
+  LayoutGrid,
+  List,
+  Clock,
+} from "lucide-react";
 import {
   computeOutcome,
   deleteTrade,
@@ -28,7 +37,16 @@ import {
 import { fetchSettings, updateSettings } from "@/lib/settings";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-type ColKey = "entryTime" | "stats" | "images" | "compliance" | "playbook" | "status" | "grade" | "outcome" | "side";
+type ColKey =
+  | "entryTime"
+  | "stats"
+  | "images"
+  | "compliance"
+  | "playbook"
+  | "status"
+  | "grade"
+  | "outcome"
+  | "side";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
@@ -44,8 +62,8 @@ const COL_LABELS: Record<ColKey, string> = {
 
 const gradeStyle: Record<string, string> = {
   "A+": "bg-primary text-primary-foreground shadow-primary/20",
-  "A": "bg-amber-500 text-white shadow-amber-500/20",
-  "B": "bg-destructive text-destructive-foreground shadow-destructive/20",
+  A: "bg-amber-500 text-white shadow-amber-500/20",
+  B: "bg-destructive text-destructive-foreground shadow-destructive/20",
 };
 
 export function TradeLog() {
@@ -71,7 +89,17 @@ export function TradeLog() {
       const s = localStorage.getItem("trade-log-cols");
       if (s) return JSON.parse(s);
     } catch {}
-    return { entryTime: true, stats: true, images: true, compliance: true, playbook: true, status: true, grade: true, outcome: true, side: true };
+    return {
+      entryTime: true,
+      stats: true,
+      images: true,
+      compliance: true,
+      playbook: true,
+      status: true,
+      grade: true,
+      outcome: true,
+      side: true,
+    };
   });
 
   useEffect(() => {
@@ -129,7 +157,9 @@ export function TradeLog() {
                 <FileText className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Trade Log</h1>
+                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                  Trade Log
+                </h1>
                 <p className="text-[10px] lg:text-sm text-muted-foreground font-medium uppercase tracking-wider">
                   {trades.length} Recorded Entries
                 </p>
@@ -150,8 +180,8 @@ export function TradeLog() {
               <button
                 onClick={() => handleUpdateView("table")}
                 className={`p-2 rounded-lg transition-all ${
-                  settings?.tradeLogView === "table" 
-                    ? "bg-white text-primary shadow-sm" 
+                  settings?.tradeLogView === "table"
+                    ? "bg-white text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 title="Table View"
@@ -161,8 +191,8 @@ export function TradeLog() {
               <button
                 onClick={() => handleUpdateView("gallery")}
                 className={`p-2 rounded-lg transition-all ${
-                  settings?.tradeLogView === "gallery" 
-                    ? "bg-white text-primary shadow-sm" 
+                  settings?.tradeLogView === "gallery"
+                    ? "bg-white text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 title="Gallery View"
@@ -217,9 +247,9 @@ export function TradeLog() {
           ) : settings?.tradeLogView === "gallery" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sorted.map((t) => (
-                <TradeGalleryCard 
-                  key={t.id} 
-                  trade={t} 
+                <TradeGalleryCard
+                  key={t.id}
+                  trade={t}
                   onClick={() => openEdit(t)}
                   showGrade={settings?.showTradeGrade}
                 />
@@ -242,7 +272,9 @@ export function TradeLog() {
                       {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
                       {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
                       {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
-                      {cols.compliance && <th className="text-left p-4 w-[200px]">Follow Playbook</th>}
+                      {cols.compliance && (
+                        <th className="text-left p-4 w-[200px]">Follow Playbook</th>
+                      )}
                       {cols.status && <th className="text-left p-4 w-[140px]">Status</th>}
                       <th className="text-left p-4">Trade Notes</th>
                     </tr>
@@ -263,7 +295,9 @@ export function TradeLog() {
                           </td>
                           {cols.outcome && (
                             <td className="p-4">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}>
+                              <span
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}
+                              >
                                 {outcome.label}
                               </span>
                             </td>
@@ -272,11 +306,15 @@ export function TradeLog() {
                           {settings?.showTradeGrade && cols.grade && (
                             <td className="p-4">
                               {t.grade ? (
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${gradeStyle[t.grade]}`}>
+                                <span
+                                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${gradeStyle[t.grade]}`}
+                                >
                                   {t.grade}
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold text-muted-foreground/30">—</span>
+                                <span className="text-[10px] font-bold text-muted-foreground/30">
+                                  —
+                                </span>
                               )}
                             </td>
                           )}
@@ -304,11 +342,13 @@ export function TradeLog() {
 
                           {cols.side && (
                             <td className="p-4">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                t.side === "buy" 
-                                  ? "bg-primary text-primary-foreground shadow-primary/20" 
-                                  : "bg-destructive text-destructive-foreground shadow-destructive/20"
-                              }`}>
+                              <span
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                                  t.side === "buy"
+                                    ? "bg-primary text-primary-foreground shadow-primary/20"
+                                    : "bg-destructive text-destructive-foreground shadow-destructive/20"
+                                }`}
+                              >
                                 {t.side}
                               </span>
                             </td>
@@ -327,7 +367,8 @@ export function TradeLog() {
                                 >
                                   <BookOpen className="w-3.5 h-3.5" />
                                   <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
-                                    {playbookSetups.find(s => s.id === t.setupId)?.name || "Unknown"}
+                                    {playbookSetups.find((s) => s.id === t.setupId)?.name ||
+                                      "Unknown"}
                                   </span>
                                 </button>
                               )}
@@ -337,8 +378,11 @@ export function TradeLog() {
                           {cols.stats && (
                             <td className="p-4">
                               <div className="flex flex-col gap-0.5">
-                                <span className={`text-sm font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                                  {t.netPnl > 0 ? "+" : ""}{t.netPnl.toFixed(2)}
+                                <span
+                                  className={`text-sm font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}
+                                >
+                                  {t.netPnl > 0 ? "+" : ""}
+                                  {t.netPnl.toFixed(2)}
                                 </span>
                                 <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
                                   RR {t.actualRr} / {t.maxRr}
@@ -350,8 +394,16 @@ export function TradeLog() {
                           {cols.images && (
                             <td className="p-4" onClick={(e) => e.stopPropagation()}>
                               <div className="flex gap-2">
-                                <TradeImageThumb path={t.beforeImg} label="PRE" pair={{ path: t.afterImg, label: "POST" }} />
-                                <TradeImageThumb path={t.afterImg} label="POST" pair={{ path: t.beforeImg, label: "PRE" }} />
+                                <TradeImageThumb
+                                  path={t.beforeImg}
+                                  label="PRE"
+                                  pair={{ path: t.afterImg, label: "POST" }}
+                                />
+                                <TradeImageThumb
+                                  path={t.afterImg}
+                                  label="POST"
+                                  pair={{ path: t.beforeImg, label: "PRE" }}
+                                />
                               </div>
                             </td>
                           )}
@@ -361,12 +413,16 @@ export function TradeLog() {
                               {t.complianceCheck ? (
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20">
                                   <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-black uppercase tracking-wider">Followed</span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider">
+                                    Followed
+                                  </span>
                                 </div>
                               ) : (
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive text-destructive-foreground shadow-sm shadow-destructive/20">
                                   <AlertCircle className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-black uppercase tracking-wider">Incomplete</span>
+                                  <span className="text-[10px] font-black uppercase tracking-wider">
+                                    Incomplete
+                                  </span>
                                 </div>
                               )}
                             </td>
@@ -374,11 +430,15 @@ export function TradeLog() {
 
                           {cols.status && (
                             <td className="p-4">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                t.status === "Not Started" ? "bg-destructive text-destructive-foreground shadow-destructive/20" :
-                                t.status === "Opened" ? "bg-primary text-primary-foreground shadow-primary/20" :
-                                "bg-amber-500 text-white shadow-amber-500/20"
-                              }`}>
+                              <span
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                                  t.status === "Not Started"
+                                    ? "bg-destructive text-destructive-foreground shadow-destructive/20"
+                                    : t.status === "Opened"
+                                      ? "bg-primary text-primary-foreground shadow-primary/20"
+                                      : "bg-amber-500 text-white shadow-amber-500/20"
+                                }`}
+                              >
                                 {t.status}
                               </span>
                             </td>
@@ -411,7 +471,7 @@ export function TradeLog() {
 
 function formatTime(iso: string) {
   const d = new Date(iso);
-  
+
   // Create a formatter for NY timezone
   const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone: "America/New_York",

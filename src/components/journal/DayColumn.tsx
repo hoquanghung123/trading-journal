@@ -50,7 +50,9 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           <span className="text-primary font-bold text-sm tracking-tight">
             {weekdayOf(entry.date)}
           </span>
-          <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{ddmm(entry.date)}</span>
+          <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+            {ddmm(entry.date)}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">
@@ -93,7 +95,9 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/20 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/20 font-black border border-white/5">
               Monthly Outlook
             </div>
-            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/10 font-bold">MON OR 1ST ONLY</span>
+            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/10 font-bold">
+              MON OR 1ST ONLY
+            </span>
           </div>
         )}
 
@@ -148,7 +152,12 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           <PasteSlot
             label="4h"
             image={entry.h4[session]?.img}
-            onChange={(u) => onUpdate({ ...entry, h4: { ...entry.h4, [session]: { ...entry.h4[session], img: u } } })}
+            onChange={(u) =>
+              onUpdate({
+                ...entry,
+                h4: { ...entry.h4, [session]: { ...entry.h4[session], img: u } },
+              })
+            }
             focused={isFocused(`h4-${session}` as SlotKind)}
             onFocus={() => focus(`h4-${session}` as SlotKind)}
             className="h-52 rounded-xl overflow-hidden border border-border/50"

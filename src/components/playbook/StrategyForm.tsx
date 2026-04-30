@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { PlaybookModel, SetupConfluences, ExecutionRules } from "@/types/playbook";
-import { X, Save, Target, CheckSquare, Settings2, FileText, Clock, TrendingUp, Plus, Image as ImageIcon, Trash2, Upload } from "lucide-react";
+import {
+  X,
+  Save,
+  Target,
+  CheckSquare,
+  Settings2,
+  FileText,
+  Clock,
+  TrendingUp,
+  Plus,
+  Image as ImageIcon,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { Input } from "@/components/ui/input";
@@ -15,16 +28,20 @@ interface StrategyFormProps {
 export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProps) {
   const [name, setName] = useState(initialData?.name || "");
   const [timeframe, setTimeframe] = useState(initialData?.timeframe || "1H");
-  const [marketCondition, setMarketCondition] = useState(initialData?.marketCondition || "Trending");
+  const [marketCondition, setMarketCondition] = useState(
+    initialData?.marketCondition || "Trending",
+  );
   const [killzones, setKillzones] = useState(initialData?.killzones || "");
-  const [status, setStatus] = useState<"Approved" | "Testing" | "Under Review">(initialData?.status || "Testing");
+  const [status, setStatus] = useState<"Approved" | "Testing" | "Under Review">(
+    initialData?.status || "Testing",
+  );
   const [definition, setDefinition] = useState(initialData?.definition || "");
   const [thumbnail, setThumbnail] = useState<string>(
-    initialData?.images.find((img) => img.type === "perfect")?.url || ""
+    initialData?.images.find((img) => img.type === "perfect")?.url || "",
   );
 
   const [confluences, setConfluences] = useState<SetupConfluences>(
-    initialData?.setupConfluences || []
+    initialData?.setupConfluences || [],
   );
   const [newConfluence, setNewConfluence] = useState("");
 
@@ -35,7 +52,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       takeProfit: "",
       riskPercent: "1%",
       breakEven: "",
-    }
+    },
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,12 +69,12 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       definition,
       setupConfluences: confluences,
       executionRules: execution,
-      images: thumbnail 
+      images: thumbnail
         ? [
             { id: generateId(), url: thumbnail, type: "perfect" },
-            ...(initialData?.images?.filter(img => img.type !== 'perfect') || [])
+            ...(initialData?.images?.filter((img) => img.type !== "perfect") || []),
           ]
-        : (initialData?.images?.filter(img => img.type !== 'perfect') || []),
+        : initialData?.images?.filter((img) => img.type !== "perfect") || [],
     };
 
     onSave(model);
@@ -114,7 +131,6 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 lg:p-8 overflow-y-auto scrollbar-hide">
       <div className="bg-background rounded-[48px] w-full max-w-5xl max-h-[92vh] overflow-hidden border border-border flex flex-col my-auto relative shadow-2xl animate-in zoom-in-95 duration-300">
-        
         {/* Header - Identical to TradeModal */}
         <div className="px-10 pt-10 pb-6 border-b border-border/50 shrink-0">
           <div className="flex items-center justify-between">
@@ -127,7 +143,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                   {initialData ? "Edit Strategy" : "Add New Strategy"}
                 </h2>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-1">
-                   Strategy Configuration & Protocol
+                  Strategy Configuration & Protocol
                 </p>
               </div>
             </div>
@@ -140,8 +156,10 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-10 py-8 space-y-10 scrollbar-hide">
-          
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto px-10 py-8 space-y-10 scrollbar-hide"
+        >
           {/* Section: Basic Info */}
           <div className="space-y-6">
             <SectionHeader title="Model Specification" />
@@ -196,19 +214,28 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
               {/* Feature Image Upload */}
               <div className="md:col-span-2">
                 <Field label="Feature Visual (Thumbnail)">
-                  <div 
+                  <div
                     onPaste={handlePaste}
                     className="relative aspect-video w-full rounded-[32px] border-2 border-dashed border-border bg-muted/20 flex flex-col items-center justify-center overflow-hidden group transition-all hover:border-primary/50"
                   >
                     {thumbnail ? (
                       <>
-                        <img src={thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                        <img
+                          src={thumbnail}
+                          alt="Thumbnail Preview"
+                          className="w-full h-full object-cover"
+                        />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-4 backdrop-blur-[2px]">
                           <label className="cursor-pointer p-4 bg-white/10 hover:bg-white/20 rounded-2xl text-white transition-all active:scale-95">
                             <Upload className="w-6 h-6" />
-                            <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={handleFileUpload}
+                            />
                           </label>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setThumbnail("")}
                             className="p-4 bg-rose-500/20 hover:bg-rose-500/40 rounded-2xl text-rose-500 transition-all active:scale-95"
@@ -223,12 +250,21 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                           <ImageIcon className="w-10 h-10" />
                         </div>
                         <div>
-                          <p className="text-sm font-black uppercase tracking-widest text-foreground">Paste or Upload Image</p>
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">Perfect execution example</p>
+                          <p className="text-sm font-black uppercase tracking-widest text-foreground">
+                            Paste or Upload Image
+                          </p>
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">
+                            Perfect execution example
+                          </p>
                         </div>
                         <label className="mt-4 px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl cursor-pointer hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20">
                           Choose File
-                          <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                          />
                         </label>
                       </div>
                     )}
@@ -241,7 +277,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
           {/* Section: Logic & Protocol */}
           <div className="space-y-10">
             <SectionHeader title="Logic & Protocol" />
-            
+
             <div className="space-y-6">
               <div className="flex gap-4">
                 <Input
@@ -371,9 +407,7 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="h-4 w-1 bg-primary rounded-full" />
-      <h3 className="text-xs font-black uppercase tracking-widest text-primary">
-        {title}
-      </h3>
+      <h3 className="text-xs font-black uppercase tracking-widest text-primary">{title}</h3>
     </div>
   );
 }

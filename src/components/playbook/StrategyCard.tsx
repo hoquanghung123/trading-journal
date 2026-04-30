@@ -53,17 +53,23 @@ export function StrategyCard({ model, onClick, stats }: StrategyCardProps) {
         <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">
           {model.name}
         </h3>
-        
+
         <div className="mt-auto pt-6 flex items-center justify-between border-t border-border/50">
           <div className="flex flex-col">
-            <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">Winrate</span>
-            <span className={`text-sm font-black ${stats && stats.winRate >= 60 ? "text-emerald-500" : stats && stats.winRate < 40 ? "text-rose-500" : "text-foreground"}`}>
+            <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">
+              Winrate
+            </span>
+            <span
+              className={`text-sm font-black ${stats && stats.winRate >= 60 ? "text-emerald-500" : stats && stats.winRate < 40 ? "text-rose-500" : "text-foreground"}`}
+            >
               {stats ? `${stats.winRate.toFixed(0)}%` : "N/A"}
             </span>
           </div>
-          
+
           <div className="flex flex-col items-end">
-            <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">Avg RR</span>
+            <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">
+              Avg RR
+            </span>
             <span className="text-sm font-black text-foreground">
               {stats ? stats.avgRr.toFixed(1) : "—"}
             </span>
@@ -71,12 +77,12 @@ export function StrategyCard({ model, onClick, stats }: StrategyCardProps) {
         </div>
 
         <div className="mt-3 flex items-center justify-between">
-           <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-             <Clock className="w-3 h-3" /> {model.timeframe}
-           </div>
-           <div className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-             {stats?.count || 0} Trades
-           </div>
+          <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
+            <Clock className="w-3 h-3" /> {model.timeframe}
+          </div>
+          <div className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+            {stats?.count || 0} Trades
+          </div>
         </div>
       </div>
     </div>

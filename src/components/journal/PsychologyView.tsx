@@ -392,11 +392,11 @@ function Section({
   action?: React.ReactNode;
 }) {
   return (
-    <section
-      className="bg-white rounded-2xl border border-border p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-300"
-    >
+    <section className="bg-white rounded-2xl border border-border p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-300">
       <div className="flex items-center justify-between mb-6 sm:mb-8 gap-4">
-        <h2 className="text-[10px] sm:text-sm font-black uppercase tracking-widest text-primary">{title}</h2>
+        <h2 className="text-[10px] sm:text-sm font-black uppercase tracking-widest text-primary">
+          {title}
+        </h2>
         {action}
       </div>
       {children}

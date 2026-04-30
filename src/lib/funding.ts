@@ -20,7 +20,7 @@ const fromRow = (r: Row): MonthlyFunding => ({
   amount: Number(r.amount),
 });
 
-const toRow = (f: Partial<MonthlyFunding>, userId: string) => ({
+const toRow = (f: MonthlyFunding, userId: string) => ({
   user_id: userId,
   month_key: f.monthKey,
   amount: f.amount,
@@ -31,7 +31,7 @@ export async function fetchFunding(): Promise<MonthlyFunding[]> {
     .from("monthly_funding")
     .select("*")
     .order("month_key", { ascending: true });
-  
+
   if (error) throw error;
   return (data as Row[]).map(fromRow);
 }
@@ -39,11 +39,11 @@ export async function fetchFunding(): Promise<MonthlyFunding[]> {
 export async function upsertFunding(f: Partial<MonthlyFunding>): Promise<void> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
+  if (!f.monthKey) throw new Error("Month key is required");
 
-  const { error } = await supabase
-    .from("monthly_funding")
-    .upsert(toRow(f, u.user.id), { onConflict: "user_id, month_key" });
-  
+  const row = toRow(f as MonthlyFunding, u.user.id);
+  const { error } = await supabase.from("monthly_funding").upsert([row]);
+
   if (error) throw error;
 }
 

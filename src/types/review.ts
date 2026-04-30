@@ -22,7 +22,7 @@ export interface Review {
   id: string; // timestamp or uuid
   period: string; // e.g. "2026-W17", "2026-04"
   type: ReviewType;
-  
+
   // Self-Reflection
   technicalReflection: string;
   psychologicalReflection: string;
@@ -33,7 +33,7 @@ export interface Review {
 
   // Action Plan
   actionPlan: ActionPlan;
-  
+
   createdAt: number;
   updatedAt: number;
 }

@@ -18,9 +18,7 @@ export function PlaybookGrid({ models, onSelectModel, onAddNew, stats }: Playboo
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <FolderOpen className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              Playbook
-            </h2>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">Playbook</h2>
           </div>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
             Trading Models & Strategies
