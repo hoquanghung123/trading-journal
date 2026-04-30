@@ -217,6 +217,7 @@ export function TradeLog() {
                       key={k}
                       checked={cols[k]}
                       onCheckedChange={(v) => setCols((c) => ({ ...c, [k]: !!v }))}
+                      onSelect={(e) => e.preventDefault()}
                       className="font-medium"
                     >
                       {COL_LABELS[k]}
@@ -252,6 +253,8 @@ export function TradeLog() {
                   trade={t}
                   onClick={() => openEdit(t)}
                   showGrade={settings?.showTradeGrade}
+                  cols={cols}
+                  playbookName={playbookSetups.find((s) => s.id === t.setupId)?.name}
                 />
               ))}
             </div>
