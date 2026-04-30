@@ -147,15 +147,6 @@ export function JournalView() {
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [entries, asset, month, assetList]);
 
-  const stats = useMemo(() => {
-    const total = filtered.length * 2;
-    const correct = filtered.reduce(
-      (s, e) => s + (e.weeklyCorrect ? 1 : 0) + (e.dailyCorrect ? 1 : 0),
-      0,
-    );
-    const acc = total ? Math.round((correct / total) * 100) : 0;
-    return { days: filtered.length, correct, total, acc };
-  }, [filtered]);
 
   const jumpRight = () => {
     const el = scrollerRef.current;
@@ -308,18 +299,6 @@ export function JournalView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 lg:gap-8 px-4 lg:px-6 py-2 border-t border-border bg-muted/30 text-[10px] font-semibold tracking-wide overflow-x-auto hide-scrollbar">
-          <Stat label="Days" value={stats.days} />
-          <Stat label="Checks" value={`${stats.correct}/${stats.total}`} />
-          <Stat label="Win %" value={`${stats.acc}%`} accent={stats.acc >= 60 ? "green" : "amber"} />
-          <span className="ml-auto hidden sm:flex items-center gap-2 text-primary whitespace-nowrap">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Live
-          </span>
-        </div>
       </header>
 
       <main className="px-4 py-5">
@@ -363,28 +342,6 @@ export function JournalView() {
   );
 }
 
-function Stat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  accent?: "green" | "amber";
-}) {
-  const color =
-    accent === "green"
-      ? "text-emerald-600"
-      : accent === "amber"
-        ? "text-amber-600"
-        : "text-foreground";
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="text-muted-foreground font-bold uppercase tracking-widest text-[9px]">{label}</span>
-      <span className={`font-black text-[12px] ${color}`}>{value}</span>
-    </span>
-  );
-}
 
 function Empty({ onAdd }: { onAdd: () => void }) {
   return (

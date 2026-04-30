@@ -116,10 +116,10 @@ function MonthBox({
                       className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
                         active
                           ? b === "bullish" 
-                            ? "bg-emerald-500 text-white shadow-sm" 
+                            ? "bg-primary text-primary-foreground shadow-sm" 
                             : b === "bearish" 
-                              ? "bg-rose-500 text-white shadow-sm"
-                              : "bg-amber-500 text-white shadow-sm"
+                              ? "bg-destructive text-destructive-foreground shadow-sm"
+                              : "bg-warning text-warning-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >

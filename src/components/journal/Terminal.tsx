@@ -98,7 +98,12 @@ function Shell() {
   const signOut = async () => { await supabase.auth.signOut(); };
 
   return (
-    <div className="min-h-screen flex bg-background font-sans overflow-hidden">
+    <div 
+      className="min-h-screen flex bg-background font-sans overflow-hidden"
+      style={{ 
+        "--sidebar-width": isMobileOpen ? "0px" : isLeftCollapsed ? "80px" : "260px" 
+      } as React.CSSProperties}
+    >
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div 

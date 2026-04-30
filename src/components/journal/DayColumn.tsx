@@ -21,7 +21,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
   return (
     <div
       id={`bias-entry-${entry.id}`}
-      className="bg-white rounded-2xl w-[280px] shrink-0 flex flex-col overflow-hidden border border-border shadow-sm scroll-mx-6 transition-all duration-300"
+      className="bg-white rounded-2xl w-[85vw] md:w-[calc((100vw-var(--sidebar-width)-64px)/3)] shrink-0 flex flex-col overflow-hidden border border-border shadow-sm scroll-mx-6 transition-all duration-300"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-border bg-muted/20">
@@ -68,7 +68,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           />
         ) : (
           /* Spacer for Tue-Fri to maintain horizontal alignment */
-          <div className="h-28 rounded-xl border border-terminal-border/10 bg-black/5 flex items-center justify-center relative group/spacer">
+          <div className="h-44 rounded-xl border border-terminal-border/10 bg-black/5 flex items-center justify-center relative group/spacer">
             <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/20 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/20 font-black border border-white/5">
               Monthly Outlook
             </div>
@@ -130,7 +130,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             onChange={(u) => onUpdate({ ...entry, h4: { ...entry.h4, [session]: { ...entry.h4[session], img: u } } })}
             focused={isFocused(`h4-${session}` as SlotKind)}
             onFocus={() => focus(`h4-${session}` as SlotKind)}
-            className="h-36 rounded-xl overflow-hidden border border-border/50"
+            className="h-52 rounded-xl overflow-hidden border border-border/50"
           >
             {entry.h4[session]?.bias && (
               <span
@@ -175,7 +175,7 @@ function SlotWithBias({
       focused={focused}
       onFocus={onFocus}
       onChange={onImg}
-      className="h-28"
+      className="h-44"
     >
       {!hideBiasAndTick && (
         <>

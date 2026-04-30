@@ -247,10 +247,10 @@ function BiasPicker({ value, onChange }: { value: Bias; onChange: (v: Bias) => v
             className={`px-3 py-3 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all flex items-center justify-center text-center leading-none h-full ${
               active
                 ? b === "bullish" 
-                  ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20" 
+                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
                   : b === "bearish" 
-                    ? "bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/20"
-                    : "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/20"
+                    ? "bg-destructive text-destructive-foreground border-destructive shadow-lg shadow-destructive/20"
+                    : "bg-warning text-warning-foreground border-warning shadow-lg shadow-warning/20"
                 : "bg-white border-border text-muted-foreground hover:border-primary/30"
             }`}
           >
