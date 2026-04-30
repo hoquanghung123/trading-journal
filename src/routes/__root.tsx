@@ -93,8 +93,8 @@ function RootComponent() {
       const tf = timeframe.toUpperCase();
 
       // Early validation for Monthly
-      if ((tf === "M" || tf === "MONTH" || tf === "1M") && weekdayOf(today) !== "MON") {
-        toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2!");
+      if ((tf === "M" || tf === "MONTH" || tf === "1M") && weekdayOf(today) !== "MON" && !today.endsWith("-01")) {
+        toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2 hoặc Ngày 1 đầu tháng!");
         (window as any).__JOURNAL_SYNC_IN_PROGRESS__ = false;
         return;
       }
