@@ -1,9 +1,8 @@
-import { createAPIFileRoute } from '@tanstack/start/api'
+import { createAPIFileRoute } from '@tanstack/react-start/api'
 
 export const Route = createAPIFileRoute('/storage/$')({
   handler: async ({ request, params }) => {
-    // In TanStack Start API routes, the splat parameter is usually in params['_'] or similar
-    // based on how the route is defined. For /storage/$, it's likely params['_']
+    // In TanStack Start API routes, the splat parameter is in params['_']
     const path = params['_']
     
     if (!path) {
@@ -11,8 +10,6 @@ export const Route = createAPIFileRoute('/storage/$')({
     }
 
     try {
-      // In Cloudflare Pages, bindings are available on the request.context or platform object
-      // depending on the adapter. TanStack Start Cloudflare adapter usually puts them in request.env
       // @ts-ignore
       const r2 = request.env?.R2 || (globalThis as any).R2
 
