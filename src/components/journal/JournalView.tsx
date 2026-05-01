@@ -272,21 +272,23 @@ export function JournalView() {
           </div>
 
           <div className="flex items-center gap-4 lg:ml-auto">
-            <label className="flex items-center gap-2 flex-1 lg:flex-none">
-              <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
-              <select
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="flex-1 lg:flex-none bg-white border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              >
-                <option value="ALL">All months</option>
-                {months.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {viewMode !== "month" && (
+              <label className="flex items-center gap-2 flex-1 lg:flex-none">
+                <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+                <select
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="flex-1 lg:flex-none bg-white border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                >
+                  <option value="ALL">All months</option>
+                  {months.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
               <button
