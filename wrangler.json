@@ -1,9 +1,10 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "trading-journal",
-  "compatibility_date": "2025-09-24",
-  "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": "dist/client",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "r2_buckets": [
     {
       "binding": "R2",

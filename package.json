@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && cp dist/server/server.js dist/client/server.js && cp src/_worker.js dist/client/_worker.js && cp -r dist/server/assets/* dist/client/assets/ && cp wrangler.production.json dist/client/wrangler.json",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "build:cf": "vite build && cp dist/server/server.js dist/client/server.js && cp dist/server/server.js dist/client/_worker.js && cp -r dist/server/assets/* dist/client/assets/ && cp wrangler.production.json dist/client/wrangler.json",
+    "build:cf": "npm run build",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

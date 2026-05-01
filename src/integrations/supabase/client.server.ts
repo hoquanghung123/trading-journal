@@ -6,17 +6,20 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || (globalThis as any).SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || (globalThis as any).SUPABASE_SERVICE_ROLE_KEY;
+  const env = (typeof process !== 'undefined' ? process.env : {}) as any;
+  const g = (globalThis as any);
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  const url = env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || g.SUPABASE_URL || g.VITE_SUPABASE_URL;
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || g.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
     if (typeof window === "undefined") {
       console.warn("Supabase Admin credentials missing from server environment.");
     }
     return null;
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient<Database>(url, key, {
     auth: {
       storage: undefined,
       persistSession: false,

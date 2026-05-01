@@ -2,13 +2,16 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const getSupabaseConfig = () => {
+let _supabase: any;
+
+const getSupabaseClient = () => {
+  if (_supabase) return _supabase;
+
   // Try to get from import.meta.env (Vite build-time)
   let url = import.meta.env.VITE_SUPABASE_URL || "";
   let key = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
   // If missing and on server, try to get from process.env or globalThis
-  // Note: We can't easily use getRequest() here because it's a module-level variable
   if (!url || !key) {
     const env = (typeof process !== 'undefined' ? process.env : {}) as any;
     const g = (globalThis as any);
@@ -16,18 +19,24 @@ const getSupabaseConfig = () => {
     key = key || env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || g.SUPABASE_PUBLISHABLE_KEY || g.VITE_SUPABASE_ANON_KEY;
   }
 
-  return { 
-    url: url || "https://placeholder-url.supabase.co", 
-    key: key || "placeholder-key" 
-  };
+  _supabase = createClient<Database>(
+    url || "https://placeholder-url.supabase.co", 
+    key || "placeholder-key", 
+    {
+      auth: {
+        storage: typeof window !== "undefined" ? window.localStorage : undefined,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    }
+  );
+  return _supabase;
 };
 
-const config = getSupabaseConfig();
-
-export const supabase = createClient<Database>(config.url, config.key, {
-  auth: {
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
-    persistSession: true,
-    autoRefreshToken: true,
+// Export a proxy that delegates all calls to the lazily initialized client
+export const supabase = new Proxy({} as any, {
+  get(_, prop, receiver) {
+    const client = getSupabaseClient();
+    return Reflect.get(client, prop, receiver);
   },
-});
+}) as unknown as ReturnType<typeof createClient<Database>>;
