@@ -25,14 +25,18 @@ export default {
         const path = decodeURIComponent(url.pathname.substring(9));
         const r2 = env.R2;
         if (r2) {
-          // Try R2 first
-          const object = await r2.get(path);
-          if (object) {
-            const headers = new Headers();
-            object.writeHttpMetadata(headers);
-            headers.set("etag", object.httpEtag);
-            headers.set("Cache-Control", "public, max-age=31536000, immutable");
-            return new Response(object.body, { headers });
+          // Try R2 first, but wrap in try/catch because Sippy can throw "Access Denied" for non-existent files
+          try {
+            const object = await r2.get(path);
+            if (object) {
+              const headers = new Headers();
+              object.writeHttpMetadata(headers);
+              headers.set("etag", object.httpEtag);
+              headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              return new Response(object.body, { headers });
+            }
+          } catch (e) {
+            console.warn("R2 get failed (likely Sippy-related), falling back to Supabase:", e.message);
           }
 
           // Fallback to Supabase if not in R2
