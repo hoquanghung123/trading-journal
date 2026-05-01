@@ -101,8 +101,8 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
           </div>
 
           <div className="space-y-10">
-            {/* Monthly - Only on Mondays */}
-            {weekdayOf(draft.date) === "MON" && (
+            {/* Monthly - Only on Mondays or 1st of Month */}
+            {(weekdayOf(draft.date) === "MON" || draft.date.endsWith("-01")) && (
               <Section title="Monthly Outlook">
                 <div className="grid grid-cols-[1fr_120px] gap-4">
                   <PasteSlot

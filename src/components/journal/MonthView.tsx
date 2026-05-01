@@ -37,7 +37,7 @@ export function MonthView({ entries, onUpdate, asset }: Props) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-8">
+    <div className="flex flex-row gap-8 overflow-x-auto pb-10 px-4 md:px-8 snap-x hide-scrollbar">
       {grouped.map(([month, monthEntries]) => (
         <MonthBox
           key={month}
@@ -86,7 +86,7 @@ function MonthBox({
   }, [month]);
 
   return (
-    <div className="bg-white rounded-[24px] border border-border shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white rounded-[32px] border border-border shadow-md overflow-hidden flex flex-col w-[85vw] md:w-[800px] shrink-0 snap-center transition-all duration-300 hover:shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
         <h3 className="text-lg font-black tracking-tight text-foreground flex items-center">
