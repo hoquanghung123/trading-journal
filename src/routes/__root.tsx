@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { useEffect } from "react";
 import { toast, Toaster } from "sonner";
@@ -81,6 +81,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const router = useRouter();
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       // Listen for our specific extension message
@@ -124,7 +125,7 @@ function RootComponent() {
 
         if (!entry) {
           entry = {
-            id: crypto.randomUUID(),
+            id: typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2),
             date: today,
             asset: targetAsset,
             weeklyBias: "consolidation",
@@ -149,9 +150,7 @@ function RootComponent() {
             toast.info("Đang lưu vào khung MONTHLY...");
             updatedEntry.monthlyImg = path;
           } else {
-            toast.error("Chỉ hỗ trợ lưu khung Monthly vào Thứ 2 hoặc Ngày 1 đầu tháng!", {
-              id: toastId,
-            });
+            toast.error("Chỉ hỗ trợ lưu khung Monthly vào Thứ 2 hoặc Ngày 1 đầu tháng!");
             return;
           }
         } else if (tf === "W" || tf === "WEEK") {
@@ -169,7 +168,6 @@ function RootComponent() {
             session = "LDN";
           } else if (hour >= 18 || hour < 5) {
             if (SPLIT_NY_ASSETS.includes(targetAsset)) {
-              // Split NY for Indices: 18h-23h (AM), 23h-5h (PM)
               if (hour >= 18 && hour < 23) session = "NY AM";
               else session = "NY PM";
             } else {
@@ -184,12 +182,11 @@ function RootComponent() {
         await upsertEntry(updatedEntry as DayEntry);
         toast.success(`Đã lưu ${targetAsset} thành công!`, { id: toastId });
 
-        // Reload faster
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
+        // Smooth update without full reload
+        router.invalidate();
       } catch (err: any) {
-        toast.error("Lỗi: " + err.message, { id: toastId });
+        console.error("Extension Sync Error:", err);
+        toast.error("Lỗi đồng bộ: " + (err.message || "Unknown error"), { id: toastId });
       } finally {
         window.__JOURNAL_SYNC_IN_PROGRESS__ = false;
       }
