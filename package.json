@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "build:cf": "vite build && cp dist/server/server.js dist/client/server.js && cp dist/server/server.js dist/client/_worker.js && cp -r dist/server/assets/* dist/client/assets/ && cp wrangler.jsonc dist/client/wrangler.json",
+    "build:cf": "vite build && cp dist/server/server.js dist/client/server.js && cp dist/server/server.js dist/client/_worker.js && cp -r dist/server/assets/* dist/client/assets/ && sed 's/\"dist\\/client\"/\\".\\"/g' wrangler.jsonc > dist/client/wrangler.json",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
