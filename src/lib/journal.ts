@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "./utils";
+import { uploadToR2, deleteFromR2 } from "./storage";
 
 export type Bias = "bullish" | "bearish" | "consolidation";
 export type Session = "ASIA" | "LDN" | "NY" | "NY AM" | "NY PM";
@@ -235,7 +236,6 @@ export function fileToDataURL(file: File): Promise<string> {
   });
 }
 
-const BUCKET = "journal-charts";
 
 /** Upload a data URL or File to Storage. Returns a public path stored in DB. */
 export async function uploadChartImage(input: string | File): Promise<string> {
@@ -267,11 +267,26 @@ export async function uploadChartImage(input: string | File): Promise<string> {
   }
 
   const path = `${u.user.id}/${generateId()}.${ext}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
-    contentType: blob.type,
-    upsert: false,
+
+  // Convert blob to base64 to send to server function
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
   });
-  if (error) throw error;
+
+  await uploadToR2({
+    data: {
+      path,
+      base64,
+      contentType: blob.type,
+    },
+  });
+
   return path;
 }
 
@@ -287,7 +302,7 @@ export function getChartUrl(path: string): string {
 
 export async function deleteChartImage(path?: string): Promise<void> {
   if (!path || path.startsWith("data:") || path.startsWith("http")) return;
-  await supabase.storage.from(BUCKET).remove([path]);
+  await deleteFromR2({ data: path });
 }
 
 /**
