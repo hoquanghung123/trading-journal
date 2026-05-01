@@ -14,7 +14,7 @@ export type SlotKind =
   | "h4-NY AM"
   | "h4-NY PM";
 
-export const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
+export const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!", "ES", "YM", "NQ"];
 
 export function getSessionsForAsset(asset: string): Session[] {
   if (SPLIT_NY_ASSETS.includes(asset)) {
