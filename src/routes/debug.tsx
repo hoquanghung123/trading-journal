@@ -4,19 +4,32 @@ import { getRequest } from "@tanstack/react-start/server";
 
 const getServerEnv = createServerFn({ method: "GET" })
   .handler(async () => {
-    const request = getRequest();
-    // @ts-ignore
-    const env = request?.context?.cloudflare?.env || request?.context || {};
-    
-    return {
-      hasCloudflare: !!request?.context?.cloudflare,
-      envKeys: Object.keys(env).filter(k => !k.includes("KEY") && !k.includes("SECRET")),
-      processEnvKeys: typeof process !== "undefined" ? Object.keys(process.env).filter(k => !k.includes("KEY") && !k.includes("SECRET")) : [],
-      globalKeys: Object.keys(globalThis).filter(k => k === "R2" || k === "MINIFLARE"),
-    };
+    try {
+      const request = getRequest();
+      // @ts-ignore
+      const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any) || {};
+      
+      const check = (key: string) => !!(env[key] || (globalThis as any)[key]);
+
+      return {
+        timestamp: new Date().toISOString(),
+        hasCloudflareContext: !!request?.context?.cloudflare,
+        variablesPresent: {
+          SUPABASE_URL: check("SUPABASE_URL") || check("VITE_SUPABASE_URL"),
+          SUPABASE_PUBLISHABLE_KEY: check("SUPABASE_PUBLISHABLE_KEY") || check("VITE_SUPABASE_ANON_KEY"),
+          SUPABASE_SERVICE_ROLE_KEY: check("SUPABASE_SERVICE_ROLE_KEY"),
+          R2_BINDING: check("R2"),
+        },
+        allEnvKeys: Object.keys(env).filter(k => !k.includes("KEY") && !k.includes("SECRET") && !k.includes("PASSWORD")),
+        nodeVersion: typeof process !== "undefined" ? process.version : "unknown",
+      };
+    } catch (e: any) {
+      return { error: e.message, stack: e.stack };
+    }
   });
 
 export const Route = createFileRoute("/debug")({
+  loader: async () => getServerEnv(),
   component: DebugComponent,
 });
 
