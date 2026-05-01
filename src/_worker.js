@@ -15,6 +15,17 @@ export default {
       console.log("Worker executing request:", request.url);
       console.log("Available env keys:", Object.keys(env));
 
+      // Direct bypass for /hello to verify worker health
+      if (request.url.endsWith('/hello')) {
+        return new Response(JSON.stringify({ 
+          status: "ok", 
+          message: "Hello from Worker Wrapper!",
+          envKeys: Object.keys(env)
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
       return await server.fetch(request, env, ctx);
     } catch (e) {
       console.error("CRITICAL WORKER ERROR:", e);
