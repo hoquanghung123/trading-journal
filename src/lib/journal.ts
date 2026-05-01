@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "./utils";
-import { uploadToR2, deleteFromR2 } from "./storage";
+import { uploadToR2, deleteFromR2, proxyFetchImage } from "./storage";
 
 export type Bias = "bullish" | "bearish" | "consolidation";
 export type Session = "ASIA" | "LDN" | "NY" | "NY AM" | "NY PM";
@@ -242,48 +242,45 @@ export async function uploadChartImage(input: string | File): Promise<string> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
 
-  let blob: Blob;
+  let base64: string;
+  let contentType: string;
   let ext = "png";
 
   if (typeof input === "string" && input.startsWith("http")) {
-    // Remote URL
-    const response = await fetch(input);
-    if (!response.ok) throw new Error("Failed to fetch image from URL");
-    blob = await response.blob();
-    ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg");
+    // Remote URL (e.g. TradingView) - Fetch on Server Side
+    const result = await proxyFetchImage({ data: input });
+    base64 = result.base64;
+    contentType = result.contentType;
+    ext = (contentType.split("/")[1] || "png").replace("jpeg", "jpg");
   } else if (typeof input === "string") {
     // data URL
     const m = input.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
     if (!m) throw new Error("Invalid image data");
-    const mime = m[1];
-    ext = mime.split("/")[1].replace("jpeg", "jpg");
-    const bin = atob(m[2]);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    blob = new Blob([bytes], { type: mime });
+    contentType = m[1];
+    base64 = m[2];
+    ext = contentType.split("/")[1].replace("jpeg", "jpg");
   } else {
-    blob = input;
-    ext = (input.type.split("/")[1] || "png").replace("jpeg", "jpg");
+    // File object
+    contentType = input.type;
+    ext = (contentType.split("/")[1] || "png").replace("jpeg", "jpg");
+    base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(input);
+    });
   }
 
   const path = `${u.user.id}/${generateId()}.${ext}`;
-
-  // Convert blob to base64 to send to server function
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 
   await uploadToR2({
     data: {
       path,
       base64,
-      contentType: blob.type,
+      contentType,
     },
   });
 

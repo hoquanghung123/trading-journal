@@ -31,6 +31,32 @@ export const uploadToR2 = createServerFn({ method: "POST" })
   });
 
 /**
+ * Server function to fetch a remote image and return it as base64.
+ * Used to bypass CORS for TradingView snapshots.
+ */
+export const proxyFetchImage = createServerFn({ method: "POST" })
+  .handler(async ({ data: url }: { data: string }) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch remote image: ${response.statusText}`);
+    
+    const contentType = response.headers.get("content-type") || "image/png";
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    
+    // Convert to base64
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    
+    return {
+      base64,
+      contentType,
+    };
+  });
+
+/**
  * Server function to delete a file from Cloudflare R2.
  */
 export const deleteFromR2 = createServerFn({ method: "POST" })

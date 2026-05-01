@@ -100,6 +100,17 @@ export default {
         response = await server.fetch(request, env, ctx);
       } catch (e) {
         console.error("SSR Fetch Error:", e);
+        // Distinguish between RPC/data requests and UI requests to prevent client crashes
+        const isJson = request.headers.get("accept")?.includes("application/json") || 
+                       request.headers.get("x-tanstack-start-rpc") || 
+                       url.pathname.includes("/_rpc/");
+        
+        if (isJson) {
+          return new Response(JSON.stringify({ error: "Internal Server Error", message: e.message }), { 
+            status: 500, 
+            headers: { "Content-Type": "application/json" } 
+          });
+        }
         return new Response("Internal Server Error", { status: 500 });
       }
       
