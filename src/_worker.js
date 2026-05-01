@@ -25,17 +25,36 @@ export default {
       };
 
       // 1. Try to serve static assets first
-      // Cloudflare Pages provides env.ASSETS to fetch static files
       try {
         const assetResponse = await env.ASSETS.fetch(request.clone());
         if (assetResponse.ok) {
           return assetResponse;
         }
       } catch (e) {
-        console.warn("Asset fetch failed, falling back to SSR:", e);
+        console.warn("Asset fetch failed, falling back to handlers:", e);
       }
 
-      // 2. Fallback to SSR if asset not found
+      // 2. Direct R2 storage bypass
+      // This handles /storage/path/to/image.png directly from R2
+      const url = new URL(request.url);
+      if (url.pathname.startsWith('/storage/')) {
+        const path = decodeURIComponent(url.pathname.substring(9)); // Remove '/storage/'
+        const r2 = env.R2;
+        if (r2) {
+          const object = await r2.get(path);
+          if (object) {
+            const headers = new Headers();
+            object.writeHttpMetadata(headers);
+            headers.set("etag", object.httpEtag);
+            headers.set("Cache-Control", "public, max-age=31536000, immutable");
+            return new Response(object.body, { headers });
+          }
+          return new Response("Object not found in R2", { status: 404 });
+        }
+        return new Response("R2 binding not configured", { status: 500 });
+      }
+
+      // 3. Fallback to SSR
       let response = await server.fetch(request, env, ctx);
       
       // 3. Inject environment variables into the HTML for the client
