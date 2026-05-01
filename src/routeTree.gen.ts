@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as HelloRouteImport } from './routes/hello'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StorageSplatRouteImport } from './routes/storage.$'
 
+const HelloRoute = HelloRouteImport.update({
+  id: '/hello',
+  path: '/hello',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DebugRoute = DebugRouteImport.update({
   id: '/debug',
   path: '/debug',
@@ -32,35 +38,46 @@ const StorageSplatRoute = StorageSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/debug': typeof DebugRoute
+  '/hello': typeof HelloRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/debug': typeof DebugRoute
+  '/hello': typeof HelloRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/debug': typeof DebugRoute
+  '/hello': typeof HelloRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/debug' | '/storage/$'
+  fullPaths: '/' | '/debug' | '/hello' | '/storage/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/debug' | '/storage/$'
-  id: '__root__' | '/' | '/debug' | '/storage/$'
+  to: '/' | '/debug' | '/hello' | '/storage/$'
+  id: '__root__' | '/' | '/debug' | '/hello' | '/storage/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DebugRoute: typeof DebugRoute
+  HelloRoute: typeof HelloRoute
   StorageSplatRoute: typeof StorageSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/hello': {
+      id: '/hello'
+      path: '/hello'
+      fullPath: '/hello'
+      preLoaderRoute: typeof HelloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/debug': {
       id: '/debug'
       path: '/debug'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DebugRoute: DebugRoute,
+  HelloRoute: HelloRoute,
   StorageSplatRoute: StorageSplatRoute,
 }
 export const routeTree = rootRouteImport
