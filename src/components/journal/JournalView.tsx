@@ -157,10 +157,10 @@ export function JournalView() {
         return asset === "ALL" ? true : e.asset === asset;
       })
       .filter((e) =>
-        asset === "TODAY" ? true : month === "ALL" ? true : monthKey(e.date) === month,
+        viewMode === "month" ? true : (asset === "TODAY" ? true : month === "ALL" ? true : monthKey(e.date) === month),
       )
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [entries, asset, month, assetList]);
+  }, [entries, asset, month, assetList, viewMode]);
 
   const jumpRight = () => {
     const el = scrollerRef.current;
