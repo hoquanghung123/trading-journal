@@ -11,24 +11,17 @@ export default {
       if (env.VITE_SUPABASE_URL) globalThis.VITE_SUPABASE_URL = env.VITE_SUPABASE_URL;
       if (env.VITE_SUPABASE_ANON_KEY) globalThis.VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY;
 
-      // Debug log for environment
-      console.log("Worker executing request:", request.url);
-      console.log("Available env keys:", Object.keys(env));
+      // 1. Check for Node.js compatibility
+      const hasProcess = typeof process !== 'undefined';
+      const hasAsyncLocalStorage = typeof ReadableStream !== 'undefined'; // Just a placeholder check
+      console.log("Environment Check:", { hasProcess, nodeVersion: hasProcess ? process.version : 'N/A' });
 
-      // Intercept fetch to debug internal calls
-      const originalFetch = globalThis.fetch;
-      // @ts-ignore
-      globalThis.fetch = async (input, init) => {
-        const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
-        console.log("Internal Fetch call:", url);
-        try {
-          const res = await originalFetch(input, init);
-          if (!res.ok) console.warn("Internal Fetch failed:", url, res.status);
-          return res;
-        } catch (err) {
-          console.error("Internal Fetch CRASHED:", url, err.message);
-          throw err;
-        }
+      // 2. Capture console.error to find the real cause of HTTPError
+      let lastErrorMessage = "";
+      const originalConsoleError = console.error;
+      console.error = (...args) => {
+        lastErrorMessage += args.map(a => String(a)).join(' ') + "\n";
+        originalConsoleError.apply(console, args);
       };
 
       // Direct bypass for /hello to verify worker health
@@ -36,7 +29,8 @@ export default {
         return new Response(JSON.stringify({ 
           status: "ok", 
           message: "Hello from Worker Wrapper!",
-          envKeys: Object.keys(env)
+          envKeys: Object.keys(env),
+          diagnostics: { hasProcess, nodeVersion: hasProcess ? process.version : 'N/A' }
         }), {
           headers: { 'Content-Type': 'application/json' }
         });
@@ -44,15 +38,18 @@ export default {
 
       const response = await server.fetch(request, env, ctx);
       
-      // If we got a 500 HTTPError, let's try to see if we can provide more info
+      // 3. If we got a 500 HTTPError, swap the response with our diagnostic info
       if (response.status === 500) {
-        const clonedRes = response.clone();
-        try {
-          const body = await clonedRes.json();
-          if (body.message === 'HTTPError') {
-            console.error("DETECTED HTTPError from Server Entry");
-          }
-        } catch (e) {}
+        return new Response(JSON.stringify({
+          status: 500,
+          message: "DIAGNOSTIC REPORT",
+          lastConsoleError: lastErrorMessage || "No console error captured",
+          envKeys: Object.keys(env),
+          url: request.url
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
 
       return response;
