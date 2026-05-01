@@ -6,17 +6,20 @@ import type { Database } from "./types";
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const request = getRequest();
+    // @ts-ignore
+    const env = request?.context?.cloudflare?.env || request?.context || process.env || (globalThis as any);
+    
+    const SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+      console.error("Auth Middleware: Missing Supabase environment variables.");
       throw new Response(
         "Missing Supabase environment variables. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set.",
         { status: 500 },
       );
     }
-
-    const request = getRequest();
 
     if (!request?.headers) {
       throw new Response("Unauthorized: No request headers available", { status: 401 });

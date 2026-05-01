@@ -10,9 +10,10 @@ function createSupabaseAdminClient() {
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || (globalThis as any).SUPABASE_SERVICE_ROLE_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error(
-      "Missing Supabase server environment variables. Ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.",
-    );
+    if (typeof window === "undefined") {
+      console.warn("Supabase Admin credentials missing from server environment.");
+    }
+    return null;
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -31,7 +32,12 @@ let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
 // Import like: import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
   get(_, prop, receiver) {
-    if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient();
+    if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient() || undefined;
+    if (!_supabaseAdmin) {
+      console.error(`Attempted to access supabaseAdmin.${String(prop)} but client is not initialized.`);
+      // Return a dummy object that fails gracefully
+      return () => { throw new Error("Supabase Admin not initialized"); };
+    }
     return Reflect.get(_supabaseAdmin, prop, receiver);
   },
 });
