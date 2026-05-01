@@ -48,8 +48,9 @@ export default {
           }
 
           // Use the authenticated endpoint to support private buckets
-          const authenticatedUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/${path}`;
-          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${path}`;
+          // The actual bucket name is 'journal-charts' based on your dashboard
+          const authenticatedUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/journal-charts/${path}`;
+          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/journal-charts/${path}`;
           
           try {
             // Try authenticated first
