@@ -47,7 +47,9 @@ export function JournalView() {
   const ASSETS = useMemo(() => assetList.filter((s) => !s.isForex).map((s) => s.name), [assetList]);
   const [entries, setEntries] = useState<DayEntry[]>([]);
   const [asset, setAsset] = useState<string>("TODAY");
-  const [month, setMonth] = useState<string>("ALL");
+  const [month, setMonth] = useState<string>(() => {
+    return localStorage.getItem("journal-filter-month") || "ALL";
+  });
   const [viewMode, setViewMode] = useState<"timeline" | "month">("timeline");
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
@@ -94,6 +96,11 @@ export function JournalView() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Save month preference
+  useEffect(() => {
+    localStorage.setItem("journal-filter-month", month);
+  }, [month]);
 
   // Subscribe to smart-link focus events from Trade Log
   useEffect(() => {
