@@ -48,14 +48,23 @@ export default {
           }
 
           // Use the authenticated endpoint to support private buckets
-          const supabaseUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/${path}`;
+          const authenticatedUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/${path}`;
+          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${path}`;
           
           try {
-            const supabaseResponse = await fetch(supabaseUrl, {
+            // Try authenticated first
+            let supabaseResponse = await fetch(authenticatedUrl, {
               headers: {
-                "Authorization": `Bearer ${SERVICE_KEY}`
+                "Authorization": `Bearer ${SERVICE_KEY}`,
+                "apikey": SERVICE_KEY
               }
             });
+
+            // If 400 or 404 on authenticated, try public as fallback
+            if (!supabaseResponse.ok && (supabaseResponse.status === 400 || supabaseResponse.status === 404)) {
+              console.log("Authenticated fetch failed, trying public...");
+              supabaseResponse = await fetch(publicUrl);
+            }
             if (supabaseResponse.ok) {
               const contentType = supabaseResponse.headers.get("content-type");
               const body = await supabaseResponse.arrayBuffer();
@@ -71,14 +80,18 @@ export default {
                   "Content-Type": contentType || "image/png",
                   "Cache-Control": "public, max-age=31536000, immutable",
                   "X-Migration-Source": "Supabase-Fallback",
-                  "X-Debug-URL": supabaseUrl
+                  "X-Debug-Authenticated-URL": authenticatedUrl,
+                  "X-Debug-Public-URL": publicUrl
                 }
               });
             } else {
               // Return the error status from Supabase to help debug
-              return new Response(`Supabase Error: ${supabaseResponse.status} for URL: ${supabaseUrl}`, { 
+              return new Response(`Supabase Error: ${supabaseResponse.status} after trying both Authenticated and Public URLs.`, { 
                 status: supabaseResponse.status,
-                headers: { "X-Debug-URL": supabaseUrl }
+                headers: { 
+                  "X-Debug-Authenticated-URL": authenticatedUrl,
+                  "X-Debug-Public-URL": publicUrl
+                }
               });
             }
           } catch (e) {
