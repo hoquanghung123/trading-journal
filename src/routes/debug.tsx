@@ -17,12 +17,11 @@ const getServerEnv = createServerFn({ method: "GET" })
   });
 
 export const Route = createFileRoute("/debug")({
-  loader: () => getServerEnv(),
   component: DebugComponent,
 });
 
 function DebugComponent() {
-  const serverData = Route.useLoaderData();
+  const serverData = Route.useLoaderData() || { message: "No server data" };
   
   return (
     <div className="p-8 font-mono">

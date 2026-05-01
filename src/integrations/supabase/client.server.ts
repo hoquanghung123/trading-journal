@@ -34,9 +34,15 @@ export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdm
   get(_, prop, receiver) {
     if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient() || undefined;
     if (!_supabaseAdmin) {
-      console.error(`Attempted to access supabaseAdmin.${String(prop)} but client is not initialized.`);
-      // Return a dummy object that fails gracefully
-      return () => { throw new Error("Supabase Admin not initialized"); };
+      if (typeof window === "undefined") {
+        console.error(`Attempted to access supabaseAdmin.${String(prop)} but client is not initialized.`);
+      }
+      // Return a safe dummy for common Supabase methods
+      if (prop === "from") return () => ({ select: () => ({ order: () => Promise.resolve({ data: [], error: new Error("Supabase Admin not initialized") }) }) });
+      return () => { 
+        console.error("Supabase Admin not initialized. Operation cancelled.");
+        return Promise.resolve({ data: null, error: new Error("Supabase Admin not initialized") });
+      };
     }
     return Reflect.get(_supabaseAdmin, prop, receiver);
   },

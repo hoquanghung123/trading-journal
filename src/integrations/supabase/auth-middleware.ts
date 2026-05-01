@@ -6,68 +6,79 @@ import type { Database } from "./types";
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const request = getRequest();
-    // @ts-ignore
-    const env = request?.context?.cloudflare?.env || request?.context || process.env || (globalThis as any);
-    
-    const SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
+    try {
+      const request = getRequest();
+      // @ts-ignore
+      const env = request?.context?.cloudflare?.env || request?.context || process.env || (globalThis as any);
+      
+      const SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+      const SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 
-    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-      console.error("Auth Middleware: Missing Supabase environment variables.");
-      throw new Response(
-        "Missing Supabase environment variables. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set.",
-        { status: 500 },
-      );
-    }
+      if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+        console.error("Auth Middleware: Missing Supabase environment variables.", {
+          hasContext: !!request?.context,
+          hasCloudflare: !!request?.context?.cloudflare,
+          envKeys: request?.context?.cloudflare?.env ? Object.keys(request.context.cloudflare.env) : []
+        });
+        throw new Response(
+          "Missing Supabase environment variables. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set.",
+          { status: 500 },
+        );
+      }
 
-    if (!request?.headers) {
-      throw new Response("Unauthorized: No request headers available", { status: 401 });
-    }
+      if (!request?.headers) {
+        throw new Response("Unauthorized: No request headers available", { status: 401 });
+      }
 
-    const authHeader = request.headers.get("authorization");
+      const authHeader = request.headers.get("authorization");
 
-    if (!authHeader) {
-      throw new Response("Unauthorized: No authorization header provided", { status: 401 });
-    }
+      if (!authHeader) {
+        throw new Response("Unauthorized: No authorization header provided", { status: 401 });
+      }
 
-    if (!authHeader.startsWith("Bearer ")) {
-      throw new Response("Unauthorized: Only Bearer tokens are supported", { status: 401 });
-    }
+      if (!authHeader.startsWith("Bearer ")) {
+        throw new Response("Unauthorized: Only Bearer tokens are supported", { status: 401 });
+      }
 
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) {
-      throw new Response("Unauthorized: No token provided", { status: 401 });
-    }
+      const token = authHeader.replace("Bearer ", "");
+      if (!token) {
+        throw new Response("Unauthorized: No token provided", { status: 401 });
+      }
 
-    const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
-      global: {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-      auth: {
-        storage: undefined,
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
+        auth: {
+          storage: undefined,
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      });
 
-    const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data?.claims) {
-      throw new Response("Unauthorized: Invalid token", { status: 401 });
+      const { data, error } = await supabase.auth.getClaims(token);
+      if (error || !data?.claims) {
+        console.error("Auth Middleware: getClaims error", error);
+        throw new Response("Unauthorized: Invalid token", { status: 401 });
+      }
+
+      if (!data.claims.sub) {
+        throw new Response("Unauthorized: No user ID found in token", { status: 401 });
+      }
+
+      return next({
+        context: {
+          supabase,
+          userId: data.claims.sub,
+          claims: data.claims,
+        },
+      });
+    } catch (err: any) {
+      console.error("Auth Middleware Exception:", err);
+      if (err instanceof Response) throw err;
+      throw new Response(err.message || "Internal Server Error in Auth Middleware", { status: 500 });
     }
-
-    if (!data.claims.sub) {
-      throw new Response("Unauthorized: No user ID found in token", { status: 401 });
-    }
-
-    return next({
-      context: {
-        supabase,
-        userId: data.claims.sub,
-        claims: data.claims,
-      },
-    });
   },
 );

@@ -2,28 +2,32 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const getSupabaseConfig = () => {
+  // Try to get from import.meta.env (Vite build-time)
+  let url = import.meta.env.VITE_SUPABASE_URL || "";
+  let key = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-// We use a dummy URL if missing to prevent createClient from throwing, 
-// though we should still warn if we're in the browser.
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  if (typeof window !== "undefined") {
-    console.warn("Supabase credentials missing. Please check your Cloudflare Environment Variables.");
+  // If missing and on server, try to get from process.env or globalThis
+  // Note: We can't easily use getRequest() here because it's a module-level variable
+  if (!url || !key) {
+    const env = (typeof process !== 'undefined' ? process.env : {}) as any;
+    const g = (globalThis as any);
+    url = url || env.SUPABASE_URL || env.VITE_SUPABASE_URL || g.SUPABASE_URL || g.VITE_SUPABASE_URL;
+    key = key || env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || g.SUPABASE_PUBLISHABLE_KEY || g.VITE_SUPABASE_ANON_KEY;
   }
-}
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+  return { 
+    url: url || "https://placeholder-url.supabase.co", 
+    key: key || "placeholder-key" 
+  };
+};
 
-export const supabase = createClient<Database>(
-  SUPABASE_URL || "https://placeholder-url.supabase.co", 
-  SUPABASE_PUBLISHABLE_KEY || "placeholder-key", 
-  {
-    auth: {
-      storage: typeof window !== "undefined" ? window.localStorage : undefined,
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  }
-);
+const config = getSupabaseConfig();
+
+export const supabase = createClient<Database>(config.url, config.key, {
+  auth: {
+    storage: typeof window !== "undefined" ? window.localStorage : undefined,
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
