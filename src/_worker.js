@@ -36,9 +36,24 @@ export default {
       }
 
       // 2. Fallback to SSR if asset not found
-      const response = await server.fetch(request, env, ctx);
+      let response = await server.fetch(request, env, ctx);
       
-      // 3. If we got a 500 HTTPError, swap the response with our diagnostic info
+      // 3. Inject environment variables into the HTML for the client
+      if (response.headers.get("content-type")?.includes("text/html")) {
+        const body = await response.text();
+        const injectedScript = `
+          <script>
+            window.ENV = {
+              SUPABASE_URL: "${env.SUPABASE_URL || ""}",
+              SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
+            };
+          </script>
+        `;
+        const newBody = body.replace('</head>', `${injectedScript}</head>`);
+        response = new Response(newBody, response);
+      }
+
+      // 4. If we got a 500 HTTPError, swap the response with our diagnostic info
       if (response.status === 500) {
         return new Response(JSON.stringify({
           status: 500,

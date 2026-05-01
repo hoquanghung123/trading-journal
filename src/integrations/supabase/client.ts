@@ -7,17 +7,28 @@ let _supabase: any;
 const getSupabaseClient = () => {
   if (_supabase) return _supabase;
 
-  // Try to get from import.meta.env (Vite build-time)
-  let url = import.meta.env.VITE_SUPABASE_URL || "";
-  let key = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+  const getEnv = (key: string) => {
+    // Check window.ENV (injected by worker)
+    if (typeof window !== 'undefined' && (window as any).ENV?.[key]) {
+      return (window as any).ENV[key];
+    }
+    // Check import.meta.env (build time)
+    if (import.meta.env[`VITE_${key}`]) {
+      return import.meta.env[`VITE_${key}`];
+    }
+    // Check process.env (server side fallback)
+    if (typeof process !== 'undefined' && process.env[key]) {
+      return process.env[key];
+    }
+    // Check globalThis (worker side fallback)
+    if ((globalThis as any)[key]) {
+      return (globalThis as any)[key];
+    }
+    return '';
+  };
 
-  // If missing and on server, try to get from process.env or globalThis
-  if (!url || !key) {
-    const env = (typeof process !== 'undefined' ? process.env : {}) as any;
-    const g = (globalThis as any);
-    url = url || env.SUPABASE_URL || env.VITE_SUPABASE_URL || g.SUPABASE_URL || g.VITE_SUPABASE_URL;
-    key = key || env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || g.SUPABASE_PUBLISHABLE_KEY || g.VITE_SUPABASE_ANON_KEY;
-  }
+  const url = getEnv('SUPABASE_URL');
+  const key = getEnv('SUPABASE_PUBLISHABLE_KEY');
 
   _supabase = createClient<Database>(
     url || "https://placeholder-url.supabase.co", 
