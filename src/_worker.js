@@ -80,24 +80,15 @@ export default {
                 headers: {
                   "Content-Type": contentType || "image/png",
                   "Cache-Control": "public, max-age=31536000, immutable",
-                  "X-Migration-Source": "Supabase-Fallback",
-                  "X-Debug-Authenticated-URL": authenticatedUrl,
-                  "X-Debug-Public-URL": publicUrl
+                  "X-Migration-Source": "Supabase-Fallback"
                 }
               });
             } else {
-              // Return the error status from Supabase to help debug
-              return new Response(`Supabase Error: ${supabaseResponse.status} after trying both Authenticated and Public URLs.`, { 
-                status: supabaseResponse.status,
-                headers: { 
-                  "X-Debug-Authenticated-URL": authenticatedUrl,
-                  "X-Debug-Public-URL": publicUrl
-                }
-              });
+              return new Response("Object not found in Supabase", { status: 404 });
             }
           } catch (e) {
             console.error("Migration fallback failed:", e);
-            return new Response(`Migration error: ${e.message}`, { status: 500 });
+            return new Response("Internal Server Error", { status: 500 });
           }
         }
         return new Response("R2 binding not configured", { status: 500 });
@@ -108,12 +99,8 @@ export default {
       try {
         response = await server.fetch(request, env, ctx);
       } catch (e) {
-        return new Response(JSON.stringify({
-          status: 500,
-          message: "SSR CRASH",
-          error: e.message,
-          stack: e.stack
-        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        console.error("SSR Fetch Error:", e);
+        return new Response("Internal Server Error", { status: 500 });
       }
       
       // 5. Inject environment variables into HTML for client-side Supabase client
@@ -135,35 +122,10 @@ export default {
         });
       }
 
-      // 6. Detailed error report for 500 responses
-      if (response.status === 500) {
-        const clonedResponse = response.clone();
-        try {
-          const errorText = await clonedResponse.text();
-          return new Response(JSON.stringify({
-            status: 500,
-            message: "APPLICATION ERROR",
-            detail: errorText,
-            url: request.url
-          }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-        } catch (e) {
-          // If we can't read the error, just return the original response
-        }
-      }
-
       return response;
     } catch (e) {
       console.error("CRITICAL WORKER ERROR:", e);
-      return new Response(JSON.stringify({
-        status: 500,
-        message: "WORKER WRAPPER CRASH",
-        error: e.message,
-        stack: e.stack,
-        url: request.url
-      }), { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json' } 
-      });
+      return new Response("Internal Server Error", { status: 500 });
     }
   }
 };
