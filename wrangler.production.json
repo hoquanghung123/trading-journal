@@ -8,7 +8,7 @@
   "r2_buckets": [
     {
       "binding": "R2",
-      "bucket_name": "trading-journal-assets"
+      "bucket_name": "tradingjournal-chart"
     }
   ]
 }
