@@ -75,7 +75,17 @@ export default {
       }
 
       // 4. Fallback to SSR (TanStack Start)
-      let response = await server.fetch(request, env, ctx);
+      let response;
+      try {
+        response = await server.fetch(request, env, ctx);
+      } catch (e) {
+        return new Response(JSON.stringify({
+          status: 500,
+          message: "SSR CRASH",
+          error: e.message,
+          stack: e.stack
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
       
       // 5. Inject environment variables into HTML for client-side Supabase client
       if (response.headers.get("content-type")?.includes("text/html")) {
@@ -96,10 +106,35 @@ export default {
         });
       }
 
+      // 6. Detailed error report for 500 responses
+      if (response.status === 500) {
+        const clonedResponse = response.clone();
+        try {
+          const errorText = await clonedResponse.text();
+          return new Response(JSON.stringify({
+            status: 500,
+            message: "APPLICATION ERROR",
+            detail: errorText,
+            url: request.url
+          }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        } catch (e) {
+          // If we can't read the error, just return the original response
+        }
+      }
+
       return response;
     } catch (e) {
-      console.error("Worker Error:", e);
-      return new Response("Internal Server Error", { status: 500 });
+      console.error("CRITICAL WORKER ERROR:", e);
+      return new Response(JSON.stringify({
+        status: 500,
+        message: "WORKER WRAPPER CRASH",
+        error: e.message,
+        stack: e.stack,
+        url: request.url
+      }), { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
     }
   }
 };
