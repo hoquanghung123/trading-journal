@@ -195,7 +195,7 @@ export function newTrade(): Trade {
     id: generateId(),
     entryTime: new Date().toISOString(),
     exitTime: new Date().toISOString(),
-    symbol: "XAUUSD",
+    symbol: "",
     side: "buy",
     grossPnl: 0,
     fees: 0,

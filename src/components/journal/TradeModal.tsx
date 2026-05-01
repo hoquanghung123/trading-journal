@@ -7,6 +7,7 @@ import { useSymbols } from "@/lib/symbols";
 import { fetchEntries, type DayEntry, ddmm } from "@/lib/journal";
 import { PasteSlot } from "./PasteSlot";
 import {
+  ExternalLink,
   Trash2,
   Save,
   FileText,
@@ -16,6 +17,7 @@ import {
   TrendingUp,
   Image as ImageIcon,
 } from "lucide-react";
+import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,7 +53,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
   const { data: symbols = [] } = useSymbols();
   const { models: playbookSetups } = usePlaybook();
-  const SYMBOLS = symbols.map((s) => s.name);
+  const SYMBOLS = useMemo(() => symbols.map((s) => s.name), [symbols]);
 
   const { data: settings } = useQuery({
     queryKey: ["user_settings"],
@@ -59,8 +61,18 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   });
 
   useEffect(() => {
-    setT(trade);
-  }, [trade]);
+    if (!trade) {
+      setT(null);
+      return;
+    }
+
+    // If new trade or invalid symbol, default to first available symbol
+    if (symbols.length > 0 && (!trade.symbol || !SYMBOLS.includes(trade.symbol))) {
+      setT({ ...trade, symbol: symbols[0].name });
+    } else {
+      setT(trade);
+    }
+  }, [trade, symbols, SYMBOLS]);
 
   useEffect(() => {
     if (!open) return;
@@ -73,12 +85,15 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
     () =>
       biasEntries
         .filter((e) => {
-          const isToday = e.date === new Date().toISOString().slice(0, 10);
+          const tradeDate = t?.entryTime
+            ? t.entryTime.slice(0, 10)
+            : new Date().toISOString().slice(0, 10);
+          const isSameDay = e.date === tradeDate;
           const isMatchingSymbol = !t?.symbol || e.asset === t.symbol;
-          return isToday && isMatchingSymbol;
+          return isSameDay && isMatchingSymbol;
         })
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [biasEntries, t?.symbol],
+    [biasEntries, t?.symbol, t?.entryTime],
   );
 
   const update = (patch: Partial<Trade>) => {
@@ -340,23 +355,38 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   </div>
                 </Field>
                 <Field label={`Context: Bias entry (${t.symbol})`}>
-                  <select
-                    value={t.biasEntryId ?? ""}
-                    onChange={(e) => update({ biasEntryId: e.target.value || undefined })}
-                    className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
-                  >
-                    <option value="">— Link to Bias entry —</option>
-                    {filteredBias.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {ddmm(b.date)} — {b.dailyBias.toUpperCase()}
-                      </option>
-                    ))}
-                    {filteredBias.length === 0 && (
-                      <option value="" disabled>
-                        No {t.symbol} journal entries found for today
-                      </option>
+                  <div className="flex gap-2">
+                    <select
+                      value={t.biasEntryId ?? ""}
+                      onChange={(e) => update({ biasEntryId: e.target.value || undefined })}
+                      className="h-12 flex-1 rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
+                    >
+                      <option value="">— Link to Bias entry —</option>
+                      {filteredBias.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {ddmm(b.date)} — {b.dailyBias.toUpperCase()}
+                        </option>
+                      ))}
+                      {filteredBias.length === 0 && (
+                        <option value="" disabled>
+                          No {t.symbol} journal entries found for today
+                        </option>
+                      )}
+                    </select>
+                    {t.biasEntryId && (
+                      <button
+                        onClick={() => {
+                          navigateToPage("bias");
+                          setTimeout(() => focusBiasEntry(t.biasEntryId!), 50);
+                          onClose();
+                        }}
+                        className="h-12 w-12 flex items-center justify-center rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
+                        title="Go to Bias entry"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </button>
                     )}
-                  </select>
+                  </div>
                 </Field>
                 <Field label="Setup / Strategy">
                   <select

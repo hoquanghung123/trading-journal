@@ -46,7 +46,8 @@ type ColKey =
   | "status"
   | "grade"
   | "outcome"
-  | "side";
+  | "side"
+  | "bias";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
@@ -58,6 +59,7 @@ const COL_LABELS: Record<ColKey, string> = {
   grade: "Grade",
   outcome: "Outcome",
   side: "Side",
+  bias: "Bias Context",
 };
 
 const gradeStyle: Record<string, string> = {
@@ -99,6 +101,7 @@ export function TradeLog() {
       grade: true,
       outcome: true,
       side: true,
+      bias: true,
     };
   });
 
@@ -271,6 +274,7 @@ export function TradeLog() {
                       )}
                       {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
                       <th className="text-left p-4 w-[120px]">Symbol</th>
+                      {cols.bias && <th className="text-left p-4 w-[120px]">Bias Context</th>}
                       {cols.side && <th className="text-left p-4 w-[80px]">Side</th>}
                       {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
                       {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
@@ -342,6 +346,24 @@ export function TradeLog() {
                               <span className="font-black text-foreground text-sm">{t.symbol}</span>
                             </div>
                           </td>
+
+                          {cols.bias && (
+                            <td className="p-4">
+                              {t.biasEntryId && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateToPage("bias");
+                                    setTimeout(() => focusBiasEntry(t.biasEntryId!), 50);
+                                  }}
+                                  className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20"
+                                  title="View Bias Context"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </td>
+                          )}
 
                           {cols.side && (
                             <td className="p-4">

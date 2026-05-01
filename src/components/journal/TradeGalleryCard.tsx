@@ -12,6 +12,8 @@ import {
 import { getAssetIconUrl } from "@/lib/symbols";
 import { getChartUrl } from "@/lib/journal";
 import { useState } from "react";
+import { ExternalLink } from "lucide-react";
+import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 
 interface TradeGalleryCardProps {
   trade: Trade;
@@ -200,6 +202,19 @@ export function TradeGalleryCard({
             <div className="px-2.5 py-0.5 rounded-lg bg-muted text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
               {trade.status}
             </div>
+          )}
+          {show("bias") && trade.biasEntryId && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateToPage("bias");
+                setTimeout(() => focusBiasEntry(trade.biasEntryId!), 50);
+              }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
+              title="Go to Bias entry"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
 

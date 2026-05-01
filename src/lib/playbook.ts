@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { PlaybookModel, PlaybookImage } from "@/types/playbook";
+import { PlaybookModel, PlaybookImage, SetupConfluences } from "@/types/playbook";
 
 type Row = {
   id: string;
