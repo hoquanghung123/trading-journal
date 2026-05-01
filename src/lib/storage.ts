@@ -5,8 +5,7 @@ import { getRequest } from "@tanstack/react-start/server";
  * Server function to upload a file to Cloudflare R2.
  */
 export const uploadToR2 = createServerFn({ method: "POST" })
-  .validator((d: { path: string; base64: string; contentType: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { path: string; base64: string; contentType: string } }) => {
     const request = getRequest();
     // @ts-ignore
     const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
@@ -35,8 +34,7 @@ export const uploadToR2 = createServerFn({ method: "POST" })
  * Server function to delete a file from Cloudflare R2.
  */
 export const deleteFromR2 = createServerFn({ method: "POST" })
-  .validator((path: string) => path)
-  .handler(async ({ data: path }) => {
+  .handler(async ({ data: path }: { data: string }) => {
     const request = getRequest();
     // @ts-ignore
     const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
@@ -55,8 +53,7 @@ export const deleteFromR2 = createServerFn({ method: "POST" })
  * This is used by the proxy route to serve images.
  */
 export const fetchFromR2 = createServerFn({ method: "GET" })
-  .validator((path: string) => path)
-  .handler(async ({ data: path }) => {
+  .handler(async ({ data: path }: { data: string }) => {
     const request = getRequest();
     // @ts-ignore
     const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
