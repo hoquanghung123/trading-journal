@@ -28,16 +28,23 @@ export function MonthView({ entries, onUpdate, asset }: Props) {
       if (!map.has(m)) map.set(m, []);
       map.get(m)!.push(e);
     }
-    // Sort months descending (newest first)
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    // Sort months ascending (oldest first, newest last on the right)
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [entries]);
 
   if (grouped.length === 0) {
     return null; // Should be handled by Empty state in JournalView
   }
 
+  const scrollRef = useMemo(() => (el: HTMLDivElement) => {
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, []);
+
   return (
-    <div className="flex flex-row gap-8 overflow-x-auto pb-10 px-4 md:px-8 snap-x hide-scrollbar">
+    <div 
+      ref={scrollRef}
+      className="flex flex-row gap-8 overflow-x-auto pb-10 px-4 md:px-8 snap-x hide-scrollbar"
+    >
       {grouped.map(([month, monthEntries]) => (
         <MonthBox
           key={month}
