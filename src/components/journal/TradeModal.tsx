@@ -424,9 +424,28 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {playbookSetups
-                      .find((s) => s.id === t.setupId)
-                      ?.setupConfluences.map((c) => {
+                    {(() => {
+                      const setup = playbookSetups.find((s) => s.id === t.setupId);
+                      if (!setup) return null;
+                      
+                      const confluences = setup.setupConfluences;
+                      const flatConfluences = confluences 
+                        ? [
+                            ...(confluences.narrative || []),
+                            ...(confluences.liquidity || []),
+                            ...(confluences.confirmation || [])
+                          ]
+                        : [];
+
+                      if (flatConfluences.length === 0) {
+                        return (
+                          <p className="col-span-2 text-xs font-medium text-muted-foreground italic p-4 text-center">
+                            No confluences defined for this playbook.
+                          </p>
+                        );
+                      }
+
+                      return flatConfluences.map((c) => {
                         const isMissed = t.missedConfluences?.includes(c);
                         return (
                           <div
@@ -460,14 +479,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                             </span>
                           </div>
                         );
-                      })}
-                    {(!playbookSetups.find((s) => s.id === t.setupId)?.setupConfluences ||
-                      playbookSetups.find((s) => s.id === t.setupId)?.setupConfluences.length ===
-                        0) && (
-                      <p className="col-span-2 text-xs font-medium text-muted-foreground italic p-4 text-center">
-                        No confluences defined for this playbook.
-                      </p>
-                    )}
+                      });
+                    })()}
                   </div>
                 </div>
               )}
