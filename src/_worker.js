@@ -24,18 +24,18 @@ export default {
         originalConsoleError.apply(console, args);
       };
 
-      // Direct bypass for /hello to verify worker health
-      if (request.url.endsWith('/hello')) {
-        return new Response(JSON.stringify({ 
-          status: "ok", 
-          message: "Hello from Worker Wrapper!",
-          envKeys: Object.keys(env),
-          diagnostics: { hasProcess, nodeVersion: hasProcess ? process.version : 'N/A' }
-        }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
+      // 1. Try to serve static assets first
+      // Cloudflare Pages provides env.ASSETS to fetch static files
+      try {
+        const assetResponse = await env.ASSETS.fetch(request.clone());
+        if (assetResponse.ok) {
+          return assetResponse;
+        }
+      } catch (e) {
+        console.warn("Asset fetch failed, falling back to SSR:", e);
       }
 
+      // 2. Fallback to SSR if asset not found
       const response = await server.fetch(request, env, ctx);
       
       // 3. If we got a 500 HTTPError, swap the response with our diagnostic info
