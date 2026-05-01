@@ -40,11 +40,22 @@ export default {
           }
 
           // Fallback to Supabase if not in R2
-          const SUPABASE_PROJECT_ID = "mlyowmvrpjtqruramrhp"; // From your screenshot
-          const supabaseUrl = `https://${SUPABASE_PROJECT_ID}.storage.supabase.co/storage/v1/object/public/${path}`;
+          const SUPABASE_URL = env.SUPABASE_URL;
+          const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+          
+          if (!SUPABASE_URL || !SERVICE_KEY) {
+            return new Response("Missing Supabase configuration for migration", { status: 500 });
+          }
+
+          // Use the authenticated endpoint to support private buckets
+          const supabaseUrl = `${SUPABASE_URL}/storage/v1/object/authenticated/${path}`;
           
           try {
-            const supabaseResponse = await fetch(supabaseUrl);
+            const supabaseResponse = await fetch(supabaseUrl, {
+              headers: {
+                "Authorization": `Bearer ${SERVICE_KEY}`
+              }
+            });
             if (supabaseResponse.ok) {
               const contentType = supabaseResponse.headers.get("content-type");
               const body = await supabaseResponse.arrayBuffer();
