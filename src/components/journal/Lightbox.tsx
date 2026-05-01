@@ -43,7 +43,10 @@ export function Lightbox({ images, index, onClose, onIndexChange }: Props) {
 
   return createPortal(
     <div
-      onClick={onClose}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-6 sm:p-10 bg-slate-950/95 backdrop-blur-md cursor-zoom-out animate-in fade-in-0 duration-300"
     >
       <button
