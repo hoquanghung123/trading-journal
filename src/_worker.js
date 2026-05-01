@@ -10,6 +10,7 @@ export default {
       if (env.SUPABASE_SERVICE_ROLE_KEY) globalThis.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
       if (env.VITE_SUPABASE_URL) globalThis.VITE_SUPABASE_URL = env.VITE_SUPABASE_URL;
       if (env.VITE_SUPABASE_ANON_KEY) globalThis.VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY;
+      if (env.R2) globalThis.R2 = env.R2;
 
       // 1. Check for Node.js compatibility
       const hasProcess = typeof process !== 'undefined';
