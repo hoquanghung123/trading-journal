@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getWebRequest } from "@tanstack/react-start/server";
 
 /**
  * Server function to upload a file to Cloudflare R2.
@@ -6,10 +7,13 @@ import { createServerFn } from "@tanstack/react-start";
 export const uploadToR2 = createServerFn({ method: "POST" })
   .validator((d: { path: string; base64: string; contentType: string }) => d)
   .handler(async ({ data }) => {
-    // In Cloudflare Pages, bindings are typically available on process.env in these environments
+    const request = getWebRequest();
     // @ts-ignore
-    const r2 = process.env.R2 || (globalThis as any).R2;
+    const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
+    const r2 = env?.R2;
+    
     if (!r2) {
+      console.error("R2 binding 'R2' not found in context:", Object.keys(env || {}));
       throw new Error("R2 binding 'R2' not found.");
     }
 
@@ -33,8 +37,11 @@ export const uploadToR2 = createServerFn({ method: "POST" })
 export const deleteFromR2 = createServerFn({ method: "POST" })
   .validator((path: string) => path)
   .handler(async ({ data: path }) => {
+    const request = getWebRequest();
     // @ts-ignore
-    const r2 = process.env.R2 || (globalThis as any).R2;
+    const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
+    const r2 = env?.R2;
+    
     if (!r2) {
       throw new Error("R2 binding 'R2' not found.");
     }
@@ -50,10 +57,14 @@ export const deleteFromR2 = createServerFn({ method: "POST" })
 export const fetchFromR2 = createServerFn({ method: "GET" })
   .validator((path: string) => path)
   .handler(async ({ data: path }) => {
+    const request = getWebRequest();
     // @ts-ignore
-    const r2 = process.env.R2 || (globalThis as any).R2;
+    const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
+    const r2 = env?.R2;
+    
     if (!r2) {
-      return new Response("Storage configuration error", { status: 500 });
+      console.error("R2 binding 'R2' not found in fetch handler");
+      return new Response("Storage configuration error (R2 not found)", { status: 500 });
     }
 
     const object = await r2.get(path);

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tanstack-start-app",
+  "name": "trading-journal",
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": "dist/client",
@@ -9,5 +9,8 @@
       "binding": "R2",
       "bucket_name": "tradingjournal-chart"
     }
-  ]
+  ],
+  "vars": {
+    "NODE_VERSION": "22.16.0"
+  }
 }
