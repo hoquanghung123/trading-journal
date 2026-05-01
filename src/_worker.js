@@ -55,15 +55,21 @@ export default {
                 headers: {
                   "Content-Type": contentType || "image/png",
                   "Cache-Control": "public, max-age=31536000, immutable",
-                  "X-Migration-Source": "Supabase-Fallback"
+                  "X-Migration-Source": "Supabase-Fallback",
+                  "X-Debug-URL": supabaseUrl
                 }
+              });
+            } else {
+              // Return the error status from Supabase to help debug
+              return new Response(`Supabase Error: ${supabaseResponse.status} for URL: ${supabaseUrl}`, { 
+                status: supabaseResponse.status,
+                headers: { "X-Debug-URL": supabaseUrl }
               });
             }
           } catch (e) {
             console.error("Migration fallback failed:", e);
+            return new Response(`Migration error: ${e.message}`, { status: 500 });
           }
-          
-          return new Response("Object not found", { status: 404 });
         }
         return new Response("R2 binding not configured", { status: 500 });
       }
