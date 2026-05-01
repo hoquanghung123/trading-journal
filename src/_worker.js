@@ -18,13 +18,21 @@ export default {
       return await server.fetch(request, env, ctx);
     } catch (e) {
       console.error("CRITICAL WORKER ERROR:", e);
+      const errorDetail = e instanceof Error ? {
+        message: e.message,
+        stack: e.stack,
+        name: e.name
+      } : {
+        message: String(e),
+        keys: Object.keys(e || {})
+      };
+
       return new Response(JSON.stringify({
         status: 500,
         unhandled: true,
-        message: "Worker Error",
-        error: e.message,
-        stack: e.stack,
-        keys: Object.keys(env)
+        source: "worker_wrapper",
+        error: errorDetail,
+        envKeys: Object.keys(env)
       }), { 
         status: 500, 
         headers: { 'Content-Type': 'application/json' } 
