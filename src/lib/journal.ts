@@ -152,12 +152,21 @@ export async function deleteEntry(id: string): Promise<void> {
       typeof h4?.ASIA === "string" ? h4.ASIA : h4?.ASIA?.img,
       typeof h4?.LDN === "string" ? h4.LDN : h4?.LDN?.img,
       typeof h4?.NY === "string" ? h4.NY : h4?.NY?.img,
+      typeof h4?.["NY AM"] === "string" ? h4["NY AM"] : h4?.["NY AM"]?.img,
+      typeof h4?.["NY PM"] === "string" ? h4["NY PM"] : h4?.["NY PM"]?.img,
     ].filter((p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"));
+    
     if (paths.length) {
+      // 1. Dọn dẹp Supabase (Legacy)
       await supabase.storage
-        .from(BUCKET)
+        .from("journal-charts")
         .remove(paths)
         .catch(() => {});
+        
+      // 2. Dọn dẹp Cloudflare R2 (New)
+      for (const path of paths) {
+        await deleteFromR2({ data: path }).catch(() => {});
+      }
     }
   }
 }
