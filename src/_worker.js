@@ -17,87 +17,69 @@ export default {
 
       // 2. Asset & Storage Handling
       if (url.pathname.startsWith('/storage/')) {
-        if (!env.R2) {
-          return new Response("Storage configuration missing", { status: 500 });
-        }
+        const debug = {
+          v: "V17.6-PROD",
+          path: decodeURIComponent(url.pathname.substring(9)),
+          env: Object.keys(env || {}).join(","),
+          sb_len: (env.SUPABASE_URL || "").length
+        };
 
         try {
-          const path = decodeURIComponent(url.pathname.substring(9));
-          
-          if (!env.R2) {
-            return new Response("R2 Binding Missing", { 
-              status: 500, 
-              headers: { "X-Debug-Error": "env.R2 is undefined" } 
-            });
-          }
-
+          const path = debug.path;
           let object = null;
-          let r2Error = null;
           
           try {
             object = await env.R2.get(path);
-          } catch (e) {
-            r2Error = e.message;
-            console.error("R2 Get Error:", r2Error);
-          }
-          
-          if (object) {
-            const headers = new Headers();
-            if (typeof object.writeHttpMetadata === 'function') {
-              object.writeHttpMetadata(headers);
-            }
-            headers.set("Cache-Control", "public, max-age=31536000, immutable");
-            headers.set("X-Content-Source", "R2-Storage");
-            return new Response(object.body, { headers });
-          }
-
-          // Fallback to Supabase Storage if missing from R2 or R2 failed
-          if (env.SUPABASE_URL) {
-            const baseUrl = env.SUPABASE_URL.replace(/\/$/, "");
-            const supabaseUrl = `${baseUrl}/storage/v1/object/public/journal-charts/${path}`;
-            
-            try {
-              const sbResponse = await fetch(supabaseUrl);
-              if (sbResponse.ok) {
-                // Auto-migrate: save to R2 in the background
-                const contentType = sbResponse.headers.get("content-type") || "image/png";
-                ctx.waitUntil(
-                  env.R2.put(path, sbResponse.clone().body, {
-                    httpMetadata: { contentType }
-                  }).catch(e => console.error("Auto-migration failed:", e.message))
-                );
-
-                const headers = new Headers(sbResponse.headers);
-                headers.set("Cache-Control", "public, max-age=31536000, immutable");
-                headers.set("X-Content-Source", "Supabase-Fallback");
-                if (r2Error) headers.set("X-Debug-R2-Error", r2Error);
-                return new Response(sbResponse.body, { headers });
-              } else {
-                return new Response(`Not Found`, { 
-                  status: 404,
-                  headers: { 
-                    "X-Debug-SB-Status": sbResponse.status.toString(), 
-                    "X-Debug-URL": supabaseUrl,
-                    "X-Debug-R2-Error": r2Error || "Not in R2"
-                  }
-                });
+            if (object) {
+              const headers = new Headers();
+              if (typeof object.writeHttpMetadata === 'function') {
+                object.writeHttpMetadata(headers);
               }
-            } catch (fetchError) {
-              return new Response(`Fetch Error`, { 
-                status: 500,
-                headers: { "X-Debug-Error": fetchError.message, "X-Debug-URL": supabaseUrl }
-              });
+              headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              headers.set('X-Debug-All', JSON.stringify({ ...debug, source: "R2" }));
+              return new Response(object.body, { headers });
             }
+          } catch (e) {
+            debug.error = e.message;
           }
 
-          return new Response("Object Not Found", { 
+          // Fallback to Supabase (and trigger Sippy if R2 gets fixed)
+          const supabaseUrl = env.SUPABASE_URL;
+          if (!supabaseUrl) throw new Error("SUPABASE_URL missing");
+          
+          const baseUrl = supabaseUrl.replace(/\/$/, "");
+          const targetUrl = `${baseUrl}/storage/v1/object/public/journal-charts/${path}`;
+          const response = await fetch(targetUrl);
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            
+            // Background push to R2
+            ctx.waitUntil((async () => {
+              try {
+                await env.R2.put(path, blob.stream(), {
+                  httpMetadata: { contentType: response.headers.get('content-type') }
+                });
+              } catch (e) {
+                console.error("Auto-migration failed:", e.message);
+              }
+            })());
+
+            const headers = new Headers(response.headers);
+            headers.set("Cache-Control", "public, max-age=31536000, immutable");
+            headers.set('X-Debug-All', JSON.stringify({ ...debug, source: "SB-OK" }));
+            return new Response(blob, { headers });
+          }
+
+          return new Response("Not Found", { 
             status: 404,
-            headers: { "X-Debug-Error": "SUPABASE_URL missing", "X-Debug-R2-Error": r2Error || "Not in R2" }
+            headers: { 'X-Debug-All': JSON.stringify({ ...debug, source: "NOT-FOUND", sb_status: response.status }) }
           });
-        } catch (globalError) {
-          return new Response(`Storage Error`, { 
+
+        } catch (error) {
+          return new Response(error.message, { 
             status: 500,
-            headers: { "X-Debug-Error": globalError.message }
+            headers: { 'X-Debug-All': JSON.stringify({ ...debug, source: "ERROR", error: error.message }) }
           });
         }
       }
