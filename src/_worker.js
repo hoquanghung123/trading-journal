@@ -4,8 +4,8 @@
  */
 import server from './server.js';
 
-const VERSION = 'V14.55-DEBUG';
-const DIAG_VERSION = 'V14.55-DIAGNOSTICS';
+const VERSION = 'V14.56-DEBUG';
+const DIAG_VERSION = 'V14.56-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -263,34 +263,44 @@ export default {
                 if (root) {
                   console.log("📦 [${VERSION}] Root/Body detected. Monitoring for hydration...");
                   
-                  const getPureContentLength = () => {
-                    const clone = root.cloneNode(true);
-                    const b = clone.querySelector('#worker-status-banner');
-                    if (b) b.remove();
-                    return clone.innerHTML.length;
-                  };
-
-                  const initialLength = getPureContentLength();
-                  
-                  const checkHydration = () => {
-                    const currentLength = getPureContentLength();
-                    // Hydration marked by significant content change or router activity
-                    if (currentLength > initialLength + 50 || window.__TSR_ROUTER__) {
-                      if (status) status.innerText = "✅ Hydrated";
-                      if (status) status.style.color = "#00ff00";
-                      setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
-                    } else {
-                      setTimeout(checkHydration, 500);
+                  let hydrated = false;
+                  const setHydrated = (msg = "✅ Hydrated") => {
+                    if (hydrated) return;
+                    hydrated = true;
+                    if (status) {
+                      status.innerText = msg;
+                      status.style.color = "#00ff00";
                     }
+                    setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
                   };
-                  checkHydration();
 
+                  // 1. Mutation Observer (Detect ANY DOM change)
+                  const observer = new MutationObserver((mutations) => {
+                    if (mutations.length > 0) {
+                      console.log("⚡ [${VERSION}] DOM Mutation detected");
+                      setHydrated();
+                      observer.disconnect();
+                    }
+                  });
+                  observer.observe(root, { childList: true, subtree: true, attributes: true });
+
+                  // 2. Global Flag Check (TanStack specific if possible)
+                  const interval = setInterval(() => {
+                    if (window.__TSR_ROUTER__ || window.__TSR__) {
+                      setHydrated("✅ Hydrated (Router)");
+                      clearInterval(interval);
+                    }
+                  }, 500);
+
+                  // 3. Perfect Hydration Timeout
                   setTimeout(() => {
-                    if (status && status.innerText.includes("⏳")) {
-                      status.innerText = "⚠️ Hydration Status Unknown";
-                      status.style.color = "#ffcc00";
+                    if (!hydrated) {
+                      console.log("😴 [${VERSION}] No mutations after 4s. Likely Perfect Hydration.");
+                      setHydrated("🟢 SSR Stable");
+                      observer.disconnect();
+                      clearInterval(interval);
                     }
-                  }, 8000);
+                  }, 4000);
                 }
               });
             </script>
