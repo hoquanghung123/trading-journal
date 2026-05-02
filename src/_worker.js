@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V15.4-PROD
+ * Version: V15.5-PROD
  */
 import server from './server.js';
 
