@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.38-DEBUG
+ * Version: V14.39-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.38-DEBUG';
-const DIAG_VERSION = 'V14.38-DIAGNOSTICS';
+const VERSION = 'V14.39-DEBUG';
+const DIAG_VERSION = 'V14.39-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -23,6 +23,7 @@ export default {
         const assetResponse = await env.ASSETS.fetch(request.clone());
         if (assetResponse.ok) {
           // Add a header to identify it's a static asset
+          console.log(`${VERSION} ASSET SERVED: ${url.pathname}`);
           const headers = new Headers(assetResponse.headers);
           headers.set("X-Asset-Source", "Cloudflare-Assets");
           return new Response(assetResponse.body, {
