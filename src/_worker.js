@@ -4,7 +4,7 @@
  */
 import server from './server.js';
 
-const VERSION = 'V14.56-DEBUG';
+const VERSION = 'V14.58-DEBUG';
 const DIAG_VERSION = 'V14.56-DIAGNOSTICS';
 
 export default {
