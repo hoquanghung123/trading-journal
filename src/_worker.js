@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.41-DEBUG
+ * Version: V14.42-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.41-DEBUG';
-const DIAG_VERSION = 'V14.41-DIAGNOSTICS';
+const VERSION = 'V14.42-DEBUG';
+const DIAG_VERSION = 'V14.42-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -135,7 +135,13 @@ export default {
       diag.step = 'ssr-fetch';
       let response;
       try {
-        response = await server.fetch(request, env, ctx);
+        // Create a new request based on the original but strip cache headers
+        // to force a fresh SSR render (prevents blank 304 responses)
+        const ssrRequest = new Request(request.url, request);
+        ssrRequest.headers.delete("if-none-match");
+        ssrRequest.headers.delete("if-modified-since");
+        
+        response = await server.fetch(ssrRequest, env, ctx);
       } catch (e) {
         diag.step = 'ssr-error';
         console.error("SSR Fetch Error:", e);
