@@ -204,10 +204,13 @@ export default {
       }
       
       // 5. Final Response Processing & Injection
+      const isJsonRequest = request.headers.get("accept")?.includes("application/json") || 
+                            request.headers.get("x-tanstack-start-rpc") || 
+                            url.pathname.includes("/_rpc/");
       const contentType = response.headers.get("content-type") || "";
-      const isHtmlResponse = contentType.includes("text/html") || isPageRequest;
+      const isHtmlResponse = (contentType.includes("text/html") || isPageRequest) && !isJsonRequest;
 
-      if (isHtmlResponse) {
+      if (isHtmlResponse && response.status === 200) {
         diag.step = 'body-inspection';
         let body = await response.text();
         
@@ -238,11 +241,10 @@ export default {
         } else {
           diag.step = 'html-processing';
           
-          // Enhanced Visual Debugger & DOM Inspection
           const statusBanner = `
             <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:4px 10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">
-              <span>🏗️ WORKER ${VERSION}: HTML Loaded (Waiting for JS...)</span>
-              <span id="hydration-status" style="color:#ffcc00;">⏳ Checking Hydration...</span>
+              <span>🏗️ WORKER ${VERSION}: Status ${response.status} (Len: ${bodyLength})</span>
+              <span id="hydration-status" style="color:#ffcc00;">⏳ Checking...</span>
             </div>
           `;
 
