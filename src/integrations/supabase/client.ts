@@ -12,10 +12,10 @@ const getSupabaseClient = () => {
     if (typeof window !== 'undefined' && (window as any).ENV?.[key]) {
       return (window as any).ENV[key];
     }
-    // Check document.documentElement.dataset (injected by worker - safest)
+    // Check document.documentElement attributes (injected by worker - safest)
     if (typeof document !== 'undefined') {
-      const dataKey = key.toLowerCase().replace(/_/g, '-');
-      const val = document.documentElement.dataset[dataKey] || document.documentElement.dataset[key];
+      const attrName = 'data-' + key.toLowerCase().replace(/_/g, '-');
+      const val = document.documentElement.getAttribute(attrName);
       if (val) return val;
     }
     // Check import.meta.env (build time)
