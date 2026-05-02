@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.48-DEBUG
+ * Version: V14.49-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.48-DEBUG';
-const DIAG_VERSION = 'V14.48-DIAGNOSTICS';
+const VERSION = 'V14.49-DEBUG';
+const DIAG_VERSION = 'V14.49-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -203,19 +203,34 @@ export default {
             </html>
           `;
         } else {
-          // Inject script manually since we already have the body text
-          const injectedScript = `
+          // Inject script AND a visible loading indicator for debugging
+          const injectedContent = `
+            <style>
+              #worker-loading-indicator {
+                position: fixed; top: 10px; right: 10px; padding: 10px; 
+                background: #333; color: #fff; z-index: 999999; 
+                font-family: monospace; border-radius: 5px; font-size: 12px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
+              }
+            </style>
+            <div id="worker-loading-indicator">🏗️ WORKER V14.49: HTML Loaded (Waiting for JS...)</div>
             <script>
               window.ENV = {
                 SUPABASE_URL: "${env.SUPABASE_URL || ""}",
                 SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
               };
+              // Remove the indicator after 5 seconds or when app loads
+              setTimeout(() => {
+                const el = document.getElementById('worker-loading-indicator');
+                if (el) el.style.opacity = '0.5';
+              }, 5000);
             </script>
           `;
-          if (body.includes('</head>')) {
-            body = body.replace('</head>', `${injectedScript}</head>`);
+          
+          if (body.includes('</body>')) {
+            body = body.replace('</body>', `${injectedContent}</body>`);
           } else {
-            body = body + injectedScript;
+            body = body + injectedContent;
           }
         }
 
@@ -224,6 +239,10 @@ export default {
         newHeaders.delete("content-length");
         
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        newHeaders.set("Pragma", "no-cache");
+        newHeaders.set("Expires", "0");
+        newHeaders.set("Clear-Site-Data", "\"cache\", \"cookies\", \"storage\"");
+        
         newHeaders.set("X-Diagnostic-Step", diag.step);
         newHeaders.set("X-Diagnostic-Status", response.status.toString());
         newHeaders.set("X-Body-Length", bodyLength.toString());
