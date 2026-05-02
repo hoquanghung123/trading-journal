@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.50-DEBUG (Final Stability)
+ * Version: V14.51-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.50-DEBUG';
-const DIAG_VERSION = 'V14.50-DIAGNOSTICS';
+const VERSION = 'V14.51-DEBUG';
+const DIAG_VERSION = 'V14.51-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -215,7 +215,14 @@ export default {
             </html>
           `;
         } else {
-        // Inject environment variables safely
+      // 5. Final Response Processing
+      const isHtml = response.headers.get("content-type")?.includes("text/html") || isPageRequest;
+      
+      if (isHtml) {
+        diag.step = 'html-processing';
+        let body = await response.text();
+        
+        // Ensure environment variables are injected
         const injectedScript = `
           <script>
             window.ENV = {
@@ -235,10 +242,14 @@ export default {
         newHeaders.delete("content-encoding");
         newHeaders.delete("content-length");
         
+        // FORCE CORRECT CONTENT-TYPE
+        newHeaders.set("Content-Type", "text/html; charset=utf-8");
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        
         newHeaders.set("X-Diagnostic-Step", diag.step);
         newHeaders.set("X-Diagnostic-Status", response.status.toString());
         newHeaders.set("X-Response-Time", `${Date.now() - diag.start}ms`);
+        newHeaders.set("X-Final-Step", "html-delivered");
 
         return new Response(body, {
           status: response.status,
@@ -246,7 +257,16 @@ export default {
         });
       }
 
-      return response;
+      // For non-HTML responses
+      const finalHeaders = new Headers(response.headers);
+      finalHeaders.set("X-Diagnostic-Step", diag.step);
+      finalHeaders.set("X-Diagnostic-Status", response.status.toString());
+      finalHeaders.set("X-Final-Step", "asset-delivered");
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: finalHeaders
+      });
 
       return response;
     } catch (e) {
