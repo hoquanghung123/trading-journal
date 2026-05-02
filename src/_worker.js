@@ -18,7 +18,7 @@ export default {
       // 2. Asset & Storage Handling
       if (url.pathname.startsWith('/storage/')) {
         const debug = {
-          v: "V17.6-PROD",
+          v: "V17.7-PROD",
           path: decodeURIComponent(url.pathname.substring(9)),
           env: Object.keys(env || {}).join(","),
           sb_len: (env.SUPABASE_URL || "").length
