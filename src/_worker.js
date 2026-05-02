@@ -1,10 +1,10 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.61-DEBUG
+ * Version: V14.68-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.61-DEBUG';
+const VERSION = 'V14.68-DEBUG';
 
 export default {
   async fetch(request, env, ctx) {
@@ -154,6 +154,13 @@ export default {
                 console.log("DIAGNOSTIC SCRIPT ACTIVE");
               })();
             </script>`;
+
+          // Inject credentials into <html> tag attributes (Safest way)
+          if (body.includes('<html')) {
+            const urlAttr = `data-supabase-url="${env.SUPABASE_URL || ''}"`;
+            const keyAttr = `data-supabase-publishable-key="${env.SUPABASE_PUBLISHABLE_KEY || ''}"`;
+            body = body.replace(/<html([^>]*)>/i, `<html$1 ${urlAttr} ${keyAttr}>`);
+          }
 
           if (body.includes('<body')) {
             body = body.replace(/(<body[^>]*>)/i, '$1' + statusBanner + injectedScript);

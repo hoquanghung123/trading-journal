@@ -12,6 +12,12 @@ const getSupabaseClient = () => {
     if (typeof window !== 'undefined' && (window as any).ENV?.[key]) {
       return (window as any).ENV[key];
     }
+    // Check document.documentElement.dataset (injected by worker - safest)
+    if (typeof document !== 'undefined') {
+      const dataKey = key.toLowerCase().replace(/_/g, '-');
+      const val = document.documentElement.dataset[dataKey] || document.documentElement.dataset[key];
+      if (val) return val;
+    }
     // Check import.meta.env (build time)
     if (import.meta.env[`VITE_${key}`]) {
       return import.meta.env[`VITE_${key}`];
