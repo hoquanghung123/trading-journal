@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.37-DEBUG
+ * Version: V14.38-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.37-DEBUG';
-const DIAG_VERSION = 'V14.37-DIAGNOSTICS';
+const VERSION = 'V14.38-DEBUG';
+const DIAG_VERSION = 'V14.38-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -152,10 +152,16 @@ export default {
           </script>
         `;
         const newBody = body.replace('</head>', `${injectedScript}</head>`);
+        const newHeaders = new Headers(response.headers);
+        // Ensure HTML is never aggressively cached to prevent stale hash issues
+        newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        newHeaders.set("Pragma", "no-cache");
+        newHeaders.set("Expires", "0");
+
         response = new Response(newBody, {
           status: response.status,
           statusText: response.statusText,
-          headers: response.headers
+          headers: newHeaders
         });
       }
 
