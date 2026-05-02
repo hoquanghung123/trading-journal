@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.49-DEBUG
+ * Version: V14.50-DEBUG (Final Stability)
  */
 import server from './server.js';
 
-const VERSION = 'V14.49-DEBUG';
-const DIAG_VERSION = 'V14.49-DIAGNOSTICS';
+const VERSION = 'V14.50-DEBUG';
+const DIAG_VERSION = 'V14.50-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -141,19 +141,31 @@ export default {
         return new Response("R2 binding not configured", { status: 500 });
       }
 
-      // 4. Fallback to SSR (TanStack Start)
-      diag.step = 'ssr-fetch';
+      // 3. Determine if this is a page request that needs SSR
+      const isPageRequest = url.pathname === "/" || 
+                           url.pathname.endsWith(".html") || 
+                           (!url.pathname.includes(".") && !url.pathname.startsWith("/_"));
+      
       let response;
       try {
-        // Create a new request based on the original but strip cache headers
-        // to force a fresh SSR render (prevents blank 304 responses)
-        const ssrRequest = new Request(request.url, request);
-        ssrRequest.headers.delete("if-none-match");
-        ssrRequest.headers.delete("if-modified-since");
-        // Add a unique ID to break any internal server-side caching
-        ssrRequest.headers.set("X-Unique-ID", crypto.randomUUID());
-        
-        response = await server.fetch(ssrRequest, env, ctx);
+        if (isPageRequest) {
+          diag.step = 'ssr-fetch';
+          // FORCE SSR for pages
+          const ssrRequest = new Request(request.url, request);
+          ssrRequest.headers.delete("if-none-match");
+          ssrRequest.headers.delete("if-modified-since");
+          
+          response = await server.fetch(ssrRequest, env, ctx);
+        } else {
+          // Fallback for other files (images, icons, etc.)
+          diag.step = 'static-fallback';
+          response = await env.ASSETS.fetch(request);
+          if (!response.ok && response.status === 404 && !url.pathname.includes(".")) {
+            // If asset not found and it looks like a route, try SSR one last time
+            diag.step = 'ssr-last-resort';
+            response = await server.fetch(request, env, ctx);
+          }
+        }
       } catch (e) {
         diag.step = 'ssr-error';
         console.error("SSR Fetch Error:", e);
@@ -203,35 +215,20 @@ export default {
             </html>
           `;
         } else {
-          // Inject script AND a visible loading indicator for debugging
-          const injectedContent = `
-            <style>
-              #worker-loading-indicator {
-                position: fixed; top: 10px; right: 10px; padding: 10px; 
-                background: #333; color: #fff; z-index: 999999; 
-                font-family: monospace; border-radius: 5px; font-size: 12px;
-                box-shadow: 0 0 10px rgba(0,0,0,0.5);
-              }
-            </style>
-            <div id="worker-loading-indicator">🏗️ WORKER V14.49: HTML Loaded (Waiting for JS...)</div>
-            <script>
-              window.ENV = {
-                SUPABASE_URL: "${env.SUPABASE_URL || ""}",
-                SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
-              };
-              // Remove the indicator after 5 seconds or when app loads
-              setTimeout(() => {
-                const el = document.getElementById('worker-loading-indicator');
-                if (el) el.style.opacity = '0.5';
-              }, 5000);
-            </script>
-          `;
-          
-          if (body.includes('</body>')) {
-            body = body.replace('</body>', `${injectedContent}</body>`);
-          } else {
-            body = body + injectedContent;
-          }
+        // Inject environment variables safely
+        const injectedScript = `
+          <script>
+            window.ENV = {
+              SUPABASE_URL: "${env.SUPABASE_URL || ""}",
+              SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
+            };
+          </script>
+        `;
+        
+        if (body.includes('</head>')) {
+          body = body.replace('</head>', `${injectedScript}</head>`);
+        } else {
+          body = body + injectedScript;
         }
 
         const newHeaders = new Headers(response.headers);
@@ -239,33 +236,17 @@ export default {
         newHeaders.delete("content-length");
         
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
-        newHeaders.set("Pragma", "no-cache");
-        newHeaders.set("Expires", "0");
-        newHeaders.set("Clear-Site-Data", "\"cache\", \"cookies\", \"storage\"");
-        
         newHeaders.set("X-Diagnostic-Step", diag.step);
         newHeaders.set("X-Diagnostic-Status", response.status.toString());
-        newHeaders.set("X-Body-Length", bodyLength.toString());
-        newHeaders.set("X-Body-Start", bodyStart || "EMPTY");
         newHeaders.set("X-Response-Time", `${Date.now() - diag.start}ms`);
 
         return new Response(body, {
           status: response.status,
-          statusText: response.statusText,
           headers: newHeaders
         });
       }
 
-      // For all other responses
-      const finalHeaders = new Headers(response.headers);
-      finalHeaders.set("X-Diagnostic-Step", diag.step);
-      finalHeaders.set("X-Diagnostic-Status", response.status.toString());
-      
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: finalHeaders
-      });
+      return response;
 
       return response;
     } catch (e) {
