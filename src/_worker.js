@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.36-DEBUG
+ * Version: V14.37-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.36-DEBUG';
-const DIAG_VERSION = 'V14.36-DIAGNOSTICS';
+const VERSION = 'V14.37-DEBUG';
+const DIAG_VERSION = 'V14.37-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -15,6 +15,8 @@ export default {
       if (env.SUPABASE_PUBLISHABLE_KEY) globalThis.SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY;
       if (env.SUPABASE_SERVICE_ROLE_KEY) globalThis.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
       if (env.R2) globalThis.R2 = env.R2;
+
+      const url = new URL(request.url);
 
       // 2. Try to serve static assets first (CSS, JS, images from dist/client)
       try {
@@ -40,7 +42,6 @@ export default {
       }
 
       // 2. Direct R2 storage bypass with Supabase Fallback (Manual Sippy)
-      const url = new URL(request.url);
       if (url.pathname.startsWith('/storage/')) {
         const path = decodeURIComponent(url.pathname.substring(9));
         const r2 = env.R2;
