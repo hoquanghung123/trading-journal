@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V15.5-PROD
+ * Version: V17.8-PROD
  */
 import server from './server.js';
 
@@ -18,7 +18,7 @@ export default {
       // 2. Asset & Storage Handling
       if (url.pathname.startsWith('/storage/')) {
         const debug = {
-          v: "V17.7-PROD",
+          v: "V17.8-PROD",
           path: decodeURIComponent(url.pathname.substring(9)),
           env: Object.keys(env || {}).join(","),
           sb_len: (env.SUPABASE_URL || "").length
@@ -35,15 +35,17 @@ export default {
               if (typeof object.writeHttpMetadata === 'function') {
                 object.writeHttpMetadata(headers);
               }
+              // It's in R2, we can cache it for a long time
               headers.set("Cache-Control", "public, max-age=31536000, immutable");
               headers.set('X-Debug-All', JSON.stringify({ ...debug, source: "R2" }));
+              headers.set("X-Content-Source", "R2");
               return new Response(object.body, { headers });
             }
           } catch (e) {
-            debug.error = e.message;
+            debug.error = "R2-Get-Error: " + e.message;
           }
 
-          // Fallback to Supabase (and trigger Sippy if R2 gets fixed)
+          // Fallback to Supabase
           const supabaseUrl = env.SUPABASE_URL;
           if (!supabaseUrl) throw new Error("SUPABASE_URL missing");
           
@@ -53,22 +55,31 @@ export default {
           
           if (response.ok) {
             const blob = await response.blob();
+            const contentType = response.headers.get('content-type') || 'image/png';
             
             // Background push to R2
             ctx.waitUntil((async () => {
               try {
                 await env.R2.put(path, blob.stream(), {
-                  httpMetadata: { contentType: response.headers.get('content-type') }
+                  httpMetadata: { contentType }
                 });
+                console.log(`Successfully migrated ${path} to R2`);
               } catch (e) {
                 console.error("Auto-migration failed:", e.message);
               }
             })());
 
-            const headers = new Headers(response.headers);
-            headers.set("Cache-Control", "public, max-age=31536000, immutable");
-            headers.set('X-Debug-All', JSON.stringify({ ...debug, source: "SB-OK" }));
-            return new Response(blob, { headers });
+            // CRITICAL: DO NOT CACHE the fallback response! 
+            // This ensures the next request (after migration) hits the Worker again and gets the R2 version.
+            return new Response(blob, {
+              headers: {
+                "Content-Type": contentType,
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "X-Content-Source": "Supabase-Fallback",
+                "X-Debug-All": JSON.stringify({ ...debug, source: "SB-OK" }),
+                "Access-Control-Allow-Origin": "*"
+              }
+            });
           }
 
           return new Response("Not Found", { 
@@ -97,14 +108,12 @@ export default {
 
       // 3. SSR for Pages
       if (isPageRequest) {
-        // Fetch original SSR response
         const ssrRequest = new Request(request.url, request);
         const response = await server.fetch(ssrRequest, env, ctx);
         
         const contentType = response.headers.get("content-type") || "";
         const isJson = request.headers.get("accept")?.includes("json") || url.searchParams.has("_data");
 
-        // Inject environment variables into HTML for Client Side
         if (response.status === 200 && contentType.includes("text/html") && !isJson) {
           let body = await response.text();
           
