@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V15.1-PROD
+ * Version: V15.2-PROD
  */
 import server from './server.js';
 
@@ -25,21 +25,38 @@ export default {
           const path = decodeURIComponent(url.pathname.substring(9));
           const object = await env.R2.get(path);
           
-          if (!object) {
-            return new Response("Object Not Found", { status: 404 });
+          if (object) {
+            const headers = new Headers();
+            if (typeof object.writeHttpMetadata === 'function') {
+              object.writeHttpMetadata(headers);
+            }
+            headers.set("Cache-Control", "public, max-age=31536000, immutable");
+            headers.set("X-Content-Source", "R2-Storage");
+            return new Response(object.body, { headers });
           }
 
-          const headers = new Headers();
-          if (typeof object.writeHttpMetadata === 'function') {
-            object.writeHttpMetadata(headers);
+          // Fallback to Supabase Storage if missing from R2
+          if (env.SUPABASE_URL) {
+            const supabaseUrl = `${env.SUPABASE_URL}/storage/v1/object/public/journal-charts/${path}`;
+            const sbResponse = await fetch(supabaseUrl);
+
+            if (sbResponse.ok) {
+              // Auto-migrate: save to R2 in the background
+              const contentType = sbResponse.headers.get("content-type");
+              ctx.waitUntil(env.R2.put(path, sbResponse.clone().body, {
+                httpMetadata: { contentType: contentType || 'image/png' }
+              }));
+
+              const headers = new Headers(sbResponse.headers);
+              headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              headers.set("X-Content-Source", "Supabase-Fallback");
+              return new Response(sbResponse.body, { headers });
+            }
           }
-          
-          headers.set("Cache-Control", "public, max-age=31536000, immutable");
-          headers.set("X-Content-Source", "R2-Storage");
-          
-          return new Response(object.body, { headers });
+
+          return new Response("Object Not Found", { status: 404 });
         } catch (storageError) {
-          console.error('R2 Storage Error:', storageError.message);
+          console.error('Storage Error:', storageError.message);
           return new Response(`Storage Error: ${storageError.message}`, { status: 500 });
         }
       }
