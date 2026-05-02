@@ -4,7 +4,7 @@
  */
 import server from './server.js';
 
-const VERSION = 'V14.58-DEBUG';
+const VERSION = 'V14.59-DEBUG';
 const DIAG_VERSION = 'V14.56-DIAGNOSTICS';
 
 export default {
@@ -243,28 +243,39 @@ export default {
           
           const statusBanner = `
             <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:4px 10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">
-              <span>🏗️ WORKER ${VERSION}: Status ${response.status} (Len: ${bodyLength})</span>
+              <span>🏗️ WORKER ${VERSION}: Status ${response.status} (Len: ${bodyLength}) <span id="dom-info"></span></span>
               <span id="hydration-status" style="color:#ffcc00;">⏳ Checking...</span>
             </div>
           `;
 
           const injectedScript = `
+
             <script>
-              console.log("🚀 [${VERSION}] HTML RECEIVED - Length: ${body.length}");
+              const VERSION = '${VERSION}';
+              console.log("🚀 [" + VERSION + "] HTML RECEIVED - Length: ${body.length}");
               
-              window.ENV = {
-                SUPABASE_URL: "${env.SUPABASE_URL || ""}",
-                SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
+              // 0. Error Catcher
+              const errors = [];
+              window.onerror = (msg, url, line) => {
+                const status = document.getElementById('hydration-status');
+                if (status) {
+                  status.innerText = "❌ JS Error: " + msg.substring(0, 30);
+                  status.style.color = "#ff5555";
+                }
               };
 
               document.addEventListener('DOMContentLoaded', () => {
                 const root = document.getElementById('root') || document.getElementById('app') || document.body;
                 const status = document.getElementById('hydration-status');
                 const banner = document.getElementById('worker-status-banner');
+                const info = document.getElementById('dom-info');
 
                 if (root) {
-                  console.log("📦 [${VERSION}] Root/Body detected. Monitoring for hydration...");
-                  
+                  const updateInfo = () => {
+                    if (info) info.innerText = " (DOM: " + root.children.length + " children)";
+                  };
+                  updateInfo();
+
                   let hydrated = false;
                   const setHydrated = (msg = "✅ Hydrated") => {
                     if (hydrated) return;
@@ -273,31 +284,28 @@ export default {
                       status.innerText = msg;
                       status.style.color = "#00ff00";
                     }
+                    updateInfo();
                     setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
                   };
 
-                  // 1. Mutation Observer (Detect ANY DOM change)
                   const observer = new MutationObserver((mutations) => {
                     if (mutations.length > 0) {
-                      console.log("⚡ [${VERSION}] DOM Mutation detected");
                       setHydrated();
                       observer.disconnect();
                     }
                   });
                   observer.observe(root, { childList: true, subtree: true, attributes: true });
 
-                  // 2. Global Flag Check (TanStack specific if possible)
                   const interval = setInterval(() => {
                     if (window.__TSR_ROUTER__ || window.__TSR__) {
                       setHydrated("✅ Hydrated (Router)");
                       clearInterval(interval);
                     }
+                    updateInfo();
                   }, 500);
 
-                  // 3. Perfect Hydration Timeout
                   setTimeout(() => {
                     if (!hydrated) {
-                      console.log("😴 [${VERSION}] No mutations after 4s. Likely Perfect Hydration.");
                       setHydrated("🟢 SSR Stable");
                       observer.disconnect();
                       clearInterval(interval);
