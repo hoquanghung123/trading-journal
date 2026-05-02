@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V15.0-PROD
+ * Version: V15.1-PROD
  */
 import server from './server.js';
 
@@ -17,15 +17,30 @@ export default {
 
       // 2. Asset & Storage Handling
       if (url.pathname.startsWith('/storage/')) {
-        const path = decodeURIComponent(url.pathname.substring(9));
-        if (env.R2) {
+        if (!env.R2) {
+          return new Response("Storage configuration missing", { status: 500 });
+        }
+
+        try {
+          const path = decodeURIComponent(url.pathname.substring(9));
           const object = await env.R2.get(path);
-          if (object) {
-            const headers = new Headers();
-            object.writeHttpMetadata(headers);
-            headers.set("Cache-Control", "public, max-age=31536000, immutable");
-            return new Response(object.body, { headers });
+          
+          if (!object) {
+            return new Response("Object Not Found", { status: 404 });
           }
+
+          const headers = new Headers();
+          if (typeof object.writeHttpMetadata === 'function') {
+            object.writeHttpMetadata(headers);
+          }
+          
+          headers.set("Cache-Control", "public, max-age=31536000, immutable");
+          headers.set("X-Content-Source", "R2-Storage");
+          
+          return new Response(object.body, { headers });
+        } catch (storageError) {
+          console.error('R2 Storage Error:', storageError.message);
+          return new Response(`Storage Error: ${storageError.message}`, { status: 500 });
         }
       }
 
