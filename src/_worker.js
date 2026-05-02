@@ -1,4 +1,11 @@
+/**
+ * Cloudflare Pages SSR Worker for TanStack Start
+ * Version: V14.33-DEBUG
+ */
 import server from './server.js';
+
+const VERSION = 'V14.33-DEBUG';
+const DIAG_VERSION = 'V14.33-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -13,10 +20,23 @@ export default {
       try {
         const assetResponse = await env.ASSETS.fetch(request.clone());
         if (assetResponse.ok) {
-          return assetResponse;
+          // Add a header to identify it's a static asset
+          const headers = new Headers(assetResponse.headers);
+          headers.set("X-Asset-Source", "Cloudflare-Assets");
+          return new Response(assetResponse.body, {
+            status: assetResponse.status,
+            statusText: assetResponse.statusText,
+            headers
+          });
+        }
+        
+        // If it's an asset request but not found, don't fall through to SSR
+        if (url.pathname.startsWith('/assets/')) {
+          console.error(`${VERSION} ASSET NOT FOUND:`, url.pathname);
+          return new Response(`Asset Not Found: ${url.pathname}`, { status: 404 });
         }
       } catch (e) {
-        // Fall through to handlers
+        console.error(`${VERSION} ASSETS.fetch error:`, e);
       }
 
       // 2. Direct R2 storage bypass with Supabase Fallback (Manual Sippy)
@@ -135,8 +155,22 @@ export default {
 
       return response;
     } catch (e) {
-      console.error("CRITICAL WORKER ERROR:", e);
-      return new Response("Internal Server Error", { status: 500 });
+      console.error(`${VERSION} FATAL_ERROR:`, e);
+      
+      return new Response(JSON.stringify({
+        status: 500,
+        unhandled: true,
+        version: VERSION,
+        message: e.message || "Internal Server Error",
+        stack: e.stack,
+        request_info: {
+          url: request.url,
+          method: request.method
+        }
+      }), { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
     }
   }
 };

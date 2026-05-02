@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && cp -r dist/server/* dist/client/ && cp src/_worker.js dist/client/_worker.js && cp wrangler.production.json dist/client/wrangler.json",
+    "build": "vite build && cp -r dist/server/* dist/client/ && cp src/_worker.js dist/client/_worker.js && cp wrangler.production.json dist/client/wrangler.json && node scripts/patch-bundle.cjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "build:cf": "npm run build",
