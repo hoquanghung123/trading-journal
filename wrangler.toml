@@ -1,0 +1,11 @@
+name = "trading-journal"
+pages_build_output_dir = "dist/client"
+compatibility_date = "2025-02-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "tradingjournal-chart"
+
+[vars]
+NODE_VERSION = "22.16.0"
