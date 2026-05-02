@@ -4,8 +4,8 @@
  */
 import server from './server.js';
 
-const VERSION = 'V14.34-DEBUG';
-const DIAG_VERSION = 'V14.34-DIAGNOSTICS';
+const VERSION = 'V14.35-DEBUG';
+const DIAG_VERSION = 'V14.35-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -53,6 +53,7 @@ export default {
               object.writeHttpMetadata(headers);
               headers.set("etag", object.httpEtag);
               headers.set("Cache-Control", "public, max-age=31536000, immutable");
+              headers.set("X-Storage-Source", "R2");
               return new Response(object.body, { headers });
             }
           } catch (e) {
@@ -100,7 +101,8 @@ export default {
                 headers: {
                   "Content-Type": contentType || "image/png",
                   "Cache-Control": "public, max-age=31536000, immutable",
-                  "X-Migration-Source": "Supabase-Fallback"
+                  "X-Storage-Source": "Supabase-Fallback",
+                  "X-Migration-Status": "Migrating-To-R2"
                 }
               });
             } else {
