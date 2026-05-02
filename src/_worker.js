@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.43-DEBUG
+ * Version: V14.44-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.43-DEBUG';
-const DIAG_VERSION = 'V14.43-DIAGNOSTICS';
+const VERSION = 'V14.44-DEBUG';
+const DIAG_VERSION = 'V14.44-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -140,6 +140,8 @@ export default {
         const ssrRequest = new Request(request.url, request);
         ssrRequest.headers.delete("if-none-match");
         ssrRequest.headers.delete("if-modified-since");
+        // Add a unique ID to break any internal server-side caching
+        ssrRequest.headers.set("X-Unique-ID", crypto.randomUUID());
         
         response = await server.fetch(ssrRequest, env, ctx);
       } catch (e) {
@@ -200,6 +202,7 @@ export default {
         newHeaders.set("X-Diagnostic-Status", response.status.toString());
         newHeaders.set("X-Response-Time", `${Date.now() - diag.start}ms`);
         newHeaders.set("X-Body-Length", body.length.toString());
+        newHeaders.set("X-Body-Snippet", body.substring(0, 50).replace(/[\n\r]/g, ' '));
 
         response = new Response(newBody, {
           status: response.status,
