@@ -1,14 +1,15 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.40-DEBUG
+ * Version: V14.41-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.40-DEBUG';
-const DIAG_VERSION = 'V14.40-DIAGNOSTICS';
+const VERSION = 'V14.41-DEBUG';
+const DIAG_VERSION = 'V14.41-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
+    const diag = { step: 'init', start: Date.now() };
     try {
       // 1. Inject environment variables into global scope
       if (env.SUPABASE_URL) globalThis.SUPABASE_URL = env.SUPABASE_URL;
@@ -25,10 +26,12 @@ export default {
         const assetResponse = isRoot ? { ok: false } : await env.ASSETS.fetch(request.clone());
         
         if (assetResponse.ok) {
+          diag.step = 'static-asset';
           // Add a header to identify it's a static asset
           console.log(`${VERSION} ASSET SERVED: ${url.pathname}`);
           const headers = new Headers(assetResponse.headers);
           headers.set("X-Asset-Source", "Cloudflare-Assets");
+          headers.set("X-Diagnostic-Step", diag.step);
           return new Response(assetResponse.body, {
             status: assetResponse.status,
             statusText: assetResponse.statusText,
@@ -38,8 +41,12 @@ export default {
         
         // If it's an asset request but not found, don't fall through to SSR
         if (url.pathname.startsWith('/assets/')) {
+          diag.step = 'asset-404';
           console.error(`${VERSION} ASSET NOT FOUND:`, url.pathname);
-          return new Response(`Asset Not Found: ${url.pathname}`, { status: 404 });
+          return new Response(`Asset Not Found: ${url.pathname}`, { 
+            status: 404,
+            headers: { "X-Diagnostic-Step": diag.step }
+          });
         }
       } catch (e) {
         console.error(`${VERSION} ASSETS.fetch error:`, e);
@@ -125,10 +132,12 @@ export default {
       }
 
       // 4. Fallback to SSR (TanStack Start)
+      diag.step = 'ssr-fetch';
       let response;
       try {
         response = await server.fetch(request, env, ctx);
       } catch (e) {
+        diag.step = 'ssr-error';
         console.error("SSR Fetch Error:", e);
         // Distinguish between RPC/data requests and UI requests to prevent client crashes
         const isJson = request.headers.get("accept")?.includes("application/json") || 
@@ -146,7 +155,14 @@ export default {
       
       // 5. Inject environment variables into HTML for client-side Supabase client
       if (response.headers.get("content-type")?.includes("text/html")) {
+        diag.step = 'html-injection';
         const body = await response.text();
+        
+        if (!body || body.length < 10) {
+          console.error(`${VERSION} EMPTY SSR BODY DETECTED`);
+          diag.step = 'empty-body';
+        }
+
         const injectedScript = `
           <script>
             window.ENV = {
@@ -161,8 +177,19 @@ export default {
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
         newHeaders.set("Pragma", "no-cache");
         newHeaders.set("Expires", "0");
+        newHeaders.set("X-Diagnostic-Step", diag.step);
+        newHeaders.set("X-Response-Time", `${Date.now() - diag.start}ms`);
 
         response = new Response(newBody, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders
+        });
+      } else {
+        // For non-HTML responses, still add diagnostic info
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set("X-Diagnostic-Step", diag.step);
+        response = new Response(response.body, {
           status: response.status,
           statusText: response.statusText,
           headers: newHeaders
