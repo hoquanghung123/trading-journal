@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V15.2-PROD
+ * Version: V15.3-PROD
  */
 import server from './server.js';
 
@@ -23,6 +23,14 @@ export default {
 
         try {
           const path = decodeURIComponent(url.pathname.substring(9));
+          
+          if (!env.R2) {
+            return new Response("R2 Binding Missing", { 
+              status: 500, 
+              headers: { "X-Debug-Error": "env.R2 is undefined" } 
+            });
+          }
+
           const object = await env.R2.get(path);
           
           if (object) {
@@ -37,27 +45,48 @@ export default {
 
           // Fallback to Supabase Storage if missing from R2
           if (env.SUPABASE_URL) {
-            const supabaseUrl = `${env.SUPABASE_URL}/storage/v1/object/public/journal-charts/${path}`;
-            const sbResponse = await fetch(supabaseUrl);
+            const baseUrl = env.SUPABASE_URL.replace(/\/$/, "");
+            const supabaseUrl = `${baseUrl}/storage/v1/object/public/journal-charts/${path}`;
+            
+            try {
+              const sbResponse = await fetch(supabaseUrl);
+              if (sbResponse.ok) {
+                // Auto-migrate: save to R2 in the background
+                const contentType = sbResponse.headers.get("content-type") || "image/png";
+                ctx.waitUntil(
+                  env.R2.put(path, sbResponse.clone().body, {
+                    httpMetadata: { contentType }
+                  }).catch(e => console.error("Auto-migration failed:", e.message))
+                );
 
-            if (sbResponse.ok) {
-              // Auto-migrate: save to R2 in the background
-              const contentType = sbResponse.headers.get("content-type");
-              ctx.waitUntil(env.R2.put(path, sbResponse.clone().body, {
-                httpMetadata: { contentType: contentType || 'image/png' }
-              }));
-
-              const headers = new Headers(sbResponse.headers);
-              headers.set("Cache-Control", "public, max-age=31536000, immutable");
-              headers.set("X-Content-Source", "Supabase-Fallback");
-              return new Response(sbResponse.body, { headers });
+                const headers = new Headers(sbResponse.headers);
+                headers.set("Cache-Control", "public, max-age=31536000, immutable");
+                headers.set("X-Content-Source", "Supabase-Fallback");
+                headers.set("X-Debug-Migrating", "true");
+                return new Response(sbResponse.body, { headers });
+              } else {
+                return new Response(`Not in R2 or Supabase (${sbResponse.status})`, { 
+                  status: 404,
+                  headers: { "X-Debug-SB-Status": sbResponse.status.toString(), "X-Debug-URL": supabaseUrl }
+                });
+              }
+            } catch (fetchError) {
+              return new Response(`Fetch Error: ${fetchError.message}`, { 
+                status: 500,
+                headers: { "X-Debug-Error": fetchError.message, "X-Debug-URL": supabaseUrl }
+              });
             }
           }
 
-          return new Response("Object Not Found", { status: 404 });
+          return new Response("Object Not Found (No Fallback)", { 
+            status: 404,
+            headers: { "X-Debug-Error": "SUPABASE_URL missing" }
+          });
         } catch (storageError) {
-          console.error('Storage Error:', storageError.message);
-          return new Response(`Storage Error: ${storageError.message}`, { status: 500 });
+          return new Response(`Storage Error: ${storageError.message}`, { 
+            status: 500,
+            headers: { "X-Debug-Error": storageError.message }
+          });
         }
       }
 
