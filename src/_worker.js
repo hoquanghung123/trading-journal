@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.34-DEBUG
+ * Version: V14.36-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.35-DEBUG';
-const DIAG_VERSION = 'V14.35-DIAGNOSTICS';
+const VERSION = 'V14.36-DEBUG';
+const DIAG_VERSION = 'V14.36-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -49,6 +49,7 @@ export default {
           try {
             const object = await r2.get(path);
             if (object) {
+              console.log(`[R2] Found "${path}" in R2`);
               const headers = new Headers();
               object.writeHttpMetadata(headers);
               headers.set("etag", object.httpEtag);
@@ -92,9 +93,11 @@ export default {
               const body = await supabaseResponse.arrayBuffer();
 
               // Save to R2 in the background for next time
+              console.log(`[R2] Starting background migration for: ${path}`);
               ctx.waitUntil(r2.put(path, body, {
                 httpMetadata: { contentType: contentType || "image/png" }
-              }));
+              }).then(() => console.log(`[R2] Migration SUCCESS for: ${path}`))
+                .catch(err => console.error(`[R2] Migration FAILED for ${path}:`, err.message)));
 
               // Return the image to the user
               return new Response(body, {
