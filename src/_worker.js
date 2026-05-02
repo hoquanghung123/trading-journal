@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.33-DEBUG
+ * Version: V14.34-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.33-DEBUG';
-const DIAG_VERSION = 'V14.33-DIAGNOSTICS';
+const VERSION = 'V14.34-DEBUG';
+const DIAG_VERSION = 'V14.34-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {

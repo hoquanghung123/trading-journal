@@ -29,13 +29,23 @@ console.log('Bundle patched successfully.');
 
 // 3. Fix wrangler.json in dist/client
 try {
-  const rootWranglerPath = path.join(__dirname, '../wrangler.json');
+  const prodWranglerPath = path.join(__dirname, '../wrangler.production.json');
   const distWranglerPath = path.join(__dirname, '../dist/client/wrangler.json');
-  if (fs.existsSync(rootWranglerPath)) {
-    console.log('Overwriting dist/client/wrangler.json with root configuration...');
-    fs.copyFileSync(rootWranglerPath, distWranglerPath);
-    console.log('wrangler.json fixed.');
+  
+  if (fs.existsSync(prodWranglerPath)) {
+    console.log('Overwriting dist/client/wrangler.json with production configuration...');
+    fs.copyFileSync(prodWranglerPath, distWranglerPath);
+  } else {
+    // If no production config, at least fix the output_dir in the copied root config
+    const rootWranglerPath = path.join(__dirname, '../wrangler.json');
+    if (fs.existsSync(rootWranglerPath)) {
+      console.log('Patching root wrangler.json for production use...');
+      const config = JSON.parse(fs.readFileSync(rootWranglerPath, 'utf8'));
+      config.pages_build_output_dir = ".";
+      fs.writeFileSync(distWranglerPath, JSON.stringify(config, null, 2));
+    }
   }
+  console.log('wrangler.json fixed.');
 } catch (err) {
   console.error('Failed to fix wrangler.json:', err);
 }
