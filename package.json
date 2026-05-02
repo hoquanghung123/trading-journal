@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "rm -rf dist && vite build && cp dist/server/server.js dist/client/server.js && cp -rn dist/server/assets/* dist/client/assets/ 2>/dev/null || true && cp src/_worker.js dist/client/_worker.js && node scripts/patch-bundle.cjs && rm -f dist/client/wrangler.json",
+    "build": "rm -rf dist && vite build && cp dist/server/server.js dist/client/server.js && cp -rn dist/server/assets/* dist/client/assets/ 2>/dev/null || true && cp src/_worker.js dist/client/_worker.js && node scripts/patch-bundle.cjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "build:cf": "npm run build",

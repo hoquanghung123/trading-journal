@@ -28,5 +28,22 @@ fs.writeFileSync(bundlePath, content);
 console.log('Bundle patched successfully.');
 
 
-// 3. Configuration managed via root wrangler.json
-console.log('Build configuration will be managed via project root wrangler.json');
+// 3. Handle redirected wrangler.json requirement
+try {
+  const rootWranglerPath = path.join(__dirname, '../wrangler.json');
+  const distWranglerPath = path.join(__dirname, '../dist/client/wrangler.json');
+  
+  if (fs.existsSync(rootWranglerPath)) {
+    console.log('Patching wrangler.json for redirected deployment...');
+    const config = JSON.parse(fs.readFileSync(rootWranglerPath, 'utf8'));
+    
+    // CRITICAL: When the config is inside dist/client, the output dir is the current dir (.)
+    // Otherwise Cloudflare looks for dist/client/dist/client
+    config.pages_build_output_dir = ".";
+    
+    fs.writeFileSync(distWranglerPath, JSON.stringify(config, null, 2));
+    console.log('Redirected wrangler.json created at dist/client/wrangler.json');
+  }
+} catch (err) {
+  console.error('Failed to handle redirected wrangler.json:', err);
+}
