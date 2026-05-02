@@ -133,12 +133,23 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
                     setSession(s);
                     focus(`h4-${s}` as SlotKind);
                   }}
-                  className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all ${active ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 px-1 py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all ${active ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  {s}
-                  {has && (
-                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary align-middle" />
-                  )}
+                  <div className="flex items-center justify-center gap-1">
+                    {s}
+                    {entry.h4[s]?.bias ? (
+                      <span
+                        className="px-1 py-0.5 rounded-[4px] text-[7px] font-black leading-none shrink-0"
+                        style={biasStyle(entry.h4[s]!.bias!)}
+                      >
+                        {biasLabel(entry.h4[s]!.bias!)}
+                      </span>
+                    ) : (
+                      entry.h4[s]?.img && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                      )
+                    )}
+                  </div>
                 </button>
               );
             })}
