@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.52-DEBUG
+ * Version: V14.53-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.52-DEBUG';
-const DIAG_VERSION = 'V14.52-DIAGNOSTICS';
+const VERSION = 'V14.53-DEBUG';
+const DIAG_VERSION = 'V14.53-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -242,16 +242,35 @@ export default {
         diag.step = 'html-processing';
         let body = await response.text();
         
-        // Ensure environment variables AND debug logs are injected
+        // Enhanced DOM Inspection Script
         const injectedScript = `
           <script>
-            console.log("🚀 [${VERSION}] HTML RECEIVED - Body Length: ${body.length}");
+            console.log("🚀 [${VERSION}] HTML RECEIVED - Length: ${body.length}");
+            
             window.ENV = {
               SUPABASE_URL: "${env.SUPABASE_URL || ""}",
               SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
             };
+
             document.addEventListener('DOMContentLoaded', () => {
-              console.log("📦 [${VERSION}] DOMContentLoaded - App should hydrate now");
+              const rootNodes = ['root', 'app', '__next', 'mount'];
+              let found = false;
+              
+              rootNodes.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                  console.log("📦 [${VERSION}] FOUND ROOT: #" + id + " | Content length: " + el.innerHTML.length);
+                  // Apply temporary visual border for debug
+                  el.style.border = '2px dashed #ccc';
+                  el.style.minHeight = '100px';
+                  found = true;
+                }
+              });
+              
+              if (!found) {
+                console.warn("⚠️ [${VERSION}] NO ROOT ELEMENT FOUND (Expected one of: " + rootNodes.join(', ') + ")");
+                console.log("📄 BODY SNIPPET:", document.body.innerHTML.substring(0, 200));
+              }
             });
           </script>
         `;
