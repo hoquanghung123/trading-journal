@@ -4,7 +4,7 @@
  */
 import server from './server.js';
 
-const VERSION = 'V14.59-DEBUG';
+const VERSION = 'V14.60-DEBUG';
 const DIAG_VERSION = 'V14.56-DIAGNOSTICS';
 
 export default {
@@ -245,73 +245,76 @@ export default {
             <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:4px 10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">
               <span>🏗️ WORKER ${VERSION}: Status ${response.status} (Len: ${bodyLength}) <span id="dom-info"></span></span>
               <span id="hydration-status" style="color:#ffcc00;">⏳ Checking...</span>
-            </div>
-          `;
-
+            </div>`;
           const injectedScript = `
-
             <script>
               const VERSION = '${VERSION}';
-              console.log("🚀 [" + VERSION + "] HTML RECEIVED - Length: ${body.length}");
-              
-              // 0. Error Catcher
-              const errors = [];
-              window.onerror = (msg, url, line) => {
+              const logs = [];
+              const originalLog = console.log;
+              const originalError = console.error;
+              console.log = (...args) => { logs.push("LOG: " + args.join(" ")); originalLog(...args); };
+              console.error = (...args) => { logs.push("ERR: " + args.join(" ")); originalError(...args); };
+
+              let hydrated = false;
+              const setHydrated = (msg) => {
                 const status = document.getElementById('hydration-status');
                 if (status) {
-                  status.innerText = "❌ JS Error: " + msg.substring(0, 30);
-                  status.style.color = "#ff5555";
+                  status.innerText = msg;
+                  status.style.color = "#00ff00";
+                }
+                hydrated = true;
+              };
+
+              const updateInfo = () => {
+                const info = document.getElementById('dom-info');
+                if (!info) return;
+                const root = document.body;
+                const children = Array.from(root.children).filter(c => c.id !== 'worker-status-banner' && c.tagName !== 'SCRIPT');
+                const childTags = children.map(c => c.tagName).join(', ');
+                const textPreview = root.innerText.trim().substring(0, 30).replace(/\\n/g, ' ');
+                const lastLog = logs.length > 0 ? logs[logs.length - 1].substring(0, 30) : "No logs";
+                
+                info.innerHTML = \`
+                  <span style="color:#aaa;">|</span> 
+                  <b>DOM:</b> \${children.length} [\${childTags || 'NONE'}] 
+                  <span style="color:#aaa;">|</span> 
+                  <b>Text:</b> "\${textPreview || 'EMPTY'}"
+                  <span style="color:#aaa;">|</span> 
+                  <b>Log:</b> \${lastLog}
+                \`;
+              };
+
+              window.onerror = (msg) => {
+                const status = document.getElementById('hydration-status');
+                if (status) {
+                  status.innerText = "❌ JS Error: " + (msg.message || msg).substring(0, 30);
+                  status.style.color = "#ff4444";
                 }
               };
 
-              document.addEventListener('DOMContentLoaded', () => {
-                const root = document.getElementById('root') || document.getElementById('app') || document.body;
-                const status = document.getElementById('hydration-status');
-                const banner = document.getElementById('worker-status-banner');
-                const info = document.getElementById('dom-info');
-
-                if (root) {
-                  const updateInfo = () => {
-                    if (info) info.innerText = " (DOM: " + root.children.length + " children)";
-                  };
+              window.addEventListener('DOMContentLoaded', () => {
+                updateInfo();
+                const observer = new MutationObserver(() => {
                   updateInfo();
+                  if (!hydrated) setHydrated("✅ Hydrated");
+                });
+                observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-                  let hydrated = false;
-                  const setHydrated = (msg = "✅ Hydrated") => {
-                    if (hydrated) return;
-                    hydrated = true;
-                    if (status) {
-                      status.innerText = msg;
-                      status.style.color = "#00ff00";
-                    }
-                    updateInfo();
-                    setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
-                  };
+                const interval = setInterval(() => {
+                  updateInfo();
+                  if (window.__TSR_ROUTER__ || window.__TSR__) {
+                    setHydrated("✅ Hydrated (Router)");
+                    clearInterval(interval);
+                  }
+                }, 1000);
 
-                  const observer = new MutationObserver((mutations) => {
-                    if (mutations.length > 0) {
-                      setHydrated();
-                      observer.disconnect();
-                    }
-                  });
-                  observer.observe(root, { childList: true, subtree: true, attributes: true });
-
-                  const interval = setInterval(() => {
-                    if (window.__TSR_ROUTER__ || window.__TSR__) {
-                      setHydrated("✅ Hydrated (Router)");
-                      clearInterval(interval);
-                    }
-                    updateInfo();
-                  }, 500);
-
-                  setTimeout(() => {
-                    if (!hydrated) {
-                      setHydrated("🟢 SSR Stable");
-                      observer.disconnect();
-                      clearInterval(interval);
-                    }
-                  }, 4000);
-                }
+                setTimeout(() => {
+                  if (!hydrated) {
+                    setHydrated("🟢 SSR Stable");
+                    observer.disconnect();
+                    clearInterval(interval);
+                  }
+                }, 5000);
               });
             </script>
           `;
