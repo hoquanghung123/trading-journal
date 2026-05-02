@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.45-DEBUG
+ * Version: V14.46-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.45-DEBUG';
-const DIAG_VERSION = 'V14.45-DIAGNOSTICS';
+const VERSION = 'V14.46-DEBUG';
+const DIAG_VERSION = 'V14.46-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -201,6 +201,11 @@ export default {
         }
 
         const newHeaders = new Headers(response.headers);
+        // CRITICAL: Remove encoding and length headers when body is modified
+        // This prevents decoding errors in Chrome (white screen)
+        newHeaders.delete("content-encoding");
+        newHeaders.delete("content-length");
+        
         // FORCE NO CACHE
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
         newHeaders.set("Pragma", "no-cache");
