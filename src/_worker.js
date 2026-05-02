@@ -4,8 +4,8 @@
  */
 import server from './server.js';
 
-const VERSION = 'V14.54-DEBUG';
-const DIAG_VERSION = 'V14.54-DIAGNOSTICS';
+const VERSION = 'V14.55-DEBUG';
+const DIAG_VERSION = 'V14.55-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -256,16 +256,26 @@ export default {
               };
 
               document.addEventListener('DOMContentLoaded', () => {
-                const root = document.getElementById('root') || document.getElementById('app');
+                const root = document.getElementById('root') || document.getElementById('app') || document.body;
                 const status = document.getElementById('hydration-status');
                 const banner = document.getElementById('worker-status-banner');
 
                 if (root) {
-                  console.log("📦 [${VERSION}] ROOT detected. Current innerHTML length: " + root.innerHTML.length);
+                  console.log("📦 [${VERSION}] Root/Body detected. Monitoring for hydration...");
                   
-                  // Monitor for hydration
+                  const getPureContentLength = () => {
+                    const clone = root.cloneNode(true);
+                    const b = clone.querySelector('#worker-status-banner');
+                    if (b) b.remove();
+                    return clone.innerHTML.length;
+                  };
+
+                  const initialLength = getPureContentLength();
+                  
                   const checkHydration = () => {
-                    if (root.innerHTML.length > 100) {
+                    const currentLength = getPureContentLength();
+                    // Hydration marked by significant content change or router activity
+                    if (currentLength > initialLength + 50 || window.__TSR_ROUTER__) {
                       if (status) status.innerText = "✅ Hydrated";
                       if (status) status.style.color = "#00ff00";
                       setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
@@ -275,16 +285,12 @@ export default {
                   };
                   checkHydration();
 
-                  // Failure timeout
                   setTimeout(() => {
-                    if (root.innerHTML.length < 50) {
-                      if (status) status.innerText = "❌ HYDRATION FAILED (Still Blank)";
-                      if (status) status.style.color = "#ff4444";
-                      console.error("❌ [${VERSION}] Hydration timeout. Root is still empty.");
+                    if (status && status.innerText.includes("⏳")) {
+                      status.innerText = "⚠️ Hydration Status Unknown";
+                      status.style.color = "#ffcc00";
                     }
-                  }, 5000);
-                } else {
-                  if (status) status.innerText = "❌ NO ROOT ELEMENT FOUND";
+                  }, 8000);
                 }
               });
             </script>
