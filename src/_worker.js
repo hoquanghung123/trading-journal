@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.42-DEBUG
+ * Version: V14.43-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.42-DEBUG';
-const DIAG_VERSION = 'V14.42-DIAGNOSTICS';
+const VERSION = 'V14.43-DEBUG';
+const DIAG_VERSION = 'V14.43-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -162,11 +162,13 @@ export default {
       // 5. Inject environment variables into HTML for client-side Supabase client
       if (response.headers.get("content-type")?.includes("text/html")) {
         diag.step = 'html-injection';
-        const body = await response.text();
+        let body = await response.text();
         
         if (!body || body.length < 10) {
-          console.error(`${VERSION} EMPTY SSR BODY DETECTED`);
+          console.error(`${VERSION} EMPTY SSR BODY DETECTED - Status: ${response.status}`);
           diag.step = 'empty-body';
+          // If body is empty, provide a minimal fallback to avoid white screen
+          body = `<!DOCTYPE html><html><head><title>Trading Journal - Loading</title></head><body><div id="root">Loading... (SSR Empty Fallback)</div></body></html>`;
         }
 
         const injectedScript = `
@@ -177,14 +179,27 @@ export default {
             };
           </script>
         `;
-        const newBody = body.replace('</head>', `${injectedScript}</head>`);
+        
+        // Ensure we have a </head> tag to replace, or append if missing
+        let newBody;
+        if (body.includes('</head>')) {
+          newBody = body.replace('</head>', `${injectedScript}</head>`);
+        } else {
+          newBody = body + injectedScript;
+        }
+
         const newHeaders = new Headers(response.headers);
-        // Ensure HTML is never aggressively cached to prevent stale hash issues
+        // FORCE NO CACHE
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
         newHeaders.set("Pragma", "no-cache");
         newHeaders.set("Expires", "0");
+        // Clear site data to force browser to drop any old cached versions
+        newHeaders.set("Clear-Site-Data", "\"cache\"");
+        
         newHeaders.set("X-Diagnostic-Step", diag.step);
+        newHeaders.set("X-Diagnostic-Status", response.status.toString());
         newHeaders.set("X-Response-Time", `${Date.now() - diag.start}ms`);
+        newHeaders.set("X-Body-Length", body.length.toString());
 
         response = new Response(newBody, {
           status: response.status,
@@ -192,9 +207,10 @@ export default {
           headers: newHeaders
         });
       } else {
-        // For non-HTML responses, still add diagnostic info
+        // For non-HTML responses
         const newHeaders = new Headers(response.headers);
         newHeaders.set("X-Diagnostic-Step", diag.step);
+        newHeaders.set("X-Diagnostic-Status", response.status.toString());
         response = new Response(response.body, {
           status: response.status,
           statusText: response.statusText,
