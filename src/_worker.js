@@ -203,14 +203,15 @@ export default {
         return new Response("Internal Server Error", { status: 500 });
       }
       
-      // 5. Inspect and Inject (Deep Debug Mode)
-      if (response.headers.get("content-type")?.includes("text/html")) {
+      // 5. Final Response Processing & Injection
+      const contentType = response.headers.get("content-type") || "";
+      const isHtmlResponse = contentType.includes("text/html") || isPageRequest;
+
+      if (isHtmlResponse) {
         diag.step = 'body-inspection';
         let body = await response.text();
         
-        // Diagnostic information
         const bodyLength = body.length;
-        const bodyStart = body.substring(0, 100).replace(/[\n\r]/g, ' ');
         
         if (!body || bodyLength < 10) {
           diag.step = 'emergency-fallback';
@@ -220,7 +221,7 @@ export default {
             <html>
               <head><title>Worker Emergency Fallback</title></head>
               <body style="font-family: sans-serif; padding: 2rem; background: #fff0f0; color: #900;">
-                <h1>⚠️ SSR Return Empty Body (V14.48)</h1>
+                <h1>⚠️ SSR Return Empty Body (${VERSION})</h1>
                 <p>The server returned a 200 status but the body was empty.</p>
                 <hr/>
                 <p><strong>Diagnostic Info:</strong></p>
@@ -235,85 +236,78 @@ export default {
             </html>
           `;
         } else {
-      // 5. Final Response Processing
-      const isHtml = response.headers.get("content-type")?.includes("text/html") || isPageRequest;
-      
-      if (isHtml) {
-        diag.step = 'html-processing';
-        let body = await response.text();
-        
-        // Enhanced Visual Debugger & DOM Inspection
-        const statusBanner = `
-          <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:4px 10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">
-            <span>🏗️ WORKER ${VERSION}: HTML Loaded (Waiting for JS...)</span>
-            <span id="hydration-status" style="color:#ffcc00;">⏳ Checking Hydration...</span>
-          </div>
-        `;
+          diag.step = 'html-processing';
+          
+          // Enhanced Visual Debugger & DOM Inspection
+          const statusBanner = `
+            <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:4px 10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">
+              <span>🏗️ WORKER ${VERSION}: HTML Loaded (Waiting for JS...)</span>
+              <span id="hydration-status" style="color:#ffcc00;">⏳ Checking Hydration...</span>
+            </div>
+          `;
 
-        const injectedScript = `
-          <script>
-            console.log("🚀 [${VERSION}] HTML RECEIVED - Length: ${body.length}");
-            
-            window.ENV = {
-              SUPABASE_URL: "${env.SUPABASE_URL || ""}",
-              SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
-            };
+          const injectedScript = `
+            <script>
+              console.log("🚀 [${VERSION}] HTML RECEIVED - Length: ${body.length}");
+              
+              window.ENV = {
+                SUPABASE_URL: "${env.SUPABASE_URL || ""}",
+                SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
+              };
 
-            document.addEventListener('DOMContentLoaded', () => {
-              const root = document.getElementById('root') || document.getElementById('app');
-              const status = document.getElementById('hydration-status');
-              const banner = document.getElementById('worker-status-banner');
+              document.addEventListener('DOMContentLoaded', () => {
+                const root = document.getElementById('root') || document.getElementById('app');
+                const status = document.getElementById('hydration-status');
+                const banner = document.getElementById('worker-status-banner');
 
-              if (root) {
-                console.log("📦 [${VERSION}] ROOT detected. Current innerHTML length: " + root.innerHTML.length);
-                
-                // Monitor for hydration
-                const checkHydration = () => {
-                  if (root.innerHTML.length > 100) {
-                    if (status) status.innerText = "✅ Hydrated";
-                    if (status) status.style.color = "#00ff00";
-                    setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
-                  } else {
-                    setTimeout(checkHydration, 500);
-                  }
-                };
-                checkHydration();
+                if (root) {
+                  console.log("📦 [${VERSION}] ROOT detected. Current innerHTML length: " + root.innerHTML.length);
+                  
+                  // Monitor for hydration
+                  const checkHydration = () => {
+                    if (root.innerHTML.length > 100) {
+                      if (status) status.innerText = "✅ Hydrated";
+                      if (status) status.style.color = "#00ff00";
+                      setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
+                    } else {
+                      setTimeout(checkHydration, 500);
+                    }
+                  };
+                  checkHydration();
 
-                // Failure timeout
-                setTimeout(() => {
-                  if (root.innerHTML.length < 50) {
-                    if (status) status.innerText = "❌ HYDRATION FAILED (Still Blank)";
-                    if (status) status.style.color = "#ff4444";
-                    console.error("❌ [${VERSION}] Hydration timeout. Root is still empty.");
-                  }
-                }, 5000);
-              } else {
-                if (status) status.innerText = "❌ NO ROOT ELEMENT FOUND";
-              }
-            });
-          </script>
-        `;
-        
-        // Inject script in head
-        if (body.includes('</head>')) {
-          body = body.replace('</head>', `${injectedScript}</head>`);
-        } else {
-          body = body + injectedScript;
-        }
+                  // Failure timeout
+                  setTimeout(() => {
+                    if (root.innerHTML.length < 50) {
+                      if (status) status.innerText = "❌ HYDRATION FAILED (Still Blank)";
+                      if (status) status.style.color = "#ff4444";
+                      console.error("❌ [${VERSION}] Hydration timeout. Root is still empty.");
+                    }
+                  }, 5000);
+                } else {
+                  if (status) status.innerText = "❌ NO ROOT ELEMENT FOUND";
+                }
+              });
+            </script>
+          `;
+          
+          // Inject script in head
+          if (body.includes('</head>')) {
+            body = body.replace('</head>', `${injectedScript}</head>`);
+          } else {
+            body = body + injectedScript;
+          }
 
-        // Inject banner at start of body
-        if (body.includes('<body>')) {
-          body = body.replace('<body>', '<body>' + statusBanner);
-        } else if (body.includes('<body ')) {
-          // Handle cases like <body class="...">
-          body = body.replace(/(<body[^>]*>)/i, '$1' + statusBanner);
+          // Inject banner at start of body
+          if (body.includes('<body>')) {
+            body = body.replace('<body>', '<body>' + statusBanner);
+          } else if (body.includes('<body ')) {
+            body = body.replace(/(<body[^>]*>)/i, '$1' + statusBanner);
+          }
         }
 
         const newHeaders = new Headers(response.headers);
         newHeaders.delete("content-encoding");
         newHeaders.delete("content-length");
-        
-        // FORCE CORRECT CONTENT-TYPE
         newHeaders.set("Content-Type", "text/html; charset=utf-8");
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
         
@@ -338,8 +332,6 @@ export default {
         status: response.status,
         headers: finalHeaders
       });
-
-      return response;
     } catch (e) {
       console.error(`${VERSION} FATAL_ERROR:`, e);
       
