@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V15.3-PROD
+ * Version: V15.4-PROD
  */
 import server from './server.js';
 
@@ -31,7 +31,15 @@ export default {
             });
           }
 
-          const object = await env.R2.get(path);
+          let object = null;
+          let r2Error = null;
+          
+          try {
+            object = await env.R2.get(path);
+          } catch (e) {
+            r2Error = e.message;
+            console.error("R2 Get Error:", r2Error);
+          }
           
           if (object) {
             const headers = new Headers();
@@ -43,7 +51,7 @@ export default {
             return new Response(object.body, { headers });
           }
 
-          // Fallback to Supabase Storage if missing from R2
+          // Fallback to Supabase Storage if missing from R2 or R2 failed
           if (env.SUPABASE_URL) {
             const baseUrl = env.SUPABASE_URL.replace(/\/$/, "");
             const supabaseUrl = `${baseUrl}/storage/v1/object/public/journal-charts/${path}`;
@@ -62,30 +70,34 @@ export default {
                 const headers = new Headers(sbResponse.headers);
                 headers.set("Cache-Control", "public, max-age=31536000, immutable");
                 headers.set("X-Content-Source", "Supabase-Fallback");
-                headers.set("X-Debug-Migrating", "true");
+                if (r2Error) headers.set("X-Debug-R2-Error", r2Error);
                 return new Response(sbResponse.body, { headers });
               } else {
-                return new Response(`Not in R2 or Supabase (${sbResponse.status})`, { 
+                return new Response(`Not Found`, { 
                   status: 404,
-                  headers: { "X-Debug-SB-Status": sbResponse.status.toString(), "X-Debug-URL": supabaseUrl }
+                  headers: { 
+                    "X-Debug-SB-Status": sbResponse.status.toString(), 
+                    "X-Debug-URL": supabaseUrl,
+                    "X-Debug-R2-Error": r2Error || "Not in R2"
+                  }
                 });
               }
             } catch (fetchError) {
-              return new Response(`Fetch Error: ${fetchError.message}`, { 
+              return new Response(`Fetch Error`, { 
                 status: 500,
                 headers: { "X-Debug-Error": fetchError.message, "X-Debug-URL": supabaseUrl }
               });
             }
           }
 
-          return new Response("Object Not Found (No Fallback)", { 
+          return new Response("Object Not Found", { 
             status: 404,
-            headers: { "X-Debug-Error": "SUPABASE_URL missing" }
+            headers: { "X-Debug-Error": "SUPABASE_URL missing", "X-Debug-R2-Error": r2Error || "Not in R2" }
           });
-        } catch (storageError) {
-          return new Response(`Storage Error: ${storageError.message}`, { 
+        } catch (globalError) {
+          return new Response(`Storage Error`, { 
             status: 500,
-            headers: { "X-Debug-Error": storageError.message }
+            headers: { "X-Debug-Error": globalError.message }
           });
         }
       }
