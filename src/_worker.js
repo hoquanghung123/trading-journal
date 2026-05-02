@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.53-DEBUG
+ * Version: V14.54-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.53-DEBUG';
-const DIAG_VERSION = 'V14.53-DIAGNOSTICS';
+const VERSION = 'V14.54-DEBUG';
+const DIAG_VERSION = 'V14.54-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -242,7 +242,14 @@ export default {
         diag.step = 'html-processing';
         let body = await response.text();
         
-        // Enhanced DOM Inspection Script
+        // Enhanced Visual Debugger & DOM Inspection
+        const statusBanner = `
+          <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:4px 10px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;">
+            <span>🏗️ WORKER ${VERSION}: HTML Loaded (Waiting for JS...)</span>
+            <span id="hydration-status" style="color:#ffcc00;">⏳ Checking Hydration...</span>
+          </div>
+        `;
+
         const injectedScript = `
           <script>
             console.log("🚀 [${VERSION}] HTML RECEIVED - Length: ${body.length}");
@@ -253,32 +260,53 @@ export default {
             };
 
             document.addEventListener('DOMContentLoaded', () => {
-              const rootNodes = ['root', 'app', '__next', 'mount'];
-              let found = false;
-              
-              rootNodes.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                  console.log("📦 [${VERSION}] FOUND ROOT: #" + id + " | Content length: " + el.innerHTML.length);
-                  // Apply temporary visual border for debug
-                  el.style.border = '2px dashed #ccc';
-                  el.style.minHeight = '100px';
-                  found = true;
-                }
-              });
-              
-              if (!found) {
-                console.warn("⚠️ [${VERSION}] NO ROOT ELEMENT FOUND (Expected one of: " + rootNodes.join(', ') + ")");
-                console.log("📄 BODY SNIPPET:", document.body.innerHTML.substring(0, 200));
+              const root = document.getElementById('root') || document.getElementById('app');
+              const status = document.getElementById('hydration-status');
+              const banner = document.getElementById('worker-status-banner');
+
+              if (root) {
+                console.log("📦 [${VERSION}] ROOT detected. Current innerHTML length: " + root.innerHTML.length);
+                
+                // Monitor for hydration
+                const checkHydration = () => {
+                  if (root.innerHTML.length > 100) {
+                    if (status) status.innerText = "✅ Hydrated";
+                    if (status) status.style.color = "#00ff00";
+                    setTimeout(() => { if(banner) banner.style.display = 'none'; }, 2000);
+                  } else {
+                    setTimeout(checkHydration, 500);
+                  }
+                };
+                checkHydration();
+
+                // Failure timeout
+                setTimeout(() => {
+                  if (root.innerHTML.length < 50) {
+                    if (status) status.innerText = "❌ HYDRATION FAILED (Still Blank)";
+                    if (status) status.style.color = "#ff4444";
+                    console.error("❌ [${VERSION}] Hydration timeout. Root is still empty.");
+                  }
+                }, 5000);
+              } else {
+                if (status) status.innerText = "❌ NO ROOT ELEMENT FOUND";
               }
             });
           </script>
         `;
         
+        // Inject script in head
         if (body.includes('</head>')) {
           body = body.replace('</head>', `${injectedScript}</head>`);
         } else {
           body = body + injectedScript;
+        }
+
+        // Inject banner at start of body
+        if (body.includes('<body>')) {
+          body = body.replace('<body>', '<body>' + statusBanner);
+        } else if (body.includes('<body ')) {
+          // Handle cases like <body class="...">
+          body = body.replace(/(<body[^>]*>)/i, '$1' + statusBanner);
         }
 
         const newHeaders = new Headers(response.headers);
