@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.51-DEBUG
+ * Version: V14.52-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.51-DEBUG';
-const DIAG_VERSION = 'V14.51-DIAGNOSTICS';
+const VERSION = 'V14.52-DEBUG';
+const DIAG_VERSION = 'V14.52-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -155,6 +155,26 @@ export default {
           ssrRequest.headers.delete("if-none-match");
           ssrRequest.headers.delete("if-modified-since");
           
+          // 2. EXTREME ASSET PRIORITY
+          if (url.pathname.startsWith("/assets/")) {
+            diag.step = 'static-asset-direct';
+            const assetResponse = await env.ASSETS.fetch(request);
+            
+            // Add diagnostic headers to asset responses too
+            const assetHeaders = new Headers(assetResponse.headers);
+            assetHeaders.set("X-Asset-Status", assetResponse.status.toString());
+            assetHeaders.set("X-Diagnostic-Step", diag.step);
+            
+            // Force correct MIME types for common assets if missing
+            if (url.pathname.endsWith(".js")) assetHeaders.set("Content-Type", "application/javascript");
+            if (url.pathname.endsWith(".css")) assetHeaders.set("Content-Type", "text/css");
+
+            return new Response(assetResponse.body, {
+              status: assetResponse.status,
+              headers: assetHeaders
+            });
+          }
+          
           response = await server.fetch(ssrRequest, env, ctx);
         } else {
           // Fallback for other files (images, icons, etc.)
@@ -222,13 +242,17 @@ export default {
         diag.step = 'html-processing';
         let body = await response.text();
         
-        // Ensure environment variables are injected
+        // Ensure environment variables AND debug logs are injected
         const injectedScript = `
           <script>
+            console.log("🚀 [${VERSION}] HTML RECEIVED - Body Length: ${body.length}");
             window.ENV = {
               SUPABASE_URL: "${env.SUPABASE_URL || ""}",
               SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
             };
+            document.addEventListener('DOMContentLoaded', () => {
+              console.log("📦 [${VERSION}] DOMContentLoaded - App should hydrate now");
+            });
           </script>
         `;
         
