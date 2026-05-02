@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.44-DEBUG
+ * Version: V14.45-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.44-DEBUG';
-const DIAG_VERSION = 'V14.44-DIAGNOSTICS';
+const VERSION = 'V14.45-DEBUG';
+const DIAG_VERSION = 'V14.45-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -21,9 +21,19 @@ export default {
 
       // 2. Try to serve static assets first (CSS, JS, images from dist/client)
       try {
-        // BYPASS ASSETS for root and main routes to force SSR
-        const isRoot = url.pathname === "/" || url.pathname === "/index.html";
-        const assetResponse = isRoot ? { ok: false } : await env.ASSETS.fetch(request.clone());
+        // STRICT RULE: Only serve from Cloudflare Assets if it's clearly a static file
+        // and NOT an HTML document or the root path.
+        const isAssetPath = url.pathname.startsWith('/assets/') || 
+                           (url.pathname.includes('.') && !url.pathname.endsWith('.html'));
+        
+        const isPageRequest = url.pathname === "/" || 
+                             url.pathname.endsWith(".html") || 
+                             !url.pathname.includes(".");
+
+        // Force SSR for any page-like request to prevent serving the empty static index.html
+        const assetResponse = (isAssetPath && !isPageRequest) 
+          ? await env.ASSETS.fetch(request.clone()) 
+          : { ok: false };
         
         if (assetResponse.ok) {
           diag.step = 'static-asset';
