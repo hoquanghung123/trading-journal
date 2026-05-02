@@ -1,10 +1,10 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.68-DEBUG
+ * Version: V14.69-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.68-DEBUG';
+const VERSION = 'V14.69-DEBUG';
 
 export default {
   async fetch(request, env, ctx) {
@@ -17,6 +17,12 @@ export default {
     };
 
     try {
+      // 1. Diagnostics: Check if env variables exist
+      const hasUrl = !!env.SUPABASE_URL;
+      const hasKey = !!env.SUPABASE_PUBLISHABLE_KEY;
+      const envKeys = Object.keys(env).join(', ');
+      workerLog(`Env Check: URL=${hasUrl}, KEY=${hasKey} | Keys: ${envKeys}`);
+
       // 1. Inject environment variables into global scope
       if (env.SUPABASE_URL) globalThis.SUPABASE_URL = env.SUPABASE_URL;
       if (env.SUPABASE_PUBLISHABLE_KEY) globalThis.SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY;
@@ -77,10 +83,12 @@ export default {
           let body = await response.text();
           const origLen = body.length;
 
+          const envStatus = (hasUrl && hasKey) ? '<span style="color:#00ff00">ENV:✅</span>' : '<span style="color:#ff4444">ENV:❌</span>';
+
           const statusBanner = `
             <div id="worker-status-banner" style="position:fixed;top:0;left:0;right:0;background:#1a1a1a;color:#00ff00;padding:6px 12px;font-family:monospace;font-size:11px;z-index:999999;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;cursor:help;" title="Click to view full HTML source">
               <div onclick="window.showSource()" style="flex:1">
-                🏗️ <b>${VERSION}</b>: Status 200 (Len: ${origLen}) 
+                🏗️ <b>${VERSION}</b> ${envStatus} | Status 200 (Len: ${origLen}) 
                 <span id="dom-info" style="margin-left:15px;opacity:0.8;"></span>
               </div>
               <div id="hydration-status" style="color:#ffcc00;font-weight:bold;">⏳ Checking...</div>
