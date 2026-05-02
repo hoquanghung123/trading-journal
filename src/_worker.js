@@ -1,11 +1,11 @@
 /**
  * Cloudflare Pages SSR Worker for TanStack Start
- * Version: V14.47-DEBUG
+ * Version: V14.48-DEBUG
  */
 import server from './server.js';
 
-const VERSION = 'V14.47-DEBUG';
-const DIAG_VERSION = 'V14.47-DIAGNOSTICS';
+const VERSION = 'V14.48-DEBUG';
+const DIAG_VERSION = 'V14.48-DIAGNOSTICS';
 
 export default {
   async fetch(request, env, ctx) {
@@ -171,45 +171,73 @@ export default {
         return new Response("Internal Server Error", { status: 500 });
       }
       
-      // 5. Inject environment variables using HTMLRewriter (Safer & Faster)
-      if (response.headers.get("content-type")?.includes("text/html") && response.status === 200) {
-        diag.step = 'html-rewriter';
+      // 5. Inspect and Inject (Deep Debug Mode)
+      if (response.headers.get("content-type")?.includes("text/html")) {
+        diag.step = 'body-inspection';
+        let body = await response.text();
         
-        const injectedScript = `
-          window.ENV = {
-            SUPABASE_URL: "${env.SUPABASE_URL || ""}",
-            SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
-          };
-        `;
-
-        const rewriter = new HTMLRewriter()
-          .on("head", {
-            element(element) {
-              element.append(`<script>${injectedScript}</script>`, { html: true });
-            },
-          });
-
-        const newResponse = rewriter.transform(response);
-        const newHeaders = new Headers(newResponse.headers);
+        // Diagnostic information
+        const bodyLength = body.length;
+        const bodyStart = body.substring(0, 100).replace(/[\n\r]/g, ' ');
         
-        // FORCE NO CACHE
+        if (!body || bodyLength < 10) {
+          diag.step = 'emergency-fallback';
+          console.error(`${VERSION} EMPTY SSR BODY DETECTED! Status: ${response.status}`);
+          body = `
+            <!DOCTYPE html>
+            <html>
+              <head><title>Worker Emergency Fallback</title></head>
+              <body style="font-family: sans-serif; padding: 2rem; background: #fff0f0; color: #900;">
+                <h1>⚠️ SSR Return Empty Body (V14.48)</h1>
+                <p>The server returned a 200 status but the body was empty.</p>
+                <hr/>
+                <p><strong>Diagnostic Info:</strong></p>
+                <ul>
+                  <li>Status: ${response.status}</li>
+                  <li>Step: ${diag.step}</li>
+                  <li>URL: ${request.url}</li>
+                  <li>Time: ${new Date().toISOString()}</li>
+                </ul>
+                <button onclick="window.location.reload()">Try Again (Force Refresh)</button>
+              </body>
+            </html>
+          `;
+        } else {
+          // Inject script manually since we already have the body text
+          const injectedScript = `
+            <script>
+              window.ENV = {
+                SUPABASE_URL: "${env.SUPABASE_URL || ""}",
+                SUPABASE_PUBLISHABLE_KEY: "${env.SUPABASE_PUBLISHABLE_KEY || ""}"
+              };
+            </script>
+          `;
+          if (body.includes('</head>')) {
+            body = body.replace('</head>', `${injectedScript}</head>`);
+          } else {
+            body = body + injectedScript;
+          }
+        }
+
+        const newHeaders = new Headers(response.headers);
+        newHeaders.delete("content-encoding");
+        newHeaders.delete("content-length");
+        
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
-        newHeaders.set("Pragma", "no-cache");
-        newHeaders.set("Expires", "0");
-        newHeaders.set("Clear-Site-Data", "\"cache\"");
-        
         newHeaders.set("X-Diagnostic-Step", diag.step);
         newHeaders.set("X-Diagnostic-Status", response.status.toString());
+        newHeaders.set("X-Body-Length", bodyLength.toString());
+        newHeaders.set("X-Body-Start", bodyStart || "EMPTY");
         newHeaders.set("X-Response-Time", `${Date.now() - diag.start}ms`);
 
-        return new Response(newResponse.body, {
+        return new Response(body, {
           status: response.status,
           statusText: response.statusText,
           headers: newHeaders
         });
       }
 
-      // For all other responses (non-HTML or non-200)
+      // For all other responses
       const finalHeaders = new Headers(response.headers);
       finalHeaders.set("X-Diagnostic-Step", diag.step);
       finalHeaders.set("X-Diagnostic-Status", response.status.toString());
