@@ -19,7 +19,7 @@ import {
   Flame,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query-client";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGate } from "./AuthGate";
 import { JournalView } from "./JournalView";
@@ -59,9 +59,6 @@ const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: st
   { id: "account", label: "Account", icon: UserCircle },
 ];
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false } },
-});
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/lib/settings";
@@ -405,15 +402,13 @@ function UnderConstruction({ title }: { title: string }) {
 
 export function Terminal() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthGate>
-        {() => (
-          <>
-            <ThemeApplier />
-            <Shell />
-          </>
-        )}
-      </AuthGate>
-    </QueryClientProvider>
+    <AuthGate>
+      {() => (
+        <>
+          <ThemeApplier />
+          <Shell />
+        </>
+      )}
+    </AuthGate>
   );
 }

@@ -18,6 +18,9 @@ import {
   weekdayOf,
   type DayEntry,
 } from "../lib/journal";
+import { focusBiasEntry, navigateToPage } from "../lib/nav-bus";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "../lib/query-client";
 
 function NotFoundComponent() {
   return (
@@ -192,6 +195,15 @@ function RootComponent() {
         await upsertEntry(updatedEntry as DayEntry);
         toast.success(`Đã lưu ${targetAsset} thành công!`, { id: toastId });
 
+        // Instant update for React Query
+        queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+
+        // Switch to Bias page and scroll to entry
+        navigateToPage("bias");
+        setTimeout(() => {
+          focusBiasEntry(updatedEntry.id, targetAsset);
+        }, 100);
+
         // Smooth update without full reload
         router.invalidate();
       } catch (err: any) {
@@ -207,9 +219,9 @@ function RootComponent() {
   }, []);
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster position="top-right" richColors />
-    </>
+    </QueryClientProvider>
   );
 }

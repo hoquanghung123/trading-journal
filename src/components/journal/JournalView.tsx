@@ -21,6 +21,8 @@ import {
   isPrepDay,
   calculateStreak,
 } from "@/lib/journal";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query-client";
 import { useSymbols, getAssetIconUrl } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
 import { EditDayModal } from "./EditDayModal";
@@ -48,7 +50,11 @@ const newEntry = (asset: string): DayEntry => ({
 export function JournalView() {
   const { data: assetList = [] } = useSymbols();
   const ASSETS = useMemo(() => assetList.filter((s) => !s.isForex).map((s) => s.name), [assetList]);
-  const [entries, setEntries] = useState<DayEntry[]>([]);
+
+  const { data: entries = [] } = useQuery({
+    queryKey: ["journal_entries"],
+    queryFn: fetchEntries,
+  });
   const [asset, setAsset] = useState<string>(() => {
     return localStorage.getItem("journal-filter-asset") || "TODAY";
   });
@@ -91,11 +97,6 @@ export function JournalView() {
     checkPsych();
   }, []);
 
-  useEffect(() => {
-    fetchEntries()
-      .then(setEntries)
-      .catch((e) => toast.error(e.message));
-  }, []);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -198,9 +199,8 @@ export function JournalView() {
     const existingEntriesForDate = entries.filter((x) => x.date === e.date && x.id !== e.id);
     const dateWasComplete = isPrepDay(existingEntriesForDate);
 
-    setEntries((p) =>
-      p.find((x) => x.id === e.id) ? p.map((x) => (x.id === e.id ? e : x)) : [...p, e],
-    );
+    // Optimistic UI update (optional, but keep it simple for now and rely on invalidation)
+    // Actually, invalidate is better for ensuring data integrity
 
     try {
       await upsertEntry(e);
@@ -212,15 +212,16 @@ export function JournalView() {
         setCelebrationStreak(stats.currentStreak);
         setShowCelebration(true);
       }
+      queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
   const remove = async (id: string) => {
-    setEntries((p) => p.filter((x) => x.id !== id));
     try {
       await deleteEntry(id);
+      queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
     } catch (err: any) {
       toast.error(err.message);
     }
