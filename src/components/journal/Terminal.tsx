@@ -85,7 +85,9 @@ function ThemeApplier() {
 }
 
 function Shell() {
-  const [page, setPage] = useState<Page>("bias");
+  const [page, setPage] = useState<Page>(() => {
+    return (localStorage.getItem("terminal-active-page") as Page) || "bias";
+  });
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -99,6 +101,11 @@ function Shell() {
 
     fetchTrades().then(setTrades).catch(console.error);
   }, []);
+
+  // Persist page preference
+  useEffect(() => {
+    localStorage.setItem("terminal-active-page", page);
+  }, [page]);
 
   const { data: entries } = useQuery({
     queryKey: ["journal_entries"],

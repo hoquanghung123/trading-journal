@@ -49,11 +49,15 @@ export function JournalView() {
   const { data: assetList = [] } = useSymbols();
   const ASSETS = useMemo(() => assetList.filter((s) => !s.isForex).map((s) => s.name), [assetList]);
   const [entries, setEntries] = useState<DayEntry[]>([]);
-  const [asset, setAsset] = useState<string>("TODAY");
+  const [asset, setAsset] = useState<string>(() => {
+    return localStorage.getItem("journal-filter-asset") || "TODAY";
+  });
   const [month, setMonth] = useState<string>(() => {
     return localStorage.getItem("journal-filter-month") || "ALL";
   });
-  const [viewMode, setViewMode] = useState<"timeline" | "month">("timeline");
+  const [viewMode, setViewMode] = useState<"timeline" | "month">(() => {
+    return (localStorage.getItem("journal-view-mode") as "timeline" | "month") || "timeline";
+  });
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -102,10 +106,18 @@ export function JournalView() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Save month preference
+  // Save filter preferences
   useEffect(() => {
     localStorage.setItem("journal-filter-month", month);
   }, [month]);
+
+  useEffect(() => {
+    localStorage.setItem("journal-filter-asset", asset);
+  }, [asset]);
+
+  useEffect(() => {
+    localStorage.setItem("journal-view-mode", viewMode);
+  }, [viewMode]);
 
   // Subscribe to smart-link focus events from Trade Log
   useEffect(() => {
