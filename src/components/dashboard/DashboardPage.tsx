@@ -136,9 +136,9 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 sm:p-8 space-y-6 sm:space-y-10 font-sans mobile-pb">
+    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-3 sm:p-8 space-y-5 sm:space-y-10 font-sans mobile-pb">
       {/* Page Header with Toggle */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
           Dashboard Overview
         </h1>
@@ -167,8 +167,8 @@ export function DashboardPage() {
       </div>
 
       {/* Tier 1: ACCOUNT PERFORMANCE */}
-      <div className="bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[32px] p-4 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-800">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sm:mb-10">
+      <div className="bg-white dark:bg-slate-900 rounded-[20px] sm:rounded-[32px] p-4 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 sm:mb-10">
           <h2 className="text-[10px] sm:text-sm font-bold tracking-[0.2em] text-slate-900 dark:text-white uppercase">
             Account Performance
           </h2>

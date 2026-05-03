@@ -134,38 +134,38 @@ export function ReviewPage() {
   const previousReviewForDraft = getPreviousReview(currentPeriod);
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 lg:p-10">
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-8">
+    <div className="min-h-screen bg-background text-foreground p-4 lg:p-10">
+      <div className="max-w-[1600px] mx-auto space-y-6 lg:space-y-8">
+        <header className="mb-6 lg:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border pb-4 lg:pb-8">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Save className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-2 mb-1 lg:mb-2">
+              <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Save className="w-5 h-5 lg:w-6 lg:h-6 text-primary" />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl lg:text-3xl font-bold tracking-tight text-foreground">
                 Performance Review
               </h1>
             </div>
-            <p className="text-muted-foreground font-medium max-w-2xl">
+            <p className="text-xs lg:text-sm text-muted-foreground font-medium max-w-2xl">
               Deep self-reflection and systemic analysis of your trading behavior.
             </p>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+          <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+            <div className="text-left md:text-right">
+              <div className="text-[10px] lg:text-xs font-bold text-muted-foreground uppercase tracking-widest mb-0.5 lg:mb-1">
                 Editing Period
               </div>
-              <div className="text-2xl font-black text-primary flex items-center justify-end gap-3">
+              <div className="text-lg lg:text-2xl font-black text-primary flex items-center justify-start md:justify-end gap-2 lg:gap-3">
                 {currentPeriod}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <button
                       onClick={() => setTempPeriod(currentPeriod)}
-                      className="text-muted-foreground hover:text-primary transition-all p-1.5 rounded-lg hover:bg-muted"
+                      className="text-muted-foreground hover:text-primary transition-all p-1 rounded-lg hover:bg-muted"
                       title="Change Period"
                     >
-                      <Edit2 className="h-5 w-5" />
+                      <Edit2 className="h-4 w-4 lg:h-5 lg:w-5" />
                     </button>
                   </DialogTrigger>
                   <DialogContent className="bg-white border-border text-foreground rounded-2xl shadow-xl">
@@ -208,12 +208,12 @@ export function ReviewPage() {
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="forest-gradient text-white font-bold gap-3 h-14 px-8 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                className="forest-gradient text-white font-bold gap-2 lg:gap-3 h-10 lg:h-14 px-4 lg:px-8 rounded-xl lg:rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 text-xs lg:text-base"
               >
                 {isSaving ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 lg:h-5 lg:w-5 animate-spin" />
                 ) : (
-                  <Save className="h-5 w-5" />
+                  <Save className="h-4 w-4 lg:h-5 lg:w-5" />
                 )}
                 {isSaving ? "Saving..." : "Save Review"}
               </Button>

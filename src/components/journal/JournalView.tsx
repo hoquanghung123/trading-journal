@@ -241,17 +241,17 @@ export function JournalView() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6 px-4 lg:px-6 py-4">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6 px-4 lg:px-6 py-3 lg:py-4">
           <div className="flex items-center justify-between lg:justify-start gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Activity className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
+                <h1 className="text-base lg:text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
                   Bias Expect
                 </h1>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                <p className="text-[9px] lg:text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                   Journal Timeline
                 </p>
               </div>

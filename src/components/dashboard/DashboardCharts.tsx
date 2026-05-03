@@ -51,10 +51,11 @@ export function EquityCurveChart({ data, height = 300 }: ChartProps) {
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
-            fontSize={10}
+            fontSize={9}
             tickLine={false}
             axisLine={false}
             tick={{ fill: COLORS.text }}
+            minTickGap={30}
           />
           <YAxis
             stroke={COLORS.text}
@@ -102,9 +103,10 @@ export function MonthlyPnlBarChart({ data, height = 300 }: ChartProps) {
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
-            fontSize={10}
+            fontSize={9}
             tickLine={false}
             axisLine={false}
+            minTickGap={20}
           />
           <YAxis
             stroke={COLORS.text}
@@ -180,10 +182,11 @@ export function SetupPerformanceChart({ data, height = 250 }: ChartProps) {
           <XAxis
             type="number"
             stroke={COLORS.text}
-            fontSize={10}
+            fontSize={9}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `$${value}`}
+            minTickGap={25}
           />
           <YAxis
             dataKey="name"
@@ -232,9 +235,10 @@ export function DayPerformanceChart({ data, height = 250 }: ChartProps) {
           <XAxis
             dataKey="name"
             stroke={COLORS.text}
-            fontSize={10}
+            fontSize={9}
             tickLine={false}
             axisLine={false}
+            minTickGap={20}
           />
           <YAxis
             stroke={COLORS.text}

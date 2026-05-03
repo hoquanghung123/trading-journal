@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  Activity,
   UserCircle,
   Flame,
 } from "lucide-react";
@@ -123,14 +122,6 @@ function Shell() {
     return calculateStreak(entries).currentStreak;
   }, [profile, entries]);
 
-  const stats = useMemo(() => {
-    const total = trades.length;
-    const wins = trades.filter((t) => t.netPnl > 0).length;
-    const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
-    const pnl = trades.reduce((acc, t) => acc + t.netPnl, 0);
-    return { total, wr, pnl };
-  }, [trades]);
-
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -158,6 +149,7 @@ function Shell() {
           fixed lg:relative inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-sidebar sidebar-transition
           ${isMobileOpen ? "translate-x-0 w-[280px] sidebar-mobile-shadow" : "-translate-x-full lg:translate-x-0"}
           ${isLeftCollapsed ? "lg:w-[80px]" : "lg:w-[260px]"}
+          lg:shadow-none
         `}
       >
         <div
@@ -245,37 +237,7 @@ function Shell() {
             })}
           </nav>
 
-          {/* Quick Stats in Sidebar for Mobile/Expanded Sidebar */}
-          {(!isLeftCollapsed || isMobileOpen) && (
-            <div className="px-6 py-4 space-y-4">
-              <div className="p-4 rounded-2xl bg-muted/50 border border-border/50">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Performance
-                  </span>
-                  <Activity className="w-3 h-3 text-primary" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <div className="text-[9px] font-bold text-muted-foreground uppercase">
-                      Win Rate
-                    </div>
-                    <div className="text-sm font-black text-foreground">{stats.wr}%</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] font-bold text-muted-foreground uppercase">
-                      Net PnL
-                    </div>
-                    <div
-                      className={`text-sm font-black ${stats.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
-                    >
-                      ${stats.pnl.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           <div
             className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed && !isMobileOpen ? "flex flex-col items-center" : ""}`}
@@ -341,20 +303,20 @@ function Shell() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-30">
+        <header className="lg:hidden h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-30">
           <button
             onClick={() => setIsMobileOpen(true)}
-            className="p-2 rounded-xl bg-muted text-foreground"
+            className="p-2 rounded-xl hover:bg-muted text-foreground transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center forest-gradient">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center forest-gradient">
               <TerminalIcon className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-sm tracking-tight">Chartmate</span>
+            <span className="font-bold text-sm tracking-tight text-foreground">Chartmate</span>
           </div>
-          <div className="w-9" /> {/* Spacer */}
+          <div className="w-9" /> {/* Spacer to center the logo */}
         </header>
 
         {/* Viewport content */}

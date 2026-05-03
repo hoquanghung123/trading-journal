@@ -266,24 +266,24 @@ export function TradeLog() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse min-w-[800px]">
                   <thead>
-                    <tr className="text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
+                    <tr className="text-[9px] lg:text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
                       <th className="text-center py-4 px-1 w-[30px]">#</th>
-                      {cols.outcome && <th className="text-left p-4 w-[160px]">Outcome</th>}
+                      {cols.outcome && <th className="text-left p-2 lg:p-4 w-[160px]">Outcome</th>}
                       {settings?.showTradeGrade && cols.grade && (
-                        <th className="text-left p-4 w-[100px]">Grade</th>
+                        <th className="text-left p-2 lg:p-4 w-[100px]">Grade</th>
                       )}
-                      {cols.entryTime && <th className="text-left p-4 w-[180px]">Entry Time</th>}
-                      <th className="text-left p-4 w-[120px]">Symbol</th>
-                      {cols.bias && <th className="text-left p-4 w-[120px]">Bias Context</th>}
-                      {cols.side && <th className="text-left p-4 w-[80px]">Side</th>}
-                      {cols.playbook && <th className="text-left p-4 w-[100px]">Playbook</th>}
-                      {cols.stats && <th className="text-left p-4 w-[180px]">Statistics</th>}
-                      {cols.images && <th className="text-left p-4 w-[180px]">Images</th>}
+                      {cols.entryTime && <th className="text-left p-2 lg:p-4 w-[180px]">Entry Time</th>}
+                      <th className="text-left p-2 lg:p-4 w-[120px]">Symbol</th>
+                      {cols.bias && <th className="text-left p-2 lg:p-4 w-[120px]">Bias Context</th>}
+                      {cols.side && <th className="text-left p-2 lg:p-4 w-[80px]">Side</th>}
+                      {cols.playbook && <th className="text-left p-2 lg:p-4 w-[100px]">Playbook</th>}
+                      {cols.stats && <th className="text-left p-2 lg:p-4 w-[180px]">Statistics</th>}
+                      {cols.images && <th className="text-left p-2 lg:p-4 w-[180px]">Images</th>}
                       {cols.compliance && (
-                        <th className="text-left p-4 w-[200px]">Follow Playbook</th>
+                        <th className="text-left p-2 lg:p-4 w-[200px]">Follow Playbook</th>
                       )}
-                      {cols.status && <th className="text-left p-4 w-[140px]">Status</th>}
-                      <th className="text-left p-4">Trade Notes</th>
+                      {cols.status && <th className="text-left p-2 lg:p-4 w-[140px]">Status</th>}
+                      <th className="text-left p-2 lg:p-4">Trade Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -301,7 +301,7 @@ export function TradeLog() {
                             </span>
                           </td>
                           {cols.outcome && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               <span
                                 className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}
                               >
@@ -311,7 +311,7 @@ export function TradeLog() {
                           )}
 
                           {settings?.showTradeGrade && cols.grade && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               {t.grade ? (
                                 <span
                                   className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${gradeStyle[t.grade]}`}
@@ -327,7 +327,7 @@ export function TradeLog() {
                           )}
 
                           {cols.entryTime && (
-                            <td className="p-4 text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                            <td className="p-2 lg:p-4 text-[10px] lg:text-xs font-semibold text-muted-foreground whitespace-nowrap">
                               {formatTime(t.entryTime)}
                             </td>
                           )}
@@ -343,12 +343,12 @@ export function TradeLog() {
                                   />
                                 </div>
                               )}
-                              <span className="font-black text-foreground text-sm">{t.symbol}</span>
+                              <span className="font-black text-foreground text-xs lg:text-sm">{t.symbol}</span>
                             </div>
                           </td>
 
                           {cols.bias && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               {t.biasEntryId && (
                                 <button
                                   onClick={(e) => {
@@ -366,7 +366,7 @@ export function TradeLog() {
                           )}
 
                           {cols.side && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               <span
                                 className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
                                   t.side === "buy"
@@ -380,7 +380,7 @@ export function TradeLog() {
                           )}
 
                           {cols.playbook && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               {t.setupId && (
                                 <button
                                   onClick={(e) => {
@@ -401,10 +401,10 @@ export function TradeLog() {
                           )}
 
                           {cols.stats && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               <div className="flex flex-col gap-0.5">
                                 <span
-                                  className={`text-sm font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}
+                                  className={`text-xs lg:text-sm font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}
                                 >
                                   {t.netPnl > 0 ? "+" : ""}
                                   {t.netPnl.toFixed(2)}
@@ -434,7 +434,7 @@ export function TradeLog() {
                           )}
 
                           {cols.compliance && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               {t.complianceCheck ? (
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20">
                                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -454,7 +454,7 @@ export function TradeLog() {
                           )}
 
                           {cols.status && (
-                            <td className="p-4">
+                            <td className="p-2 lg:p-4">
                               <span
                                 className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
                                   t.status === "Not Started"

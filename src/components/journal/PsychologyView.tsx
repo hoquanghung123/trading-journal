@@ -169,16 +169,16 @@ export function PsychologyView() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-10 mobile-pb">
-      <div className="max-w-[1500px] mx-auto space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-background p-3 sm:p-6 lg:p-10 mobile-pb">
+      <div className="max-w-[1500px] mx-auto space-y-5 sm:space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-6 sm:pb-8 gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 sm:pb-8 gap-4 lg:gap-6">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Brain className="w-5 h-5 sm:w-7 sm:h-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl lg:text-3xl font-bold tracking-tight text-foreground">
                 Psychology Journal
               </h1>
               <p className="text-[10px] sm:text-sm text-muted-foreground font-medium uppercase tracking-wider mt-0.5 sm:mt-1">
