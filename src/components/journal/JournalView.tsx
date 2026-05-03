@@ -57,8 +57,8 @@ export function JournalView() {
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
-  const [celebrationOpen, setCelebrationOpen] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationStreak, setCelebrationStreak] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // Morning Psychology Prompt Logic
@@ -189,8 +189,8 @@ export function JournalView() {
       const isNowComplete = isPrepDay([...existingEntriesForDate, e]);
       if (!dateWasComplete && isNowComplete) {
         const stats = calculateStreak([...entries.filter(x => x.id !== e.id), e]);
-        setCurrentStreak(stats.currentStreak);
-        setCelebrationOpen(true);
+        setCelebrationStreak(stats.currentStreak);
+        setShowCelebration(true);
       }
     } catch (err: any) {
       toast.error(err.message);
