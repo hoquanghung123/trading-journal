@@ -85,7 +85,7 @@ export function JournalView() {
 
         // Check if reminder time has passed
         const now = new Date();
-        const [targetH, targetM] = (settings.reminderTime || "08:00").split(":").map(Number);
+        const [targetH, targetM] = (settings.dailyReminderTime || "08:00").split(":").map(Number);
         const currentH = now.getHours();
         const currentM = now.getMinutes();
 
