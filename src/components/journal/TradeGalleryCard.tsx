@@ -184,19 +184,40 @@ export function TradeGalleryCard({
 
         {/* Compliance Footer */}
         <div className="mt-auto pt-4 border-t border-border/30 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-col gap-2 items-start max-w-[60%]">
             {show("compliance") && (
               <>
-                {trade.complianceCheck ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                ) : (
-                  <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                )}
-                <span
-                  className={`text-[9px] font-bold uppercase tracking-widest ${trade.complianceCheck ? "text-primary" : "text-destructive"}`}
-                >
-                  {trade.complianceCheck ? "Followed" : "Incomplete"}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {trade.complianceCheck ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                  )}
+                  <span
+                    className={`text-[9px] font-bold uppercase tracking-widest ${trade.complianceCheck ? "text-primary" : "text-destructive"}`}
+                  >
+                    {trade.complianceCheck ? "Followed" : "Incomplete"}
+                  </span>
+                </div>
+                {!trade.complianceCheck &&
+                  trade.missedConfluences &&
+                  trade.missedConfluences.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {trade.missedConfluences.slice(0, 2).map((c) => (
+                        <span
+                          key={c}
+                          className="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 text-[8px] font-bold text-rose-600 uppercase tracking-tighter whitespace-nowrap"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                      {trade.missedConfluences.length > 2 && (
+                        <span className="text-[8px] font-black text-rose-400 uppercase tracking-tighter px-1">
+                          +{trade.missedConfluences.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  )}
               </>
             )}
           </div>

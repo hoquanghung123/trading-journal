@@ -435,21 +435,42 @@ export function TradeLog() {
 
                           {cols.compliance && (
                             <td className="p-2 lg:p-4">
-                              {t.complianceCheck ? (
-                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-black uppercase tracking-wider">
-                                    Followed
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive text-destructive-foreground shadow-sm shadow-destructive/20">
-                                  <AlertCircle className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-black uppercase tracking-wider">
-                                    Incomplete
-                                  </span>
-                                </div>
-                              )}
+                              <div className="flex flex-col gap-2">
+                                {t.complianceCheck ? (
+                                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20 w-fit">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span className="text-[10px] font-black uppercase tracking-wider">
+                                      Followed
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive text-destructive-foreground shadow-sm shadow-destructive/20 w-fit">
+                                      <AlertCircle className="w-3.5 h-3.5" />
+                                      <span className="text-[10px] font-black uppercase tracking-wider">
+                                        Incomplete
+                                      </span>
+                                    </div>
+                                    {t.missedConfluences && t.missedConfluences.length > 0 && (
+                                      <div className="flex flex-wrap gap-1">
+                                        {t.missedConfluences.slice(0, 2).map((c) => (
+                                          <span
+                                            key={c}
+                                            className="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 text-[8px] font-bold text-rose-600 uppercase tracking-tighter whitespace-nowrap"
+                                          >
+                                            {c}
+                                          </span>
+                                        ))}
+                                        {t.missedConfluences.length > 2 && (
+                                          <span className="text-[8px] font-black text-rose-400 uppercase tracking-tighter px-1">
+                                            +{t.missedConfluences.length - 2} more
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </td>
                           )}
 
