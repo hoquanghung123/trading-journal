@@ -7,7 +7,7 @@ import {
   ddmm
 } from "@/lib/journal";
 import { motion } from "framer-motion";
-import { Flame, Trophy, Calendar, Target, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { Flame, Trophy, Calendar, Target, ArrowLeft, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { 
   format, 
@@ -237,7 +237,7 @@ function CheckItem({ label, completed }: { label: string, completed: boolean }) 
           ? "bg-orange-500 border-orange-500 text-white" 
           : "border-slate-600 group-hover:border-slate-500"
       }`}>
-        {completed && <Plus className="w-4 h-4" strokeWidth={4} />}
+        {completed && <Check className="w-4 h-4" strokeWidth={4} />}
       </div>
       <span className={`text-sm font-bold transition-all ${completed ? "text-white" : "text-slate-400"}`}>
         {label}
