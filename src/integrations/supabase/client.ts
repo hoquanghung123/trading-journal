@@ -9,12 +9,12 @@ const getSupabaseClient = () => {
 
   const getEnv = (key: string) => {
     // Check window.ENV (injected by worker)
-    if (typeof window !== 'undefined' && (window as any).ENV?.[key]) {
+    if (typeof window !== "undefined" && (window as any).ENV?.[key]) {
       return (window as any).ENV[key];
     }
     // Check document.documentElement attributes (injected by worker - safest)
-    if (typeof document !== 'undefined') {
-      const attrName = 'data-' + key.toLowerCase().replace(/_/g, '-');
+    if (typeof document !== "undefined") {
+      const attrName = "data-" + key.toLowerCase().replace(/_/g, "-");
       const val = document.documentElement.getAttribute(attrName);
       if (val) return val;
     }
@@ -23,29 +23,29 @@ const getSupabaseClient = () => {
       return import.meta.env[`VITE_${key}`];
     }
     // Check process.env (server side fallback)
-    if (typeof process !== 'undefined' && process.env[key]) {
+    if (typeof process !== "undefined" && process.env[key]) {
       return process.env[key];
     }
     // Check globalThis (worker side fallback)
     if ((globalThis as any)[key]) {
       return (globalThis as any)[key];
     }
-    return '';
+    return "";
   };
 
-  const url = getEnv('SUPABASE_URL');
-  const key = getEnv('SUPABASE_PUBLISHABLE_KEY');
+  const url = getEnv("SUPABASE_URL");
+  const key = getEnv("SUPABASE_PUBLISHABLE_KEY");
 
   _supabase = createClient<Database>(
-    url || "https://placeholder-url.supabase.co", 
-    key || "placeholder-key", 
+    url || "https://placeholder-url.supabase.co",
+    key || "placeholder-key",
     {
       auth: {
         storage: typeof window !== "undefined" ? window.localStorage : undefined,
         persistSession: true,
         autoRefreshToken: true,
       },
-    }
+    },
   );
   return _supabase;
 };

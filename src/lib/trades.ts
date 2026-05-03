@@ -32,6 +32,7 @@ export interface Trade {
   notes?: string;
   status: TradeStatus;
   grade?: string;
+  riskPercent?: number;
 }
 
 type Row = {
@@ -61,6 +62,7 @@ type Row = {
   notes: string | null;
   status: string;
   grade: string | null;
+  risk_percent: number | null;
 };
 
 const fromRow = (r: Row): Trade => ({
@@ -90,6 +92,7 @@ const fromRow = (r: Row): Trade => ({
   notes: r.notes ?? undefined,
   status: (r.status as TradeStatus) ?? "Not Started",
   grade: r.grade ?? undefined,
+  riskPercent: Number(r.risk_percent) || 0,
 });
 
 const toRow = (t: Trade, userId: string) => ({
@@ -120,6 +123,7 @@ const toRow = (t: Trade, userId: string) => ({
   status: t.status,
   notes: t.notes ?? null,
   grade: t.grade ?? null,
+  risk_percent: t.riskPercent ?? 0,
 });
 
 export async function fetchTrades(): Promise<Trade[]> {
@@ -205,5 +209,6 @@ export function newTrade(): Trade {
     complianceCheck: true,
     missedConfluences: [],
     status: "Not Started",
+    riskPercent: 0,
   };
 }

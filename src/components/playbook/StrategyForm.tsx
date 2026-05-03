@@ -88,7 +88,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       ...prev,
       [type]: [...prev[type], value.trim()],
     }));
-    
+
     if (type === "narrative") setNewNarrative("");
     if (type === "liquidity") setNewLiquidity("");
     if (type === "confirmation") setNewConfirmation("");
@@ -195,10 +195,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
 
           <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-8 scrollbar-hide">
             {/* Tab 1: Core Specs */}
-            <TabsContent
-              value="core"
-              className="m-0 space-y-10 animate-in fade-in-50 duration-500"
-            >
+            <TabsContent value="core" className="m-0 space-y-10 animate-in fade-in-50 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Field label="Model Name">
                   <Input
@@ -212,7 +209,9 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                 <Field label="Current Status">
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as "Approved" | "Testing" | "Under Review")}
+                    onChange={(e) =>
+                      setStatus(e.target.value as "Approved" | "Testing" | "Under Review")
+                    }
                     className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
                   >
                     <option value="Testing">🧪 TESTING_PHASE</option>
@@ -322,7 +321,10 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                     <Input
                       value={newNarrative}
                       onChange={(e) => setNewNarrative(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("narrative", newNarrative))}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), addConfluence("narrative", newNarrative))
+                      }
                       placeholder="e.g., Daily Bias"
                       className="h-10 bg-white border-border rounded-xl font-bold px-4 flex-1 text-xs"
                     />
@@ -362,7 +364,10 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                     <Input
                       value={newLiquidity}
                       onChange={(e) => setNewLiquidity(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("liquidity", newLiquidity))}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), addConfluence("liquidity", newLiquidity))
+                      }
                       placeholder="e.g., BSL / SSL"
                       className="h-10 bg-white border-border rounded-xl font-bold px-4 flex-1 text-xs"
                     />
@@ -402,7 +407,10 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                     <Input
                       value={newConfirmation}
                       onChange={(e) => setNewConfirmation(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addConfluence("confirmation", newConfirmation))}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), addConfluence("confirmation", newConfirmation))
+                      }
                       placeholder="e.g., MSS / FVG"
                       className="h-10 bg-white border-border rounded-xl font-bold px-4 flex-1 text-xs"
                     />
@@ -486,7 +494,10 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
             </TabsContent>
 
             {/* Tab 3: Definition */}
-            <TabsContent value="definition" className="m-0 h-full animate-in fade-in-50 duration-500">
+            <TabsContent
+              value="definition"
+              className="m-0 h-full animate-in fade-in-50 duration-500"
+            >
               <div className="h-full flex flex-col space-y-6">
                 <SectionHeader title="Institutional Definition" />
                 <div className="flex-1 rounded-[32px] overflow-hidden border border-border bg-muted/10 min-h-[400px]">

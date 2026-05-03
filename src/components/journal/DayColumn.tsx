@@ -13,7 +13,6 @@ interface Props {
   onEdit: (e: DayEntry) => void;
 }
 
-
 export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Props) {
   const [session, setSession] = useState<Session>("ASIA");
   const isFocused = (slot: SlotKind) => focusedSlot?.id === entry.id && focusedSlot?.slot === slot;

@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchSettings } from "@/lib/settings";
 import { useQuery } from "@tanstack/react-query";
+import { useAchievementTracker } from "@/hooks/useAchievementTracker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
   const { data: symbols = [] } = useSymbols();
   const { models: playbookSetups } = usePlaybook();
+  const { track } = useAchievementTracker();
   const SYMBOLS = useMemo(() => symbols.map((s) => s.name), [symbols]);
 
   const { data: settings } = useQuery({
@@ -170,6 +172,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
     setBusy(true);
     try {
       await onSave(t);
+      await track(t); // Track achievements after save
       toast.success("Trade saved");
       onClose();
     } catch (e) {
@@ -457,13 +460,13 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     {(() => {
                       const setup = playbookSetups.find((s) => s.id === t.setupId);
                       if (!setup) return null;
-                      
+
                       const confluences = setup.setupConfluences;
-                      const flatConfluences = confluences 
+                      const flatConfluences = confluences
                         ? [
                             ...(confluences.narrative || []),
                             ...(confluences.liquidity || []),
-                            ...(confluences.confirmation || [])
+                            ...(confluences.confirmation || []),
                           ]
                         : [];
 
@@ -567,6 +570,16 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     value={t.maxRr}
                     onChange={(e) => update({ maxRr: Number(e.target.value) })}
                     className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                  />
+                </Field>
+                <Field label="Risk % of Account">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={t.riskPercent || 0}
+                    onChange={(e) => update({ riskPercent: Number(e.target.value) })}
+                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                    placeholder="e.g. 0.5"
                   />
                 </Field>
               </div>

@@ -162,7 +162,13 @@ export function JournalView() {
         return asset === "ALL" ? true : e.asset === asset;
       })
       .filter((e) =>
-        viewMode === "month" ? true : (asset === "TODAY" ? true : month === "ALL" ? true : monthKey(e.date) === month),
+        viewMode === "month"
+          ? true
+          : asset === "TODAY"
+            ? true
+            : month === "ALL"
+              ? true
+              : monthKey(e.date) === month,
       )
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [entries, asset, month, assetList, viewMode]);
@@ -173,22 +179,24 @@ export function JournalView() {
   };
 
   const upsert = async (e: DayEntry) => {
-    const wasComplete = isPrepDay(entries.filter(x => x.date === e.date && x.id !== e.id).concat(e.id === e.id ? [] : [])); 
+    const wasComplete = isPrepDay(
+      entries.filter((x) => x.date === e.date && x.id !== e.id).concat(e.id === e.id ? [] : []),
+    );
     // Simplified wasComplete: check if the date already had a prep entry
-    const existingEntriesForDate = entries.filter(x => x.date === e.date && x.id !== e.id);
+    const existingEntriesForDate = entries.filter((x) => x.date === e.date && x.id !== e.id);
     const dateWasComplete = isPrepDay(existingEntriesForDate);
-    
+
     setEntries((p) =>
       p.find((x) => x.id === e.id) ? p.map((x) => (x.id === e.id ? e : x)) : [...p, e],
     );
-    
+
     try {
       await upsertEntry(e);
-      
+
       // If it became complete just now
       const isNowComplete = isPrepDay([...existingEntriesForDate, e]);
       if (!dateWasComplete && isNowComplete) {
-        const stats = calculateStreak([...entries.filter(x => x.id !== e.id), e]);
+        const stats = calculateStreak([...entries.filter((x) => x.id !== e.id), e]);
         setCelebrationStreak(stats.currentStreak);
         setShowCelebration(true);
       }

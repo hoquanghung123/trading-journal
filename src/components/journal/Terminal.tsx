@@ -36,6 +36,7 @@ import { WeekendReviewPrompt } from "@/components/review/WeekendReviewPrompt";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
 import { ProgressView } from "./ProgressView";
 import { fetchTrades, type Trade } from "@/lib/trades";
+import { fetchEntries, calculateStreak, fetchMyProfile } from "@/lib/journal";
 
 type Page =
   | "dashboard"
@@ -98,6 +99,22 @@ function Shell() {
 
     fetchTrades().then(setTrades).catch(console.error);
   }, []);
+
+  const { data: entries } = useQuery({
+    queryKey: ["journal_entries"],
+    queryFn: fetchEntries,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["my_profile"],
+    queryFn: fetchMyProfile,
+  });
+
+  const streak = useMemo(() => {
+    if (profile) return profile.currentStreak;
+    if (!entries) return 0;
+    return calculateStreak(entries).currentStreak;
+  }, [profile, entries]);
 
   const stats = useMemo(() => {
     const total = trades.length;
@@ -191,9 +208,18 @@ function Shell() {
                       />
                     </div>
                   ) : (
-                    <Icon
-                      className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`}
-                    />
+                    <div className="relative">
+                      <Icon
+                        className={`w-5 h-5 shrink-0 ${active ? "text-white" : "text-muted-foreground"}`}
+                      />
+                      {item.id === "progress" && streak > 0 && (
+                        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center border border-sidebar group-hover:border-muted transition-colors">
+                          <span className="text-[9px] font-black text-white leading-none">
+                            {streak}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
                   {(!isLeftCollapsed || isMobileOpen) && <span>{item.label}</span>}
                 </button>

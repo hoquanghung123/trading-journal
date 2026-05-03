@@ -65,7 +65,7 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
             onClick={onClose}
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
           />
-          
+
           <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                     </span>
                   </motion.div>
                 </div>
-                
+
                 <motion.div
                   animate={{ y: [0, -6, 0], rotate: [0, 5, -5, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -115,21 +115,23 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                     const dateStr = format(day, "yyyy-MM-dd");
                     const completed = streakDays.includes(dateStr);
                     const isTodayDay = isToday(day);
-                    
+
                     return (
                       <div key={i} className="flex flex-col items-center gap-2">
-                        <span className={`text-[10px] font-black uppercase tracking-tighter ${
-                          isTodayDay ? "text-orange-500" : "text-slate-400"
-                        }`}>
+                        <span
+                          className={`text-[10px] font-black uppercase tracking-tighter ${
+                            isTodayDay ? "text-orange-500" : "text-slate-400"
+                          }`}
+                        >
                           {format(day, "eeeeee")}
                         </span>
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          transition={{ delay: 0.5 + (i * 0.1) }}
+                          transition={{ delay: 0.5 + i * 0.1 }}
                           className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                            completed 
-                              ? "bg-orange-500 text-white shadow-sm" 
+                            completed
+                              ? "bg-orange-500 text-white shadow-sm"
                               : isTodayDay
                                 ? "border-2 border-orange-500 bg-white"
                                 : "bg-slate-200"
@@ -142,7 +144,8 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                   })}
                 </div>
                 <p className="text-[10px] font-bold text-slate-400 leading-tight px-2">
-                  A <span className="text-orange-500">streak</span> counts how many days you've completed HTF prep in a row
+                  A <span className="text-orange-500">streak</span> counts how many days you've
+                  completed HTF prep in a row
                 </p>
               </div>
 

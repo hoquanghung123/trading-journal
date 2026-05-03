@@ -42,3 +42,6 @@ supabase/.env.local
 *.sw?
 
 .wrangler
+
+.agent/
+.gemini/

@@ -1,4 +1,11 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouter } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+  useRouter,
+} from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { useEffect } from "react";
 import { toast, Toaster } from "sonner";
@@ -125,7 +132,10 @@ function RootComponent() {
 
         if (!entry) {
           entry = {
-            id: typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+            id:
+              typeof crypto.randomUUID === "function"
+                ? crypto.randomUUID()
+                : Math.random().toString(36).slice(2),
             date: today,
             asset: targetAsset,
             weeklyBias: "consolidation",

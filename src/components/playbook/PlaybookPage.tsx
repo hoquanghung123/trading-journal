@@ -14,7 +14,7 @@ import { fetchTrades, Trade, upsertTrade, deleteTrade, tradesQueryKey } from "@/
 export function PlaybookPage() {
   const queryClient = useQueryClient();
   const { models, isLoaded: isPlaybookLoaded, addModel, updateModel, deleteModel } = usePlaybook();
-  
+
   const { data: trades = [], isLoading: isTradesLoading } = useQuery({
     queryKey: tradesQueryKey,
     queryFn: fetchTrades,
@@ -37,7 +37,7 @@ export function PlaybookPage() {
   const stats = useMemo(() => {
     // Optimization: Group trades by setupId once
     const tradesBySetup: Record<string, Trade[]> = {};
-    trades.forEach(t => {
+    trades.forEach((t) => {
       if (t.setupId) {
         if (!tradesBySetup[t.setupId]) tradesBySetup[t.setupId] = [];
         tradesBySetup[t.setupId].push(t);

@@ -22,7 +22,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const [session, setSession] = useState<Session>("ASIA");
 
   const sessions = useMemo(() => getSessionsForAsset(draft.asset), [draft.asset]);
-  
+
   // Ensure session is valid when asset changes (e.g. from ES1! with NY AM to BTCUSD)
   useEffect(() => {
     if (!sessions.includes(session)) {

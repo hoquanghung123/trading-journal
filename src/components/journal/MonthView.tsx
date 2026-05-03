@@ -36,12 +36,15 @@ export function MonthView({ entries, onUpdate, asset }: Props) {
     return null; // Should be handled by Empty state in JournalView
   }
 
-  const scrollRef = useMemo(() => (el: HTMLDivElement) => {
-    if (el) el.scrollLeft = el.scrollWidth;
-  }, []);
+  const scrollRef = useMemo(
+    () => (el: HTMLDivElement) => {
+      if (el) el.scrollLeft = el.scrollWidth;
+    },
+    [],
+  );
 
   return (
-    <div 
+    <div
       ref={scrollRef}
       className="flex flex-row gap-8 overflow-x-auto pb-10 px-4 md:px-8 snap-x hide-scrollbar"
     >

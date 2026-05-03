@@ -6,10 +6,11 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 function createSupabaseAdminClient() {
-  const env = (typeof process !== 'undefined' ? process.env : {}) as any;
-  const g = (globalThis as any);
+  const env = (typeof process !== "undefined" ? process.env : {}) as any;
+  const g = globalThis as any;
 
-  const url = env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || g.SUPABASE_URL || g.VITE_SUPABASE_URL;
+  const url =
+    env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || g.SUPABASE_URL || g.VITE_SUPABASE_URL;
   const key = env.SUPABASE_SERVICE_ROLE_KEY || g.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
@@ -38,11 +39,19 @@ export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdm
     if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient() || undefined;
     if (!_supabaseAdmin) {
       if (typeof window === "undefined") {
-        console.error(`Attempted to access supabaseAdmin.${String(prop)} but client is not initialized.`);
+        console.error(
+          `Attempted to access supabaseAdmin.${String(prop)} but client is not initialized.`,
+        );
       }
       // Return a safe dummy for common Supabase methods
-      if (prop === "from") return () => ({ select: () => ({ order: () => Promise.resolve({ data: [], error: new Error("Supabase Admin not initialized") }) }) });
-      return () => { 
+      if (prop === "from")
+        return () => ({
+          select: () => ({
+            order: () =>
+              Promise.resolve({ data: [], error: new Error("Supabase Admin not initialized") }),
+          }),
+        });
+      return () => {
         console.error("Supabase Admin not initialized. Operation cancelled.");
         return Promise.resolve({ data: null, error: new Error("Supabase Admin not initialized") });
       };

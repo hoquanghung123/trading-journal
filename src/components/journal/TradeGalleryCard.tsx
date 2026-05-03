@@ -174,7 +174,9 @@ export function TradeGalleryCard({
               </p>
               <p className="text-sm font-black text-foreground">
                 {trade.actualRr}{" "}
-                <span className="text-[10px] text-muted-foreground font-medium">/ {trade.maxRr}</span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  / {trade.maxRr}
+                </span>
               </p>
             </div>
           </div>

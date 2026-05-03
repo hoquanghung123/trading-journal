@@ -43,6 +43,15 @@ export interface DayEntry {
   notes?: string;
 }
 
+export interface Profile {
+  id: string;
+  displayName: string;
+  avatarUrl?: string;
+  currentStreak: number;
+  longestStreak: number;
+  activeTitle?: string;
+}
+
 export const ASSETS = ["GC1!", "NQ1!", "ES1!", "BTCUSD", "EURUSD", "GBPUSD"];
 
 // ---- Row mapping ----
@@ -115,6 +124,15 @@ const toRow = (e: DayEntry, userId: string) => ({
   notes: e.notes ?? null,
 });
 
+const fromProfileRow = (r: any): Profile => ({
+  id: r.id,
+  displayName: r.display_name,
+  avatarUrl: r.avatar_url ?? undefined,
+  currentStreak: r.current_streak || 0,
+  longestStreak: r.longest_streak || 0,
+  activeTitle: r.active_title ?? undefined,
+});
+
 export async function fetchEntries(): Promise<DayEntry[]> {
   const { data, error } = await supabase
     .from("journal_entries")
@@ -155,14 +173,14 @@ export async function deleteEntry(id: string): Promise<void> {
       typeof h4?.["NY AM"] === "string" ? h4["NY AM"] : h4?.["NY AM"]?.img,
       typeof h4?.["NY PM"] === "string" ? h4["NY PM"] : h4?.["NY PM"]?.img,
     ].filter((p): p is string => !!p && !p.startsWith("data:") && !p.startsWith("http"));
-    
+
     if (paths.length) {
       // 1. Dọn dẹp Supabase (Legacy)
       await supabase.storage
         .from("journal-charts")
         .remove(paths)
         .catch(() => {});
-        
+
       // 2. Dọn dẹp Cloudflare R2 (New)
       for (const path of paths) {
         await deleteFromR2({ data: path }).catch(() => {});
@@ -245,7 +263,6 @@ export function fileToDataURL(file: File): Promise<string> {
   });
 }
 
-
 /** Upload a data URL or File to Storage. Returns a public path stored in DB. */
 export async function uploadChartImage(input: string | File): Promise<string> {
   const { data: u } = await supabase.auth.getUser();
@@ -302,7 +319,10 @@ export function getChartUrl(path: string): string {
   if (path.startsWith("data:") || path.startsWith("http")) return path;
 
   // Khi chạy local, trỏ thẳng về production để xem được ảnh từ R2
-  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ) {
     return `https://trading-journal-3di.pages.dev/storage/${path}`;
   }
 
@@ -390,14 +410,17 @@ export function calculateStreak(allEntries: DayEntry[]): StreakStats {
 
   let current = 0;
   const reversedPrepDates = [...prepDates].reverse();
-  
+
   if (reversedPrepDates.length > 0) {
-    let lastCheckedDate = new Date().toISOString().split("T")[0];
+    const lastCheckedDate = new Date().toISOString().split("T")[0];
     const latestPrepDate = reversedPrepDates[0];
-    
+
     // If the latest prep was today or yesterday, the streak is alive
-    const diffLatest = getDayDiff(new Date(lastCheckedDate + "T00:00:00"), new Date(latestPrepDate + "T00:00:00"));
-    
+    const diffLatest = getDayDiff(
+      new Date(lastCheckedDate + "T00:00:00"),
+      new Date(latestPrepDate + "T00:00:00"),
+    );
+
     if (diffLatest <= 1) {
       current = 1;
       for (let i = 0; i < reversedPrepDates.length - 1; i++) {
@@ -418,4 +441,28 @@ export function calculateStreak(allEntries: DayEntry[]): StreakStats {
     streakDays: prepDates,
     isTodayComplete,
   };
+}
+
+export async function fetchLeaderboard(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .order("current_streak", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return (data as any[]).map(fromProfileRow);
+}
+
+export async function fetchMyProfile(): Promise<Profile | null> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", u.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return fromProfileRow(data);
 }

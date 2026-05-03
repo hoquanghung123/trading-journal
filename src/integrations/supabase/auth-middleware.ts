@@ -9,8 +9,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     try {
       const request = getRequest();
       // @ts-ignore
-      const env = request?.context?.cloudflare?.env || request?.context || process.env || (globalThis as any);
-      
+      const env =
+        request?.context?.cloudflare?.env || request?.context || process.env || (globalThis as any);
+
       const SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
       const SUPABASE_PUBLISHABLE_KEY = env.SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY;
 
@@ -18,7 +19,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
         console.error("Auth Middleware: Missing Supabase environment variables.", {
           hasContext: !!request?.context,
           hasCloudflare: !!request?.context?.cloudflare,
-          envKeys: request?.context?.cloudflare?.env ? Object.keys(request.context.cloudflare.env) : []
+          envKeys: request?.context?.cloudflare?.env
+            ? Object.keys(request.context.cloudflare.env)
+            : [],
         });
         throw new Response(
           "Missing Supabase environment variables. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set.",
@@ -78,7 +81,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     } catch (err: any) {
       console.error("Auth Middleware Exception:", err);
       if (err instanceof Response) throw err;
-      throw new Response(err.message || "Internal Server Error in Auth Middleware", { status: 500 });
+      throw new Response(err.message || "Internal Server Error in Auth Middleware", {
+        status: 500,
+      });
     }
   },
 );

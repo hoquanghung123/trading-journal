@@ -264,6 +264,15 @@
     line-height: 1.6;
   }
 
+  .animate-pulse-subtle {
+    animation: pulse-subtle 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.92; transform: scale(0.99); }
+  }
+
   /* Mobile Optimizations */
   @media (max-width: 640px) {
     .mobile-card-shadow {
