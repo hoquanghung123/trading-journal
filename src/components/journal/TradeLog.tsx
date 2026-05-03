@@ -18,6 +18,9 @@ import {
   upsertTrade,
   type Trade,
 } from "@/lib/trades";
+import { isWithinInterval, startOfDay, endOfDay, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { DateRangePicker } from "../shared/DateRangePicker";
+import { DateRange } from "react-day-picker";
 import { focusBiasEntry, focusPlaybookModel, navigateToPage } from "@/lib/nav-bus";
 import { CheckCircle2, ShieldAlert, AlertCircle, BookOpen } from "lucide-react";
 import { getAssetIconUrl } from "@/lib/symbols";
@@ -70,6 +73,7 @@ const gradeStyle: Record<string, string> = {
 
 export function TradeLog() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
@@ -144,9 +148,21 @@ export function TradeLog() {
     await reload();
   };
 
+  const filteredTrades = useMemo(() => {
+    if (!dateRange?.from) return trades;
+    
+    const start = startOfDay(dateRange.from);
+    const end = endOfDay(dateRange.to || dateRange.from);
+
+    return trades.filter((t) => {
+      const entryDate = parseISO(t.entryTime);
+      return isWithinInterval(entryDate, { start, end });
+    });
+  }, [trades, dateRange]);
+
   const sorted = useMemo(
-    () => [...trades].sort((a, b) => +new Date(a.entryTime) - +new Date(b.entryTime)),
-    [trades],
+    () => [...filteredTrades].sort((a, b) => +new Date(b.entryTime) - +new Date(a.entryTime)),
+    [filteredTrades],
   );
 
   return (
@@ -164,7 +180,7 @@ export function TradeLog() {
                   Trade Log
                 </h1>
                 <p className="text-[10px] lg:text-sm text-muted-foreground font-medium uppercase tracking-wider">
-                  {trades.length} Recorded Entries
+                  {filteredTrades.length} Recorded Entries
                 </p>
               </div>
             </div>
@@ -177,7 +193,9 @@ export function TradeLog() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
+            <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full sm:w-auto" />
+            
             {/* View Mode Toggle */}
             <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border/50 shrink-0">
               <button

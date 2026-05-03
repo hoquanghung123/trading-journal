@@ -9,13 +9,25 @@ import { AccountModal } from "./AccountModal";
 import { Loader2, Wallet } from "lucide-react";
 import { PlaybookPerformance } from "./PlaybookPerformance";
 import { fetchPlaybook, playbookQueryKey } from "@/lib/playbook";
-import { isSameMonth, format, parseISO } from "date-fns";
+import { isSameMonth, format, parseISO, startOfMonth, endOfMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { DateRangePicker } from "../shared/DateRangePicker";
+import { DateRange } from "react-day-picker";
 import { Review } from "@/types/review";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 export function DashboardPage() {
   const queryClient = useQueryClient();
-  const [isMonthOnly, setIsMonthOnly] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
   const [showAccountModal, setShowAccountModal] = useState(false);
 
   const { data: trades = [], isLoading: loadingTrades } = useQuery({
@@ -63,10 +75,16 @@ export function DashboardPage() {
   }, [reviews]);
 
   const filteredTrades = useMemo(() => {
-    if (!isMonthOnly) return trades;
-    const now = new Date();
-    return trades.filter((t) => isSameMonth(parseISO(t.entryTime), now));
-  }, [trades, isMonthOnly]);
+    if (!dateRange?.from) return trades;
+    
+    const start = startOfDay(dateRange.from);
+    const end = endOfDay(dateRange.to || dateRange.from);
+
+    return trades.filter((t) => {
+      const entryDate = parseISO(t.entryTime);
+      return isWithinInterval(entryDate, { start, end });
+    });
+  }, [trades, dateRange]);
 
   const stats = useMemo(() => {
     const activeTrades = filteredTrades;
@@ -83,20 +101,22 @@ export function DashboardPage() {
         disciplined: 0,
       };
 
-    const wins = activeTrades.filter((t) => t.actualRr > 0);
-    const winRate = (wins.length / total) * 100;
+    const disciplinedTrades = activeTrades.filter((t) => t.complianceCheck);
+    const totalDisciplined = disciplinedTrades.length;
+    const wins = disciplinedTrades.filter((t) => t.actualRr > 0);
+    const winRate = totalDisciplined > 0 ? (wins.length / totalDisciplined) * 100 : 0;
     const totalPnl = activeTrades.reduce((acc, t) => acc + t.netPnl, 0);
 
-    // SQN Calculation
-    const pnls = activeTrades.map((t) => t.netPnl);
-    const avgPnl = totalPnl / total;
-    const stdDev = Math.sqrt(
-      pnls.map((p) => Math.pow(p - avgPnl, 2)).reduce((a, b) => a + b, 0) / total,
-    );
-    const sqn = stdDev > 0 ? (avgPnl / stdDev) * Math.sqrt(total) : 0;
+    // SQN Calculation based on disciplined trades
+    const pnls = disciplinedTrades.map((t) => t.netPnl);
+    const avgPnl = totalDisciplined > 0 ? totalPnl / totalDisciplined : 0;
+    const stdDev = totalDisciplined > 0 
+      ? Math.sqrt(pnls.map((p) => Math.pow(p - avgPnl, 2)).reduce((a, b) => a + b, 0) / totalDisciplined)
+      : 0;
+    const sqn = stdDev > 0 ? (avgPnl / stdDev) * Math.sqrt(totalDisciplined) : 0;
 
     // Discipline Calculation
-    const disciplined = activeTrades.filter((t) => t.complianceCheck).length;
+    const disciplined = disciplinedTrades.length;
     const discipline = (disciplined / total) * 100;
 
     // R Calculations
@@ -136,34 +156,14 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-3 sm:p-8 space-y-5 sm:space-y-10 font-sans mobile-pb">
+    <TooltipProvider>
+      <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-3 sm:p-8 space-y-5 sm:space-y-10 font-sans mobile-pb">
       {/* Page Header with Toggle */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
           Dashboard Overview
         </h1>
-        <div className="flex w-full sm:w-auto bg-white dark:bg-slate-900 p-1 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-          <button
-            onClick={() => setIsMonthOnly(true)}
-            className={`flex-1 sm:flex-none px-4 sm:px-6 py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-widest transition-all ${
-              isMonthOnly
-                ? "bg-primary text-white shadow-md"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            THIS MONTH
-          </button>
-          <button
-            onClick={() => setIsMonthOnly(false)}
-            className={`flex-1 sm:flex-none px-4 sm:px-6 py-1.5 rounded-full text-[10px] sm:text-xs font-bold tracking-widest transition-all ${
-              !isMonthOnly
-                ? "bg-primary text-white shadow-md"
-                : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            ALL TIME
-          </button>
-        </div>
+        <DateRangePicker date={dateRange} setDate={setDateRange} />
       </div>
 
       {/* Tier 1: ACCOUNT PERFORMANCE */}
@@ -187,27 +187,39 @@ export function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-2 xl:grid-cols-1 gap-6 sm:gap-8 xl:border-l border-slate-50 dark:border-slate-800 xl:pl-12">
-            <StatItem label="Total Trades" value={stats.total} />
-            <StatItem label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} />
+            <StatItem
+              label="Total Trades"
+              value={stats.total}
+              tooltip="Tổng số lệnh thực hiện bao gồm lệnh follow và không follow playbook trong khoảng thời gian được chọn."
+            />
+            <StatItem
+              label="Win Rate"
+              value={`${stats.winRate.toFixed(1)}%`}
+              tooltip="Công thức: (Lệnh thắng đúng kỷ luật / Tổng lệnh đúng kỷ luật) × 100. Chỉ tính các lệnh có Compliance Check = True."
+            />
             <StatItem
               label="SQN"
               value={stats.sqn.toFixed(2)}
               color={stats.sqn >= 2 ? "text-emerald-500" : undefined}
+              tooltip="System Quality Number: Đánh giá chất lượng hệ thống (chỉ tính trên các lệnh đúng kỷ luật). Công thức: (Lợi nhuận TB / Độ lệch chuẩn PnL) × √Số lệnh."
             />
             <StatItem
               label="R Achieved"
               value={`${stats.totalR.toFixed(1)}R`}
               color="text-emerald-500"
+              tooltip="Tổng số đơn vị R (Risk-Reward) thực tế đạt được từ tất cả các lệnh thực hiện (bao gồm follow và không follow playbook)."
             />
             <StatItem
               label="Max RR Reached"
               value={`${stats.totalMaxR.toFixed(1)}R`}
               color="text-amber-500"
+              tooltip="Tổng số đơn vị R tối đa tiềm năng mà tất cả các lệnh thực hiện (bao gồm follow và không follow playbook) đã chạm tới."
             />
             <StatItem
               label="Total P/L"
               value={`$${stats.totalPnl.toLocaleString()}`}
               color={stats.totalPnl >= 0 ? "text-emerald-500" : "text-rose-500"}
+              tooltip="Tổng lợi nhuận ròng thực tế của tài khoản (bao gồm cả lệnh follow và không follow playbook)."
             />
           </div>
         </div>
@@ -228,7 +240,7 @@ export function DashboardPage() {
       </div>
 
       {/* Playbook Performance Section */}
-      <PlaybookPerformance trades={trades} playbooks={playbooks} />
+      <PlaybookPerformance trades={filteredTrades} playbooks={playbooks} />
 
       {/* Tier 3: Trading Calendar */}
       <div className="bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
@@ -251,7 +263,8 @@ export function DashboardPage() {
           }}
         />
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -259,16 +272,32 @@ function StatItem({
   label,
   value,
   color,
+  tooltip,
 }: {
   label: string;
   value: string | number;
   color?: string;
+  tooltip?: string;
 }) {
   return (
-    <div className="flex flex-col">
-      <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">
-        {label}
-      </p>
+    <div className="flex flex-col group/stat">
+      <div className="flex items-center gap-1.5 mb-1">
+        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+          {label}
+        </p>
+        {tooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-slate-300 hover:text-primary transition-colors">
+                <Info className="w-3 h-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[200px] text-center">
+              {tooltip}
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
       <h4 className={`text-lg sm:text-2xl font-black ${color || "text-slate-900 dark:text-white"}`}>
         {value}
       </h4>

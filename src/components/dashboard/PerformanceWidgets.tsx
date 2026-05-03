@@ -1,5 +1,5 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertTriangle, ListChecks } from "lucide-react";
+import { AlertTriangle, ListChecks, Info } from "lucide-react";
 
 interface DisciplineGaugeProps {
   score: number;
@@ -24,9 +24,21 @@ export function DisciplineGauge({ score, totalTrades, compliantTrades }: Discipl
   return (
     <TooltipProvider>
       <div className="flex flex-col items-center justify-between p-8 bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm h-full">
-        <h3 className="text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase mb-4">
-          Discipline Score
-        </h3>
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+            Discipline Score
+          </h3>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-slate-300 hover:text-primary transition-colors">
+                <Info className="w-3 h-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[200px] text-center">
+              Công thức: (Số lệnh đúng kỷ luật / Tổng số lệnh) × 100. Đánh giá mức độ tuân thủ Playbook của bạn.
+            </TooltipContent>
+          </Tooltip>
+        </div>
 
         <div className="relative flex items-center justify-center">
           <svg className="w-40 h-40 transform -rotate-90">
@@ -96,8 +108,8 @@ export function DisciplineGauge({ score, totalTrades, compliantTrades }: Discipl
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Compliance
             </span>
-            <span className="text-sm font-black text-slate-900 dark:text-white">
-              {compliantTrades} / {totalTrades}
+            <span className="text-[10px] sm:text-xs font-black text-slate-900 dark:text-white">
+              {compliantTrades} lệnh follow playbook / {totalTrades} tổng lệnh
             </span>
           </div>
           <div className="text-right flex flex-col">

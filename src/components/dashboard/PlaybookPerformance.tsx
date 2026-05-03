@@ -14,32 +14,19 @@ import {
 import { Trade } from "@/lib/trades";
 import { PlaybookModel } from "@/types/playbook";
 import { WinrateBarChart, DistributionDonutChart } from "./DashboardCharts";
-import { Target, BarChart3, PieChart as PieChartIcon, TrendingUp } from "lucide-react";
+import { Target, BarChart3, PieChart as PieChartIcon, TrendingUp, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PlaybookPerformanceProps {
   trades: Trade[];
   playbooks: PlaybookModel[];
 }
 
-type Timeframe = "month" | "quarter" | "year";
-
 export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformanceProps) {
-  const [timeframe, setTimeframe] = useState<Timeframe>("month");
-  const now = new Date();
-
-  const playbookTrades = useMemo(() => {
+  // We only show compliant trades in this section
+  const filteredTrades = useMemo(() => {
     return trades.filter((t) => t.complianceCheck);
   }, [trades]);
-
-  const filteredTrades = useMemo(() => {
-    return playbookTrades.filter((t) => {
-      const date = parseISO(t.entryTime);
-      if (timeframe === "month") return isSameMonth(date, now);
-      if (timeframe === "quarter") return isSameQuarter(date, now);
-      if (timeframe === "year") return isSameYear(date, now);
-      return true;
-    });
-  }, [playbookTrades, timeframe]);
 
   const stats = useMemo(() => {
     const total = filteredTrades.length;
@@ -111,22 +98,6 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
             Tracking discipline-only performance
           </p>
         </div>
-
-        <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-2xl border border-slate-100 dark:border-slate-700">
-          {(["month", "quarter", "year"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTimeframe(t)}
-              className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all uppercase ${
-                timeframe === t
-                  ? "bg-white dark:bg-slate-900 text-primary shadow-sm"
-                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="space-y-12">
@@ -145,16 +116,29 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
               value={`${stats.winRate.toFixed(1)}%`}
               subValue={`${stats.wins} Wins / ${stats.total} Trades`}
               icon={<TrendingUp className="w-4 h-4 text-emerald-500" />}
+              tooltip="Tỉ lệ thắng chỉ tính riêng cho các lệnh tuân thủ đúng Playbook (Compliance Check = True)."
             />
           </div>
 
           {/* Winrate by Pair */}
           <div className="space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-50 dark:border-slate-800 pb-4">
-              <BarChart3 className="w-4 h-4 text-slate-400" />
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                Winrate by Pair
-              </h3>
+            <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-slate-400" />
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  Winrate by Pair
+                </h3>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-slate-300 hover:text-primary transition-colors">
+                    <Info className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  Tỉ lệ thắng của các lệnh đúng kỷ luật, phân loại theo từng cặp tiền/tài sản giao dịch.
+                </TooltipContent>
+              </Tooltip>
             </div>
             {winrateByPair.length > 0 ? (
               <WinrateBarChart data={winrateByPair} height={180} />
@@ -165,11 +149,23 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
 
           {/* Winrate by Setup */}
           <div className="space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-50 dark:border-slate-800 pb-4">
-              <TrendingUp className="w-4 h-4 text-slate-400" />
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                Winrate by Setup
-              </h3>
+            <div className="flex items-center justify-between border-b border-slate-50 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-slate-400" />
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  Winrate by Setup
+                </h3>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-slate-300 hover:text-primary transition-colors">
+                    <Info className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  Tỉ lệ thắng của các lệnh đúng kỷ luật, phân loại theo từng Setup kỹ thuật mà bạn đã định nghĩa.
+                </TooltipContent>
+              </Tooltip>
             </div>
             {winrateBySetup.length > 0 ? (
               <WinrateBarChart data={winrateBySetup} height={180} />
@@ -187,6 +183,16 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                 Trade Distribution
               </h3>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="text-slate-300 hover:text-primary transition-colors">
+                    <Info className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[200px] text-center">
+                  Biểu đồ phân bổ tỉ lệ số lượng các lệnh đúng kỷ luật giữa các cặp tiền/tài sản.
+                </TooltipContent>
+              </Tooltip>
             </div>
             {distributionByPair.length > 0 ? (
               <DistributionDonutChart data={distributionByPair} height={250} />
@@ -206,17 +212,35 @@ function QuickStat({
   subValue,
   color,
   icon,
+  tooltip,
 }: {
   label: string;
   value: string | number;
   subValue: string;
   color?: string;
   icon: React.ReactNode;
+  tooltip?: string;
 }) {
   return (
     <div className="p-5 bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800/50">
       <div className="flex justify-between items-start mb-3">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+            {label}
+          </p>
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-slate-300 hover:text-primary transition-colors">
+                  <Info className="w-3 h-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[200px] text-center">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         <div className="p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
           {icon}
         </div>
