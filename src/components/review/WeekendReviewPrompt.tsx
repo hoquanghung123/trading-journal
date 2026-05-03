@@ -24,24 +24,33 @@ export function WeekendReviewPrompt() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const checkReview = () => {
-      const now = new Date();
-      const isSaturday = now.getDay() === 6;
-      const isTest = new URLSearchParams(window.location.search).get("test") === "review";
+    const checkReview = async () => {
+      try {
+        const { fetchSettings } = await import("@/lib/settings");
+        const settings = await fetchSettings();
+        if (!settings.weeklyReminder) return;
 
-      if (isSaturday || isTest) {
-        const period = getCurrentWeekPeriod();
-        const existing = reviews.find((r) => r.period === period);
+        const now = new Date();
+        const isSaturday = now.getDay() === 6;
+        const isTest = new URLSearchParams(window.location.search).get("test") === "review";
 
-        // Show if no review exists or if it's empty
-        if (!existing || (!existing.technicalReflection && !existing.psychologicalReflection)) {
-          setShow(true);
+        if (isSaturday || isTest) {
+          const period = getCurrentWeekPeriod();
+          const existing = reviews.find((r) => r.period === period);
+
+          // Show if no review exists or if it's empty
+          if (!existing || (!existing.technicalReflection && !existing.psychologicalReflection)) {
+            setShow(true);
+          }
         }
+      } catch (e) {
+        console.error("Failed to check review settings:", e);
       }
     };
 
     checkReview();
   }, [isLoaded, reviews]);
+
 
   if (!show) return null;
 

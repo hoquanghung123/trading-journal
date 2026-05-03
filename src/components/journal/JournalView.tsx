@@ -78,11 +78,25 @@ export function JournalView() {
   useEffect(() => {
     const checkPsych = async () => {
       try {
+        const { fetchSettings } = await import("@/lib/settings");
+        const settings = await fetchSettings();
+        
+        if (!settings.dailyReminder) return;
+
+        // Check if reminder time has passed
+        const now = new Date();
+        const [targetH, targetM] = (settings.reminderTime || "08:00").split(":").map(Number);
+        const currentH = now.getHours();
+        const currentM = now.getMinutes();
+
+        const isTimePassed = currentH > targetH || (currentH === targetH && currentM >= targetM);
+        const isTest = new URLSearchParams(window.location.search).get("test") === "psych";
+
+        if (!isTimePassed && !isTest) return;
+
         const today = toLocalDateStr(new Date());
         const logs = await fetchPsychologyForDate(today);
         const daily = logs.find((l) => l.tradeId === null);
-
-        const isTest = new URLSearchParams(window.location.search).get("test") === "psych";
 
         // If no daily log or no mood recorded, show prompt (or if in test mode)
         if (!daily || !daily.morningMood || isTest) {
@@ -96,6 +110,7 @@ export function JournalView() {
 
     checkPsych();
   }, []);
+
 
 
   useEffect(() => {
@@ -192,12 +207,8 @@ export function JournalView() {
   };
 
   const upsert = async (e: DayEntry) => {
-    const wasComplete = isPrepDay(
-      entries.filter((x) => x.date === e.date && x.id !== e.id).concat(e.id === e.id ? [] : []),
-    );
-    // Simplified wasComplete: check if the date already had a prep entry
-    const existingEntriesForDate = entries.filter((x) => x.date === e.date && x.id !== e.id);
-    const dateWasComplete = isPrepDay(existingEntriesForDate);
+    // Check if the date already had a prep entry BEFORE this edit
+    const dateWasComplete = isPrepDay(entries.filter((x) => x.date === e.date));
 
     // Optimistic UI update (optional, but keep it simple for now and rely on invalidation)
     // Actually, invalidate is better for ensuring data integrity
@@ -205,8 +216,8 @@ export function JournalView() {
     try {
       await upsertEntry(e);
 
-      // If it became complete just now
-      const isNowComplete = isPrepDay([...existingEntriesForDate, e]);
+      // Check if the date is complete AFTER this edit
+      const isNowComplete = isPrepDay([...entries.filter((x) => x.date === e.date && x.id !== e.id), e]);
       if (!dateWasComplete && isNowComplete) {
         const stats = calculateStreak([...entries.filter((x) => x.id !== e.id), e]);
         setCelebrationStreak(stats.currentStreak);

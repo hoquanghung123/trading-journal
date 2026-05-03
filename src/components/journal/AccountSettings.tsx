@@ -8,6 +8,10 @@ import {
   Loader2,
   Sparkles,
   Save,
+  Bell,
+  Clock,
+  Send,
+  HelpCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings, type UserSettings } from "@/lib/settings";
@@ -210,6 +214,189 @@ export function AccountSettings() {
                   <div className="w-14 h-7 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
                 </div>
               </label>
+            </div>
+          </section>
+
+          {/* Notifications Section */}
+          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                <Bell className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Notification Settings</h2>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Manage how and when you want to be reminded
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
+                      <Bell className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground block">
+                        Daily Psychology
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        Morning reminders
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={localSettings.dailyReminder ?? true}
+                      onChange={(e) =>
+                        setLocalSettings({ ...localSettings, dailyReminder: e.target.checked })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                  </div>
+                </label>
+
+                <label className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground block">
+                        Weekend Review
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        Weekly performance
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={localSettings.weeklyReminder ?? true}
+                      onChange={(e) =>
+                        setLocalSettings({ ...localSettings, weeklyReminder: e.target.checked })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                  </div>
+                </label>
+              </div>
+
+              <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary text-white">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-foreground">Reminder Schedule</h3>
+                      <div className="group relative">
+                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 font-medium leading-relaxed border border-white/10 scale-95 group-hover:scale-100 origin-bottom">
+                          <div className="space-y-1.5">
+                            <p className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-emerald-400" />
+                              <span className="font-bold">Web Popup:</span> Theo giờ máy tính của bạn.
+                            </p>
+                            <p className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-[#0088cc]" />
+                              <span className="font-bold">Telegram:</span> Gửi theo giờ Việt Nam (GMT+7).
+                            </p>
+                          </div>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900" />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+                      Set your preferred time for daily alerts
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={localSettings.reminderTime || "08:00"}
+                    onChange={(e) =>
+                      setLocalSettings({ ...localSettings, reminderTime: e.target.value })
+                    }
+                    className="bg-white border border-border rounded-xl px-4 py-2 font-bold text-sm focus:ring-2 ring-primary/20 transition-all outline-none"
+                  />
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                    Local Time
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Telegram Section */}
+          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-[#0088cc]/10 text-[#0088cc]">
+                <Send className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Telegram Integration</h2>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Receive reminders directly on your phone
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className={`p-6 rounded-2xl border transition-all ${localSettings.telegramChatId ? "bg-emerald-50 border-emerald-100" : "bg-muted/20 border-border/50"}`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${localSettings.telegramChatId ? "bg-emerald-500 shadow-emerald-500/20" : "bg-[#0088cc] shadow-[#0088cc]/20"}`}>
+                      <Send className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
+                        {localSettings.telegramChatId ? "Connected to Telegram" : "Telegram Bot"}
+                      </h3>
+                      <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                        {localSettings.telegramChatId 
+                          ? "You are receiving notifications via Telegram" 
+                          : "Connect your account to receive mobile alerts"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {localSettings.telegramChatId ? (
+                    <button 
+                      onClick={() => setLocalSettings({ ...localSettings, telegramChatId: "" })}
+                      className="px-6 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all"
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <a
+                      href={`https://t.me/ChartmateBot?start=${user.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-2.5 bg-[#0088cc] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#0088cc]/20 hover:opacity-90 active:scale-95 transition-all text-center"
+                    >
+                      Connect Now
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {!localSettings.telegramChatId && (
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-amber-800 font-medium leading-relaxed uppercase tracking-wider">
+                    Tip: Click "Connect Now" to open our Telegram Bot. 
+                    Press "Start" in the chat to automatically link your account.
+                  </p>
+                </div>
+              )}
             </div>
           </section>
 
