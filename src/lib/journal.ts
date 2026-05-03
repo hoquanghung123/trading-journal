@@ -322,3 +322,96 @@ export function resolveTradingViewUrl(url: string): string | null {
   const prefix = id[0].toLowerCase();
   return `https://s3.tradingview.com/snapshots/${prefix}/${id}.png`;
 }
+/**
+ * A "Prep Day" is defined as a day where at least one asset has:
+ * Weekly Chart + Daily Chart + H4 Asian Session Chart.
+ */
+export function isPrepDay(entries: DayEntry[]): boolean {
+  return entries.some((e) => !!e.weeklyImg && !!e.dailyImg && !!e.h4["ASIA"]?.img);
+}
+
+export interface StreakStats {
+  currentStreak: number;
+  longestStreak: number;
+  streakDays: string[]; // Dates that qualify as prep days
+  isTodayComplete: boolean;
+}
+
+export function calculateStreak(allEntries: DayEntry[]): StreakStats {
+  // 1. Group entries by date
+  const byDate: Record<string, DayEntry[]> = {};
+  allEntries.forEach((e) => {
+    if (!byDate[e.date]) byDate[e.date] = [];
+    byDate[e.date].push(e);
+  });
+
+  // 2. Identify all prep days (sorted by date)
+  const sortedDates = Object.keys(byDate).sort();
+  const prepDates = sortedDates.filter((d) => isPrepDay(byDate[d]));
+
+  if (prepDates.length === 0) {
+    return { currentStreak: 0, longestStreak: 0, streakDays: [], isTodayComplete: false };
+  }
+
+  // 3. Calculate longest streak
+  let longest = 0;
+  let currentCounter = 0;
+  let lastDate: Date | null = null;
+
+  const getDayDiff = (d1: Date, d2: Date) => {
+    const t1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
+    const t2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+    return Math.round((t1 - t2) / (1000 * 60 * 60 * 24));
+  };
+
+  prepDates.forEach((dateStr) => {
+    const currDate = new Date(dateStr + "T00:00:00");
+    if (!lastDate) {
+      currentCounter = 1;
+    } else {
+      const diff = getDayDiff(currDate, lastDate);
+      if (diff === 1) {
+        currentCounter++;
+      } else if (diff > 1) {
+        currentCounter = 1;
+      }
+    }
+    longest = Math.max(longest, currentCounter);
+    lastDate = currDate;
+  });
+
+  // 4. Calculate current streak (working backwards from today/last entry)
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isTodayComplete = isPrepDay(byDate[todayStr] ?? []);
+
+  let current = 0;
+  const reversedPrepDates = [...prepDates].reverse();
+  
+  if (reversedPrepDates.length > 0) {
+    let lastCheckedDate = new Date().toISOString().split("T")[0];
+    const latestPrepDate = reversedPrepDates[0];
+    
+    // If the latest prep was today or yesterday, the streak is alive
+    const diffLatest = getDayDiff(new Date(lastCheckedDate + "T00:00:00"), new Date(latestPrepDate + "T00:00:00"));
+    
+    if (diffLatest <= 1) {
+      current = 1;
+      for (let i = 0; i < reversedPrepDates.length - 1; i++) {
+        const d1 = new Date(reversedPrepDates[i] + "T00:00:00");
+        const d2 = new Date(reversedPrepDates[i + 1] + "T00:00:00");
+        if (getDayDiff(d1, d2) === 1) {
+          current++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    currentStreak: current,
+    longestStreak: longest,
+    streakDays: prepDates,
+    isTodayComplete,
+  };
+}

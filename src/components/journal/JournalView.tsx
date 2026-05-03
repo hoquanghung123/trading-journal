@@ -18,12 +18,15 @@ import {
   uid,
   resolveTradingViewUrl,
   uploadChartImage,
+  isPrepDay,
+  calculateStreak,
 } from "@/lib/journal";
 import { useSymbols, getAssetIconUrl } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
 import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
 import { MonthView } from "./MonthView";
+import { CelebrationModal } from "./CelebrationModal";
 import { onBiasFocus } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
@@ -54,6 +57,8 @@ export function JournalView() {
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // Morning Psychology Prompt Logic
@@ -168,11 +173,25 @@ export function JournalView() {
   };
 
   const upsert = async (e: DayEntry) => {
+    const wasComplete = isPrepDay(entries.filter(x => x.date === e.date && x.id !== e.id).concat(e.id === e.id ? [] : [])); 
+    // Simplified wasComplete: check if the date already had a prep entry
+    const existingEntriesForDate = entries.filter(x => x.date === e.date && x.id !== e.id);
+    const dateWasComplete = isPrepDay(existingEntriesForDate);
+    
     setEntries((p) =>
       p.find((x) => x.id === e.id) ? p.map((x) => (x.id === e.id ? e : x)) : [...p, e],
     );
+    
     try {
       await upsertEntry(e);
+      
+      // If it became complete just now
+      const isNowComplete = isPrepDay([...existingEntriesForDate, e]);
+      if (!dateWasComplete && isNowComplete) {
+        const stats = calculateStreak([...entries.filter(x => x.id !== e.id), e]);
+        setCurrentStreak(stats.currentStreak);
+        setCelebrationOpen(true);
+      }
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -354,6 +373,12 @@ export function JournalView() {
         isOpen={showPsychPrompt}
         onClose={() => setShowPsychPrompt(false)}
         existingLog={todayLog}
+      />
+
+      <CelebrationModal
+        isOpen={celebrationOpen}
+        onClose={() => setCelebrationOpen(false)}
+        streakCount={currentStreak}
       />
     </div>
   );

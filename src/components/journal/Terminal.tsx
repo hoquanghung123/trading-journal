@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Activity,
   UserCircle,
+  Flame,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ import { DailyViewPage } from "@/components/dashboard/DailyViewPage";
 import { AccountSettings } from "./AccountSettings";
 import { WeekendReviewPrompt } from "@/components/review/WeekendReviewPrompt";
 import { onPageChange, type PageId } from "@/lib/nav-bus";
+import { ProgressView } from "./ProgressView";
 import { fetchTrades, type Trade } from "@/lib/trades";
 
 type Page =
@@ -42,6 +44,7 @@ type Page =
   | "psychology"
   | "review"
   | "playbook"
+  | "progress"
   | "daily"
   | "account";
 
@@ -52,6 +55,7 @@ const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: st
   { id: "trades", label: "Trade Log", icon: FileText },
   { id: "psychology", label: "Psychology", icon: Brain },
   { id: "review", label: "Review", icon: CalendarCheck },
+  { id: "progress", label: "Progress", icon: Flame },
   { id: "account", label: "Account", icon: UserCircle },
 ];
 
@@ -341,6 +345,7 @@ function Shell() {
             {page === "psychology" && <PsychologyView />}
             {page === "review" && <ReviewPage />}
             {page === "playbook" && <PlaybookPage />}
+            {page === "progress" && <ProgressView />}
             {page === "account" && <AccountSettings />}
           </div>
         </main>

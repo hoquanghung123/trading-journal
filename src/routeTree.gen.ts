@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as HelloRouteImport } from './routes/hello'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StorageSplatRouteImport } from './routes/storage.$'
 
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HelloRoute = HelloRouteImport.update({
   id: '/hello',
   path: '/hello',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
+  '/progress': typeof ProgressRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
+  '/progress': typeof ProgressRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesById {
@@ -52,25 +60,34 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
+  '/progress': typeof ProgressRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/debug' | '/hello' | '/storage/$'
+  fullPaths: '/' | '/debug' | '/hello' | '/progress' | '/storage/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/debug' | '/hello' | '/storage/$'
-  id: '__root__' | '/' | '/debug' | '/hello' | '/storage/$'
+  to: '/' | '/debug' | '/hello' | '/progress' | '/storage/$'
+  id: '__root__' | '/' | '/debug' | '/hello' | '/progress' | '/storage/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DebugRoute: typeof DebugRoute
   HelloRoute: typeof HelloRoute
+  ProgressRoute: typeof ProgressRoute
   StorageSplatRoute: typeof StorageSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/hello': {
       id: '/hello'
       path: '/hello'
@@ -106,6 +123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DebugRoute: DebugRoute,
   HelloRoute: HelloRoute,
+  ProgressRoute: ProgressRoute,
   StorageSplatRoute: StorageSplatRoute,
 }
 export const routeTree = rootRouteImport
