@@ -7,8 +7,15 @@ export interface UserSettings {
   tradeLogView: "table" | "gallery";
   dailyReminder: boolean;
   weeklyReminder: boolean;
-  reminderTime: string;
+  dailyReminderTime: string;
+  weeklyReminderTime: string;
   telegramChatId?: string;
+  asianReminder: boolean;
+  londonReminder: boolean;
+  nyReminder: boolean;
+  asianTime: string;
+  londonTime: string;
+  nyTime: string;
 }
 
 type Row = {
@@ -18,8 +25,15 @@ type Row = {
   trade_log_view: string;
   daily_reminder: boolean;
   weekly_reminder: boolean;
-  reminder_time: string;
+  daily_reminder_time: string;
+  weekly_reminder_time: string;
   telegram_chat_id: string;
+  asian_reminder: boolean;
+  london_reminder: boolean;
+  ny_reminder: boolean;
+  asian_time: string;
+  london_time: string;
+  ny_time: string;
 };
 
 const fromRow = (r: Row): UserSettings => ({
@@ -29,8 +43,15 @@ const fromRow = (r: Row): UserSettings => ({
   tradeLogView: (r.trade_log_view as "table" | "gallery") || "table",
   dailyReminder: r.daily_reminder ?? false,
   weeklyReminder: r.weekly_reminder ?? false,
-  reminderTime: r.reminder_time || "08:00",
+  dailyReminderTime: r.daily_reminder_time || "08:00",
+  weeklyReminderTime: r.weekly_reminder_time || "09:00",
   telegramChatId: r.telegram_chat_id,
+  asianReminder: r.asian_reminder ?? false,
+  londonReminder: r.london_reminder ?? false,
+  nyReminder: r.ny_reminder ?? false,
+  asianTime: r.asian_time || "07:30",
+  londonTime: r.london_time || "13:00",
+  nyTime: r.ny_time || "19:00",
 });
 
 export async function fetchSettings(): Promise<UserSettings> {
@@ -54,8 +75,15 @@ export async function fetchSettings(): Promise<UserSettings> {
       trade_log_view: "table",
       daily_reminder: false,
       weekly_reminder: false,
-      reminder_time: "08:00",
+      daily_reminder_time: "08:00",
+      weekly_reminder_time: "09:00",
       telegram_chat_id: "",
+      asian_reminder: false,
+      london_reminder: false,
+      ny_reminder: false,
+      asian_time: "07:30",
+      london_time: "13:00",
+      ny_time: "19:00",
     };
     const { error: insError } = await supabase.from("user_settings").insert(defaultSettings);
     if (insError) throw insError;
@@ -82,8 +110,15 @@ export async function updateSettings(patch: Partial<UserSettings>): Promise<void
   if (patch.tradeLogView !== undefined) update.trade_log_view = patch.tradeLogView;
   if (patch.dailyReminder !== undefined) update.daily_reminder = patch.dailyReminder;
   if (patch.weeklyReminder !== undefined) update.weekly_reminder = patch.weeklyReminder;
-  if (patch.reminderTime !== undefined) update.reminder_time = patch.reminderTime;
+  if (patch.dailyReminderTime !== undefined) update.daily_reminder_time = patch.dailyReminderTime;
+  if (patch.weeklyReminderTime !== undefined) update.weekly_reminder_time = patch.weeklyReminderTime;
   if (patch.telegramChatId !== undefined) update.telegram_chat_id = patch.telegramChatId;
+  if (patch.asianReminder !== undefined) update.asian_reminder = patch.asianReminder;
+  if (patch.londonReminder !== undefined) update.london_reminder = patch.londonReminder;
+  if (patch.nyReminder !== undefined) update.ny_reminder = patch.nyReminder;
+  if (patch.asianTime !== undefined) update.asian_time = patch.asianTime;
+  if (patch.londonTime !== undefined) update.london_time = patch.londonTime;
+  if (patch.nyTime !== undefined) update.ny_time = patch.nyTime;
   update.updated_at = new Date().toISOString();
 
 

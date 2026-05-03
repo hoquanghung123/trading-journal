@@ -231,105 +231,166 @@ export function AccountSettings() {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
-                      <Bell className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground block">
-                        Daily Psychology
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-medium">
-                        Morning reminders
-                      </span>
-                    </div>
+            <div className="space-y-8">
+              {/* Journal Reminders Grouped Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
+                      Journal Reminders
+                    </h3>
                   </div>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={localSettings.dailyReminder ?? true}
-                      onChange={(e) =>
-                        setLocalSettings({ ...localSettings, dailyReminder: e.target.checked })
-                      }
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-                  </div>
-                </label>
-
-                <label className="flex items-center justify-between p-4 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground block">
-                        Weekend Review
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-medium">
-                        Weekly performance
-                      </span>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={localSettings.weeklyReminder ?? true}
-                      onChange={(e) =>
-                        setLocalSettings({ ...localSettings, weeklyReminder: e.target.checked })
-                      }
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-                  </div>
-                </label>
-              </div>
-
-              <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary text-white">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-foreground">Reminder Schedule</h3>
-                      <div className="group relative">
-                        <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 font-medium leading-relaxed border border-white/10 scale-95 group-hover:scale-100 origin-bottom">
-                          <div className="space-y-1.5">
-                            <p className="flex items-center gap-2">
-                              <div className="w-1 h-1 rounded-full bg-emerald-400" />
-                              <span className="font-bold">Web Popup:</span> Theo giờ máy tính của bạn.
-                            </p>
-                            <p className="flex items-center gap-2">
-                              <div className="w-1 h-1 rounded-full bg-[#0088cc]" />
-                              <span className="font-bold">Telegram:</span> Gửi theo giờ Việt Nam (GMT+7).
-                            </p>
-                          </div>
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900" />
-                        </div>
+                  <div className="group relative">
+                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
+                    <div className="absolute bottom-full right-0 mb-3 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 font-medium leading-relaxed border border-white/10 scale-95 group-hover:scale-100 origin-bottom-right">
+                      <div className="space-y-1.5">
+                        <p className="flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-emerald-400" />
+                          <span className="font-bold">Web Popup:</span> Theo giờ máy tính của bạn.
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-[#0088cc]" />
+                          <span className="font-bold">Telegram:</span> Gửi theo giờ Việt Nam (GMT+7).
+                        </p>
                       </div>
+                      <div className="absolute top-full right-2 border-8 border-transparent border-t-gray-900" />
                     </div>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                      Set your preferred time for daily alerts
-                    </p>
                   </div>
                 </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Daily Psychology */}
+                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
+                          <Bell className="w-4 h-4" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Daily Psychology</span>
+                      </div>
+                      <label className="relative cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={localSettings.dailyReminder ?? false}
+                          onChange={(e) => setLocalSettings({ ...localSettings, dailyReminder: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
+                      </label>
+                    </div>
+                    <input
+                      type="time"
+                      value={localSettings.dailyReminderTime || "08:00"}
+                      onChange={(e) => setLocalSettings({ ...localSettings, dailyReminderTime: e.target.value })}
+                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                    />
+                  </div>
+
+                  {/* Weekend Review */}
+                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Weekend Review (Sat)</span>
+                      </div>
+                      <label className="relative cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={localSettings.weeklyReminder ?? false}
+                          onChange={(e) => setLocalSettings({ ...localSettings, weeklyReminder: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
+                      </label>
+                    </div>
+                    <input
+                      type="time"
+                      value={localSettings.weeklyReminderTime || "09:00"}
+                      onChange={(e) => setLocalSettings({ ...localSettings, weeklyReminderTime: e.target.value })}
+                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Session Bias Reminders Grouped Section */}
+              <div className="pt-6 border-t border-border/50 space-y-4">
                 <div className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={localSettings.reminderTime || "08:00"}
-                    onChange={(e) =>
-                      setLocalSettings({ ...localSettings, reminderTime: e.target.value })
-                    }
-                    className="bg-white border border-border rounded-xl px-4 py-2 font-bold text-sm focus:ring-2 ring-primary/20 transition-all outline-none"
-                  />
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    Local Time
-                  </span>
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
+                    Session Bias Reminders
+                  </h3>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Asian Session */}
+                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Asian Bias</span>
+                      <label className="relative cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={localSettings.asianReminder ?? false}
+                          onChange={(e) => setLocalSettings({ ...localSettings, asianReminder: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
+                      </label>
+                    </div>
+                    <input
+                      type="time"
+                      value={localSettings.asianTime || "07:30"}
+                      onChange={(e) => setLocalSettings({ ...localSettings, asianTime: e.target.value })}
+                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                    />
+                  </div>
+
+                  {/* London Session */}
+                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">London Bias</span>
+                      <label className="relative cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={localSettings.londonReminder ?? false}
+                          onChange={(e) => setLocalSettings({ ...localSettings, londonReminder: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
+                      </label>
+                    </div>
+                    <input
+                      type="time"
+                      value={localSettings.londonTime || "13:00"}
+                      onChange={(e) => setLocalSettings({ ...localSettings, londonTime: e.target.value })}
+                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                    />
+                  </div>
+
+                  {/* NY Session */}
+                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">NY Bias</span>
+                      <label className="relative cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={localSettings.nyReminder ?? false}
+                          onChange={(e) => setLocalSettings({ ...localSettings, nyReminder: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
+                      </label>
+                    </div>
+                    <input
+                      type="time"
+                      value={localSettings.nyTime || "19:00"}
+                      onChange={(e) => setLocalSettings({ ...localSettings, nyTime: e.target.value })}
+                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
