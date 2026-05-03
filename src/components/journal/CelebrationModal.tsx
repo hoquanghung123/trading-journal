@@ -44,11 +44,11 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
     }
   }, [isOpen]);
 
-  // Option C: Hybrid 7-day strip (Today at position 6, 1 future day)
+  // Option C: Hybrid 7-day strip (Today at position 5, 2 future days)
   const weekStrip = useMemo(() => {
     const today = new Date();
     const days = [];
-    for (let i = -5; i <= 1; i++) {
+    for (let i = -4; i <= 2; i++) {
       days.push(addDays(today, i));
     }
     return days;
