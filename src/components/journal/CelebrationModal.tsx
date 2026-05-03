@@ -1,15 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, X } from "lucide-react";
+import { Flame, X, Check } from "lucide-react";
+import { format, subDays, addDays, isToday, isSameDay } from "date-fns";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   streakCount: number;
+  streakDays: string[]; // List of YYYY-MM-DD strings that are completed
 }
 
-export function CelebrationModal({ isOpen, onClose, streakCount }: Props) {
+export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: Props) {
   useEffect(() => {
     if (isOpen) {
       const duration = 3 * 1000;
@@ -42,6 +44,16 @@ export function CelebrationModal({ isOpen, onClose, streakCount }: Props) {
     }
   }, [isOpen]);
 
+  // Option C: Hybrid 7-day strip (Today at position 6, 1 future day)
+  const weekStrip = useMemo(() => {
+    const today = new Date();
+    const days = [];
+    for (let i = -5; i <= 1; i++) {
+      days.push(addDays(today, i));
+    }
+    return days;
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -63,61 +75,88 @@ export function CelebrationModal({ isOpen, onClose, streakCount }: Props) {
           >
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
-            <div className="p-10 text-center space-y-8">
+            <div className="p-8 text-center space-y-6">
               {/* Flame Ring */}
-              <div className="relative inline-block">
-                <div className="w-48 h-48 rounded-full border-[12px] border-orange-100 flex items-center justify-center">
+              <div className="relative inline-block mt-4">
+                <div className="w-32 h-32 rounded-full border-[10px] border-orange-100 flex items-center justify-center">
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.2, type: "spring" }}
                     className="flex flex-col items-center"
                   >
-                    <span className="text-7xl font-black text-orange-500 leading-none">
+                    <span className="text-5xl font-black text-orange-500 leading-none">
                       {streakCount}
                     </span>
-                    <span className="text-xl font-bold text-orange-400 uppercase tracking-widest mt-1">
-                      {streakCount === 1 ? "Day" : "Days"}
+                    <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mt-1">
+                      Day Streak!
                     </span>
                   </motion.div>
                 </div>
                 
-                {/* Floating Flame Icon */}
                 <motion.div
-                  animate={{ 
-                    y: [0, -10, 0],
-                    rotate: [0, 5, -5, 0]
-                  }}
-                  transition={{ 
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute -bottom-2 -right-2 bg-orange-500 w-16 h-16 rounded-3xl flex items-center justify-center shadow-lg shadow-orange-500/40"
+                  animate={{ y: [0, -6, 0], rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute -bottom-1 -right-1 bg-orange-500 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/40"
                 >
-                  <Flame className="w-8 h-8 text-white fill-white" />
+                  <Flame className="w-6 h-6 text-white fill-white" />
                 </motion.div>
               </div>
 
-              <div className="space-y-4">
-                <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-                  Prep Goal Complete!
-                </h2>
-                <p className="text-slate-500 font-medium leading-relaxed">
-                  You've met your daily goal! Consistent HTF prep is the key to trading mastery. Keep the fire burning!
+              {/* Weekly Strip */}
+              <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100 space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  {weekStrip.map((day, i) => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    const completed = streakDays.includes(dateStr);
+                    const isTodayDay = isToday(day);
+                    
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase tracking-tighter ${
+                          isTodayDay ? "text-orange-500" : "text-slate-400"
+                        }`}>
+                          {format(day, "eeeeee")}
+                        </span>
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.5 + (i * 0.1) }}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            completed 
+                              ? "bg-orange-500 text-white shadow-sm" 
+                              : isTodayDay
+                                ? "border-2 border-orange-500 bg-white"
+                                : "bg-slate-200"
+                          }`}
+                        >
+                          {completed && <Check className="w-4 h-4" strokeWidth={4} />}
+                        </motion.div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 leading-tight px-2">
+                  A <span className="text-orange-500">streak</span> counts how many days you've completed HTF prep in a row
                 </p>
+              </div>
+
+              <div className="space-y-4">
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                  Consistency is Key!
+                </h2>
               </div>
 
               <button
                 onClick={onClose}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-95 uppercase tracking-widest"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-orange-500/20 transition-all active:scale-95 uppercase tracking-widest text-sm"
               >
-                Continue Streak
+                Continue
               </button>
             </div>
           </motion.div>

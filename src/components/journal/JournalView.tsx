@@ -376,9 +376,10 @@ export function JournalView() {
       />
 
       <CelebrationModal
-        isOpen={celebrationOpen}
-        onClose={() => setCelebrationOpen(false)}
-        streakCount={currentStreak}
+        isOpen={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        streakCount={celebrationStreak}
+        streakDays={calculateStreak(entries).streakDays}
       />
     </div>
   );
