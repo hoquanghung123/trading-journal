@@ -301,8 +301,12 @@ export function getChartUrl(path: string): string {
   if (!path) return "";
   if (path.startsWith("data:") || path.startsWith("http")) return path;
 
-  // Sử dụng Splat Route (/storage/$) làm Proxy
-  // Cách này tương thích 100% với Cloudflare Pages và TanStack Start
+  // Khi chạy local, trỏ thẳng về production để xem được ảnh từ R2
+  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+    return `https://trading-journal-3di.pages.dev/storage/${path}`;
+  }
+
+  // Sử dụng Splat Route (/storage/$) làm Proxy trên Cloudflare
   return `/storage/${path}`;
 }
 
