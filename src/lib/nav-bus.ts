@@ -66,3 +66,18 @@ export function onPlaybookFocus(fn: PlaybookListener): () => void {
 export function focusPlaybookModel(id: string) {
   playbookListeners.forEach((fn) => fn(id));
 }
+
+// Celebration Navigation
+type CelebrationListener = (streak: number) => void;
+const celebrationListeners = new Set<CelebrationListener>();
+
+export function onShowCelebration(fn: CelebrationListener): () => void {
+  celebrationListeners.add(fn);
+  return () => {
+    celebrationListeners.delete(fn);
+  };
+}
+
+export function triggerCelebration(streak: number) {
+  celebrationListeners.forEach((fn) => fn(streak));
+}

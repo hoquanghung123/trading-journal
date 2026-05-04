@@ -29,7 +29,7 @@ import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
 import { MonthView } from "./MonthView";
 import { CelebrationModal } from "./CelebrationModal";
-import { onBiasFocus } from "@/lib/nav-bus";
+import { onBiasFocus, onShowCelebration } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
 
@@ -142,6 +142,14 @@ export function JournalView() {
       else setAsset("ALL");
       setMonth("ALL");
       setPendingFocusId(entryId);
+    });
+  }, []);
+
+  // Subscribe to celebration events from extension
+  useEffect(() => {
+    return onShowCelebration((streak) => {
+      setCelebrationStreak(streak);
+      setShowCelebration(true);
     });
   }, []);
 

@@ -16,9 +16,11 @@ import {
   fetchEntries,
   Session,
   weekdayOf,
+  isPrepDay,
+  calculateStreak,
   type DayEntry,
 } from "../lib/journal";
-import { focusBiasEntry, navigateToPage } from "../lib/nav-bus";
+import { focusBiasEntry, navigateToPage, triggerCelebration } from "../lib/nav-bus";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../lib/query-client";
 
@@ -192,7 +194,18 @@ function RootComponent() {
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }
 
+        const dateWasComplete = isPrepDay(currentEntries.filter(x => x.date === updatedEntry.date && x.asset === updatedEntry.asset));
+
         await upsertEntry(updatedEntry as DayEntry);
+        
+        const updatedList = [...currentEntries.filter(x => x.id !== updatedEntry.id), updatedEntry as DayEntry];
+        const isNowComplete = isPrepDay(updatedList.filter(x => x.date === updatedEntry.date && x.asset === updatedEntry.asset));
+        
+        if (!dateWasComplete && isNowComplete) {
+           const stats = calculateStreak(updatedList);
+           triggerCelebration(stats.currentStreak);
+        }
+
         toast.success(`Đã lưu ${targetAsset} thành công!`, { id: toastId });
 
         // Instant update for React Query
