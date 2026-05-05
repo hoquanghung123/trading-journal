@@ -194,12 +194,12 @@ function RootComponent() {
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }
 
-        const dateWasComplete = isPrepDay(currentEntries.filter(x => x.date === updatedEntry.date && x.asset === updatedEntry.asset));
+        const dateWasComplete = isPrepDay(currentEntries.filter(x => x.date === updatedEntry.date));
 
         await upsertEntry(updatedEntry as DayEntry);
         
         const updatedList = [...currentEntries.filter(x => x.id !== updatedEntry.id), updatedEntry as DayEntry];
-        const isNowComplete = isPrepDay(updatedList.filter(x => x.date === updatedEntry.date && x.asset === updatedEntry.asset));
+        const isNowComplete = isPrepDay(updatedList.filter(x => x.date === updatedEntry.date));
         
         if (!dateWasComplete && isNowComplete) {
            const stats = calculateStreak(updatedList);
