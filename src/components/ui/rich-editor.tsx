@@ -448,6 +448,16 @@ export function RichEditor({ value, onChange, placeholder, className }: RichEdit
           color: #475569;
           font-weight: 600;
         }
+        .tiptap img {
+          transition: all 0.2s ease-in-out;
+          cursor: pointer;
+        }
+        .tiptap img.ProseMirror-selectednode {
+          outline: 1px solid #6366f1;
+          outline-offset: 4px;
+          box-shadow: 0 0 0 12px rgba(99, 102, 241, 0.1);
+          transform: scale(1.01);
+        }
         .tiptap h1 {
           font-size: 2.25rem;
           font-weight: 900;
