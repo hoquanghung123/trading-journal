@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
-import { uploadChartImage, getChartUrl } from "@/lib/journal";
+import { uploadChartImage, getChartUrl, deleteChartImage } from "@/lib/journal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,6 +51,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+
+/** Extract R2 storage paths from all <img> src attributes in an HTML string. */
+function extractR2Paths(html: string): Set<string> {
+  const paths = new Set<string>();
+  if (!html) return paths;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('img').forEach((img) => {
+    const match = (img.getAttribute('src') || '').match(/\/storage\/(.+)/);
+    if (match) paths.add(match[1]);
+  });
+  return paths;
+}
+
+/** Flatten R2 paths from all lab note content fields. */
+function flattenR2Paths(notes: Array<{ content?: string }>): Set<string> {
+  const paths = new Set<string>();
+  notes.forEach((note) => {
+    extractR2Paths(note.content || '').forEach((p) => paths.add(p));
+  });
+  return paths;
+}
 
 interface StrategyDetailProps {
   model: PlaybookModel;
@@ -171,12 +192,21 @@ export function StrategyDetail({
     }
   };
 
-  // Auto-save logic for Definition (2s debounce — same as Lab Notes)
+  // Auto-save + R2 cleanup for Definition (2s debounce)
   useEffect(() => {
     if (definition === (model.definition || "")) return;
     setIsSavingDef(true);
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
+      // Find image paths removed from editor since last save
+      const oldPaths = extractR2Paths(model.definition || "");
+      const newPaths = extractR2Paths(definition);
+      const removed = [...oldPaths].filter((p) => !newPaths.has(p));
+
       onUpdate({ ...model, definition });
+
+      // Silently delete orphaned R2 objects
+      await Promise.allSettled(removed.map((p) => deleteChartImage(p)));
+
       setIsSavingDef(false);
       setLastSavedAtDef(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
     }, 2000);
@@ -226,24 +256,31 @@ export function StrategyDetail({
     }
   }, [model.labNotes, labNotes.length]);
 
-  // Auto-save logic for Lab Notes
+  // Auto-save + R2 cleanup for Lab Notes
   const [isSaving, setIsSaving] = useState(false);
   const lastPropsNotes = JSON.stringify(model.labNotes);
 
   useEffect(() => {
     const currentNotesStr = JSON.stringify(labNotes);
     if (currentNotesStr === lastPropsNotes) return;
-    
+
     setIsSaving(true);
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
+      // Flatten all image paths from old notes vs new notes
+      const oldPaths = flattenR2Paths(model.labNotes ?? []);
+      const newPaths = flattenR2Paths(labNotes);
+      const removed = [...oldPaths].filter((p) => !newPaths.has(p));
+
       onUpdate({ ...model, labNotes });
+
+      // Silently delete orphaned R2 objects
+      await Promise.allSettled(removed.map((p) => deleteChartImage(p)));
+
       setIsSaving(false);
       setLastSavedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
     }, 2000);
 
-    return () => {
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [labNotes, lastPropsNotes, onUpdate]);
 
   return (
