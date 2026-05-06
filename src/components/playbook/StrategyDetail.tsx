@@ -14,7 +14,6 @@ import {
   Plus,
   X,
   History,
-  Save,
   ExternalLink,
   Shield,
   Zap,
@@ -74,7 +73,8 @@ export function StrategyDetail({
 }: StrategyDetailProps) {
   const [activeImageType, setActiveImageType] = useState<"perfect" | "loss" | "mistake">("perfect");
   const [definition, setDefinition] = useState(model.definition || "");
-  const [isEditingDefinition, setIsEditingDefinition] = useState(false);
+  const [isSavingDef, setIsSavingDef] = useState(false);
+  const [lastSavedAtDef, setLastSavedAtDef] = useState<string | null>(null);
   const [labNotes, setLabNotes] = useState<any[]>(model.labNotes || []);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(model.labNotes?.[0]?.id || null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -171,11 +171,17 @@ export function StrategyDetail({
     }
   };
 
-  const saveDefinition = () => {
-    onUpdate({ ...model, definition });
-    setIsEditingDefinition(false);
-    toast.success("Definition updated");
-  };
+  // Auto-save logic for Definition (2s debounce — same as Lab Notes)
+  useEffect(() => {
+    if (definition === (model.definition || "")) return;
+    setIsSavingDef(true);
+    const timer = setTimeout(() => {
+      onUpdate({ ...model, definition });
+      setIsSavingDef(false);
+      setLastSavedAtDef(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [definition]);
 
 
   const addLabNote = () => {
@@ -450,37 +456,31 @@ export function StrategyDetail({
                       </div>
                     )}
 
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase flex items-center gap-3">
-                        <Layout className="w-5 h-5" /> Strategy Definition
-                      </h3>
-                      <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Core Architecture & Principles</p>
-                    </div>
-                    
-                    {isEditingDefinition ? (
-                      <div className="space-y-6">
-                        <RichEditor
-                          value={definition}
-                          onChange={setDefinition}
-                          uploadImage={uploadImageForEditor}
-                          className="min-h-[500px]"
-                        />
-                        <div className="flex justify-end">
-                          <button
-                            onClick={saveDefinition}
-                            className="flex items-center gap-3 px-10 py-4 bg-primary text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-primary/20"
-                          >
-                            <Save className="w-4 h-4" /> Update Definition
-                          </button>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase flex items-center gap-3">
+                          <Layout className="w-5 h-5" /> Strategy Definition
+                        </h3>
+                        <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Core Architecture & Principles</p>
                       </div>
-                    ) : (
-                      <div 
-                        className="text-xl text-foreground/80 leading-relaxed rich-content cursor-pointer hover:text-foreground transition-colors min-h-[400px]"
-                        onClick={() => setIsEditingDefinition(true)}
-                        dangerouslySetInnerHTML={{ __html: definition || "Click to define the core principles of this strategy..." }}
-                      />
-                    )}
+                      {/* Auto-save indicator */}
+                      {isSavingDef ? (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 px-4 py-2 rounded-full border border-primary/10 animate-pulse">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Syncing...
+                        </div>
+                      ) : lastSavedAtDef ? (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] bg-emerald-500/5 px-4 py-2 rounded-full border border-emerald-500/10">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Saved at {lastSavedAtDef}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <RichEditor
+                      value={definition}
+                      onChange={setDefinition}
+                      uploadImage={uploadImageForEditor}
+                      className="min-h-[500px]"
+                    />
                   </div>
                 </div>
               </TabsContent>
