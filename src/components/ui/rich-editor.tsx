@@ -127,17 +127,63 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
       handlePaste(_view, event) {
         const items = Array.from(event.clipboardData?.items ?? []);
         const imageItems = items.filter((item) => item.type.startsWith('image/'));
+
+        // No image files in clipboard → let TipTap handle normally
         if (imageItems.length === 0) return false;
 
+        const htmlItem = items.find((item) => item.type === 'text/html');
+
         event.preventDefault();
+
+        if (htmlItem) {
+          // ── Notion / rich-content paste ──────────────────────────────────
+          // Clipboard has BOTH text/html (with attachment: img srcs) and image files.
+          // We need to: parse HTML → upload images → replace broken srcs → insert.
+          htmlItem.getAsString(async (html) => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const brokenImgs = Array.from(doc.querySelectorAll('img')).filter(
+              (img) => img.src && !img.src.startsWith('http') && !img.src.startsWith('data:')
+            );
+
+            if (brokenImgs.length > 0) {
+              setIsUploading(true);
+              try {
+                const files = imageItems
+                  .map((i) => i.getAsFile())
+                  .filter((f): f is File => f !== null);
+
+                // Upload all images in parallel, preserving order
+                const uploadedUrls = await Promise.all(
+                  files.map((f) => uploadRef.current(f))
+                );
+
+                // Replace broken attachment: URLs with real R2 URLs
+                brokenImgs.forEach((img, idx) => {
+                  if (uploadedUrls[idx]) img.setAttribute('src', uploadedUrls[idx]);
+                });
+
+                editor?.commands.insertContent(doc.body.innerHTML);
+              } catch (err) {
+                console.error('[RichEditor] Notion image upload failed:', err);
+              } finally {
+                setIsUploading(false);
+              }
+            } else {
+              // HTML has no broken images → insert as-is (normal rich paste)
+              editor?.commands.insertContent(html);
+            }
+          });
+          return true;
+        }
+
+        // ── Pure image file paste (screenshot, drag-drop) ─────────────────
         imageItems.forEach((item) => {
           const file = item.getAsFile();
           if (!file) return;
           setIsUploading(true);
           uploadRef.current(file)
-            .then((url) => {
-              editor?.chain().focus().setImage({ src: url }).run();
-            })
+            .then((url) => editor?.chain().focus().setImage({ src: url }).run())
             .catch((err) => console.error('[RichEditor] Image paste upload failed:', err))
             .finally(() => setIsUploading(false));
         });
