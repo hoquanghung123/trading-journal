@@ -41,7 +41,12 @@ export function ProgressView() {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState<"progress" | "leaderboard" | "achievements">(
-    "progress",
+    () => {
+      if (typeof window !== "undefined") {
+        return (localStorage.getItem("journal_progress_tab") as any) || "progress";
+      }
+      return "progress";
+    }
   );
 
   useEffect(() => {
@@ -52,6 +57,10 @@ export function ProgressView() {
       })
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("journal_progress_tab", activeTab);
+  }, [activeTab]);
 
   const stats = useMemo(() => calculateStreak(entries), [entries]);
 

@@ -8,8 +8,16 @@ import {
   Line,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as ChartTooltip,
 } from "recharts";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 export function Leaderboard() {
   const { data: leaderboard, isLoading: loadingLeaderboard } = useQuery({
@@ -119,9 +127,23 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
             <Trophy className="w-6 h-6 text-blue-500" />
           </motion.div>
         </div>
-        <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
-          Weekly Progress
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
+            Weekly Progress
+          </h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-slate-400 hover:text-slate-600 transition-colors">
+                  <Info className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[200px]">
+                <p>XP là tổng số lượng hình ảnh bạn đã nhập vào Journal (bao gồm tất cả các khung thời gian và phiên giao dịch).</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
 
       <div className="bg-white rounded-[32px] p-8 border border-border shadow-sm space-y-6">
@@ -145,7 +167,7 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
               tickLine={false}
               tick={{ fontSize: 10, fontWeight: 800, fill: "#94A3B8" }}
             />
-            <Tooltip
+            <ChartTooltip
               contentStyle={{
                 borderRadius: "16px",
                 border: "none",
