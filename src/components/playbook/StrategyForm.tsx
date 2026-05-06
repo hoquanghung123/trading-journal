@@ -11,6 +11,12 @@ import {
   Activity,
   FileText,
   Zap,
+  GraduationCap,
+  Plus,
+  Link,
+  Edit,
+  Shield,
+  CheckCircle2,
 } from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { RichEditor } from "@/components/ui/rich-editor";
@@ -56,6 +62,20 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
     },
   );
 
+  const [moodleResources, setMoodleResources] = useState(
+    initialData?.moodleResources || [],
+  );
+  const [newResource, setNewResource] = useState({ 
+    title: "", 
+    description: "",
+    url: "", 
+    type: "video" as const,
+    progress: 0,
+    subLinks: [] as { id: string; title: string; url: string }[]
+  });
+  const [newSubLink, setNewSubLink] = useState({ title: "", url: "" });
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
@@ -70,6 +90,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       definition,
       setupConfluences: confluences,
       executionRules: execution,
+      moodleResources,
       images: thumbnail
         ? [
             { id: generateId(), url: thumbnail, type: "perfect" },
@@ -103,6 +124,62 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
 
   const handleExecutionChange = (key: keyof ExecutionRules, value: string) => {
     setExecution((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const addResource = () => {
+    if (!newResource.title) return;
+    
+    if (editingResourceId) {
+      setMoodleResources((prev) => 
+        prev.map((r) => r.id === editingResourceId ? { ...newResource, id: r.id } : r)
+      );
+      setEditingResourceId(null);
+      toast.success("Module updated");
+    } else {
+      setMoodleResources((prev) => [...prev, { ...newResource, id: generateId() }]);
+      toast.success("Module added");
+    }
+    
+    setNewResource({ 
+      title: "", 
+      description: "", 
+      url: "", 
+      type: "video", 
+      progress: 0,
+      subLinks: []
+    });
+    setNewSubLink({ title: "", url: "" });
+  };
+
+  const addSubLinkToResource = () => {
+    if (!newSubLink.title || !newSubLink.url) return;
+    setNewResource(prev => ({
+      ...prev,
+      subLinks: [...(prev.subLinks || []), { ...newSubLink, id: generateId() }]
+    }));
+    setNewSubLink({ title: "", url: "" });
+  };
+
+  const startEditResource = (res: any) => {
+    setNewResource({
+      title: res.title,
+      description: res.description || "",
+      url: res.url || "",
+      type: res.type,
+      progress: res.progress || 0,
+      subLinks: res.subLinks || []
+    });
+    setEditingResourceId(res.id);
+  };
+
+  const cancelEdit = () => {
+    setEditingResourceId(null);
+    setNewResource({ title: "", description: "", url: "", type: "video", progress: 0 });
+  };
+
+  const removeResource = (id: string) => {
+    setMoodleResources((prev) => prev.filter((r) => r.id !== id));
+    if (editingResourceId === id) cancelEdit();
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -189,6 +266,13 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
               >
                 <FileText className="w-3.5 h-3.5" />
                 Definition
+              </TabsTrigger>
+              <TabsTrigger
+                value="academy"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:[background:linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_15%))]! data-[state=active]:text-white! data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:scale-[1.02] bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                Academy
               </TabsTrigger>
             </TabsList>
           </div>
@@ -507,6 +591,225 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                     className="h-full bg-muted/5 p-6"
                     placeholder="Provide detailed logic, rules, and examples..."
                   />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Tab 4: Academy Resources */}
+            <TabsContent value="academy" className="m-0 space-y-8 animate-in fade-in-50 duration-500 pb-10">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between px-2">
+                  <SectionHeader title="Academy Curriculum Builder" />
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-primary/5 border border-primary/10 shadow-sm">
+                    <GraduationCap className="w-4 h-4 text-primary" />
+                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
+                      {moodleResources.length} Modules
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Advanced Resource Console */}
+                <div className="relative group overflow-hidden bg-gradient-to-br from-white to-primary/[0.03] border border-primary/10 rounded-[40px] p-10 shadow-xl shadow-primary/5">
+                  {/* Subtle Background Pattern */}
+                  <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px]" />
+                  
+                  <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+                    <div className="lg:col-span-3 space-y-3">
+                      <Field label="Module Title">
+                        <Input
+                          value={newResource.title}
+                          onChange={(e) => setNewResource(prev => ({ ...prev, title: e.target.value }))}
+                          className="h-14 bg-white border-primary/10 rounded-2xl font-black text-[11px] uppercase px-5"
+                          placeholder="Module 3: Liquidity..."
+                        />
+                      </Field>
+                    </div>
+                    <div className="lg:col-span-3 space-y-3">
+                      <Field label="Brief Description">
+                        <Input
+                          value={newResource.description}
+                          onChange={(e) => setNewResource(prev => ({ ...prev, description: e.target.value }))}
+                          className="h-14 bg-white border-primary/10 rounded-2xl font-bold text-[10px] px-5"
+                          placeholder="Understanding Institutional Pools"
+                        />
+                      </Field>
+                    </div>
+                    <div className="lg:col-span-3 space-y-3">
+                      <Field label="URL & Progress">
+                        <div className="flex gap-2">
+                          <Input
+                            value={newResource.url}
+                            onChange={(e) => setNewResource(prev => ({ ...prev, url: e.target.value }))}
+                            className="h-14 flex-[2] bg-white border-primary/10 rounded-2xl font-bold text-[10px] px-5"
+                            placeholder="Link..."
+                          />
+                          <Input
+                            type="number"
+                            value={newResource.progress}
+                            onChange={(e) => setNewResource(prev => ({ ...prev, progress: parseInt(e.target.value) }))}
+                            className="h-14 flex-1 bg-white border-primary/10 rounded-2xl font-bold text-[10px] px-4"
+                            placeholder="%"
+                          />
+                        </div>
+                      </Field>
+                    </div>
+
+                    <div className="lg:col-span-3">
+                      <div className="flex gap-4">
+                        <div className="flex-1 space-y-3">
+                          <Field label={editingResourceId ? "Editing..." : "Type"}>
+                            <select
+                              value={newResource.type}
+                              onChange={(e) => setNewResource(prev => ({ ...prev, type: e.target.value as any }))}
+                              className={`h-14 w-full rounded-2xl bg-white border px-4 text-[10px] font-black uppercase tracking-widest outline-none appearance-none transition-colors ${
+                                editingResourceId ? 'border-amber-500/40' : 'border-primary/10'
+                              }`}
+                            >
+                              <option value="video">📹 VIDEO</option>
+                              <option value="reading">📖 GUIDE</option>
+                              <option value="quiz">🧠 QUIZ</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={addResource}
+                            className={`w-14 h-14 rounded-2xl text-white flex items-center justify-center hover:opacity-95 transition-all shrink-0 shadow-lg ${
+                              editingResourceId ? 'bg-amber-500 shadow-amber-500/20' : 'bg-primary shadow-primary/20'
+                            }`}
+                          >
+                            {editingResourceId ? <CheckCircle2 className="w-6 h-6" /> : <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />}
+                          </button>
+                          {editingResourceId && (
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              className="w-14 h-8 rounded-xl bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-all text-[8px] font-black uppercase tracking-tighter"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Playlist Builder */}
+                  <div className="mt-8 pt-8 border-t border-primary/5 space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                      <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Playlist / Lessons Builder</Label>
+                      <span className="text-[9px] font-bold text-primary/40 uppercase">Add multiple video links for this module</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {newResource.subLinks?.map((link, idx) => (
+                        <div key={link.id} className="flex items-center gap-3 bg-white border border-primary/5 p-4 rounded-2xl shadow-sm hover:border-primary/20 transition-all group/sub">
+                          <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center text-[10px] font-black text-primary group-hover/sub:bg-primary/10 transition-colors">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black truncate uppercase tracking-tight">{link.title}</p>
+                            <p className="text-[9px] font-medium text-slate-400 truncate">{link.url}</p>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => setNewResource(prev => ({ ...prev, subLinks: prev.subLinks?.filter(l => l.id !== link.id) }))}
+                            className="text-rose-500/40 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      <div className="flex gap-2 p-2 bg-primary/5 rounded-2xl border border-dashed border-primary/20">
+                        <Input 
+                          placeholder="Lesson Title"
+                          value={newSubLink.title}
+                          onChange={e => setNewSubLink(prev => ({ ...prev, title: e.target.value }))}
+                          className="bg-white border-none h-10 text-[10px] font-bold flex-[2] rounded-xl shadow-inner"
+                        />
+                        <Input 
+                          placeholder="URL"
+                          value={newSubLink.url}
+                          onChange={e => setNewSubLink(prev => ({ ...prev, url: e.target.value }))}
+                          className="bg-white border-none h-10 text-[10px] font-bold flex-[3] rounded-xl shadow-inner"
+                        />
+                        <button 
+                          type="button"
+                          onClick={addSubLinkToResource}
+                          className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Curriculum Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {moodleResources.map((res) => (
+                    <div
+                      key={res.id}
+                      className="group relative flex items-center justify-between gap-6 p-6 rounded-[32px] border border-white bg-white/60 backdrop-blur-sm hover:bg-white hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-700"
+                    >
+                      <div className="flex items-center gap-6 min-w-0">
+                        <div className="w-14 h-14 rounded-[22px] bg-primary/5 flex items-center justify-center text-primary shrink-0 group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
+                          {res.type === 'video' ? (
+                            <Zap className="w-6 h-6 text-amber-500 fill-amber-500/20" />
+                          ) : res.type === 'reading' ? (
+                            <FileText className="w-6 h-6 text-indigo-500" />
+                          ) : res.type === 'quiz' ? (
+                            <Shield className="w-6 h-6 text-emerald-500" />
+                          ) : (
+                            <Link className="w-6 h-6 text-primary" />
+                          )}
+                        </div>
+                        <div className="min-w-0 py-1">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[8px] font-black text-primary/60 uppercase tracking-[0.25em] bg-primary/5 px-2 py-0.5 rounded-full">
+                              {res.type}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-black uppercase tracking-tight text-foreground truncate group-hover:text-primary transition-colors">
+                            {res.title}
+                          </p>
+                          <p className="text-[9px] font-medium text-muted-foreground truncate opacity-40 group-hover:opacity-60 transition-opacity">
+                            {res.url}
+                          </p>
+                        </div>
+                      </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => startEditResource(res)}
+                            className="p-3 text-amber-500/60 hover:text-amber-500 hover:bg-amber-500/10 rounded-2xl transition-all active:scale-90"
+                            title="Edit Resource"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeResource(res.id)}
+                            className="p-3 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all active:scale-90"
+                            title="Remove Resource"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                    </div>
+                  ))}
+                  {moodleResources.length === 0 && (
+                    <div className="md:col-span-2 xl:col-span-3 py-24 flex flex-col items-center justify-center text-muted-foreground/30 border-2 border-dashed border-primary/10 rounded-[50px] bg-primary/[0.01]">
+                      <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center mb-8 relative">
+                        <GraduationCap className="w-12 h-12 opacity-20" />
+                        <div className="absolute inset-0 rounded-full border-2 border-dashed border-primary/20 animate-spin-slow" />
+                      </div>
+                      <p className="text-[12px] font-black uppercase tracking-[0.4em] mb-3 text-primary/30">Curriculum Vacant</p>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-40">Architect your learning path above</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>

@@ -21,11 +21,29 @@ import {
   Target,
   LayoutDashboard,
   TrendingUp,
+  GraduationCap,
+  Link as LinkIcon,
+  Play,
+  Download,
+  CheckCircle2,
+  Lock,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichEditor } from "@/components/ui/rich-editor";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface StrategyDetailProps {
   model: PlaybookModel;
@@ -49,6 +67,54 @@ export function StrategyDetail({
   const [activeImageType, setActiveImageType] = useState<"perfect" | "loss" | "mistake">("perfect");
   const [definition, setDefinition] = useState(model.definition || "");
   const [isEditingDefinition, setIsEditingDefinition] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
+  const [quickAddForm, setQuickAddForm] = useState({
+    title: "",
+    description: "",
+    url: "",
+    type: "video" as const,
+    progress: 0,
+    subLinks: [] as { id: string; title: string; url: string }[]
+  });
+  const [newSubLink, setNewSubLink] = useState({ title: "", url: "" });
+
+  const handleQuickAdd = () => {
+    if (!quickAddForm.title || (!quickAddForm.url && quickAddForm.subLinks.length === 0)) {
+      toast.error("Please provide a title and at least one link");
+      return;
+    }
+
+    const newResource = {
+      ...quickAddForm,
+      id: generateId()
+    };
+
+    onUpdate({
+      ...model,
+      moodleResources: [...(model.moodleResources || []), newResource]
+    });
+
+    setQuickAddForm({
+      title: "",
+      description: "",
+      url: "",
+      type: "video",
+      progress: 0,
+      subLinks: []
+    });
+    setIsQuickAddOpen(false);
+    toast.success("Academy Module added");
+  };
+
+  const addSubLinkToForm = () => {
+    if (!newSubLink.title || !newSubLink.url) return;
+    setQuickAddForm(prev => ({
+      ...prev,
+      subLinks: [...prev.subLinks, { ...newSubLink, id: generateId() }]
+    }));
+    setNewSubLink({ title: "", url: "" });
+  };
 
   const coverImage = useMemo(
     () => model.images.find((img) => img.type === "perfect")?.url,
@@ -264,13 +330,264 @@ export function StrategyDetail({
                   />
                 </div>
               ) : (
-                <div
-                  className="text-sm text-muted-foreground/90 rich-content max-w-none min-h-[300px] leading-relaxed cursor-pointer hover:text-foreground transition-colors"
-                  onClick={() => setIsEditingDefinition(true)}
-                  dangerouslySetInnerHTML={{
-                    __html: model.definition || "Establish your institutional framework here.",
-                  }}
-                />
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                  <div
+                    className="lg:col-span-3 text-sm text-muted-foreground/90 rich-content max-w-none min-h-[300px] leading-relaxed cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => setIsEditingDefinition(true)}
+                    dangerouslySetInnerHTML={{
+                      __html: model.definition || "Establish your institutional framework here.",
+                    }}
+                  />
+                  
+                  {/* Academy Resources Sidebar */}
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                          <GraduationCap className="w-4 h-4 text-emerald-500" />
+                        </div>
+                        <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground/40 uppercase">
+                          Academy Resources
+                        </h3>
+                      </div>
+                      
+                      {/* Quick Add Modal */}
+                      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+                        <DialogTrigger asChild>
+                          <button className="w-8 h-8 rounded-lg bg-primary/5 hover:bg-primary/10 flex items-center justify-center text-primary/40 hover:text-primary transition-all">
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-[#1A1F2E] border-white/10 text-white rounded-[32px] sm:max-w-[500px] overflow-hidden">
+                          <DialogHeader>
+                            <DialogTitle className="text-[12px] font-black uppercase tracking-[0.3em] text-primary">
+                              Pro Module Builder
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-6 py-6 overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Title</Label>
+                                <Input 
+                                  value={quickAddForm.title}
+                                  onChange={e => setQuickAddForm(prev => ({ ...prev, title: e.target.value }))}
+                                  className="bg-white/5 border-white/10 rounded-2xl h-12 text-xs font-bold"
+                                />
+                              </div>
+                              <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Type</Label>
+                                <select 
+                                  value={quickAddForm.type}
+                                  onChange={e => setQuickAddForm(prev => ({ ...prev, type: e.target.value as any }))}
+                                  className="w-full bg-white/5 border border-white/10 rounded-2xl h-12 text-[10px] font-black uppercase tracking-widest px-4 outline-none"
+                                >
+                                  <option value="video">Video</option>
+                                  <option value="reading">Reading</option>
+                                  <option value="quiz">Quiz</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Description</Label>
+                              <Input 
+                                value={quickAddForm.description}
+                                onChange={e => setQuickAddForm(prev => ({ ...prev, description: e.target.value }))}
+                                className="bg-white/5 border-white/10 rounded-2xl h-12 text-xs font-bold"
+                              />
+                            </div>
+
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Module Playlist (Sub-links)</Label>
+                              <div className="space-y-3">
+                                {quickAddForm.subLinks.map((link) => (
+                                  <div key={link.id} className="flex items-center gap-2 bg-white/5 p-3 rounded-xl border border-white/5">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-[10px] font-bold truncate">{link.title}</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => setQuickAddForm(prev => ({ ...prev, subLinks: prev.subLinks.filter(l => l.id !== link.id) }))}
+                                      className="text-rose-500/40 hover:text-rose-500"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                                <div className="flex gap-2">
+                                  <Input 
+                                    placeholder="Lesson Name"
+                                    value={newSubLink.title}
+                                    onChange={e => setNewSubLink(prev => ({ ...prev, title: e.target.value }))}
+                                    className="bg-white/5 border-white/10 rounded-2xl h-10 text-[10px] font-bold flex-[2]"
+                                  />
+                                  <Input 
+                                    placeholder="Lesson URL"
+                                    value={newSubLink.url}
+                                    onChange={e => setNewSubLink(prev => ({ ...prev, url: e.target.value }))}
+                                    className="bg-white/5 border-white/10 rounded-2xl h-10 text-[10px] font-bold flex-[3]"
+                                  />
+                                  <button 
+                                    onClick={addSubLinkToForm}
+                                    className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3 pt-4 border-t border-white/5">
+                              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Main URL (Optional if playlist exists)</Label>
+                              <Input 
+                                value={quickAddForm.url}
+                                onChange={e => setQuickAddForm(prev => ({ ...prev, url: e.target.value }))}
+                                className="bg-white/5 border-white/10 rounded-2xl h-12 text-xs font-bold"
+                              />
+                            </div>
+
+                            <Button 
+                              onClick={handleQuickAdd}
+                              className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl h-14 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
+                            >
+                              Initialize Module
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {model.moodleResources?.map((res) => {
+                        const isExpanded = expandedResourceId === res.id;
+                        const hasSubLinks = res.subLinks && res.subLinks.length > 0;
+                        
+                        return (
+                          <div
+                            key={res.id}
+                            className={`group relative overflow-hidden rounded-[32px] transition-all duration-500 border ${
+                              isExpanded 
+                                ? 'bg-[#1A1F2E] border-white/20 shadow-2xl shadow-black/50' 
+                                : 'bg-[#1A1F2E] border-white/5 hover:border-white/10 hover:translate-y-[-2px]'
+                            }`}
+                          >
+                            {/* Card Content */}
+                            <div 
+                              className="p-8 cursor-pointer"
+                              onClick={() => setExpandedResourceId(isExpanded ? null : res.id)}
+                            >
+                              <div className="flex items-start justify-between mb-8">
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
+                                  res.type === 'video' ? 'bg-amber-500/10 text-amber-500' :
+                                  res.type === 'reading' ? 'bg-indigo-500/10 text-indigo-500' :
+                                  'bg-emerald-500/10 text-emerald-500'
+                                }`}>
+                                  {res.type === 'video' ? <Play className="w-6 h-6" /> : 
+                                   res.type === 'reading' ? <FileText className="w-6 h-6" /> : 
+                                   <GraduationCap className="w-6 h-6" />}
+                                </div>
+                                {hasSubLinks && (
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 bg-white/5 px-3 py-1.5 rounded-full">
+                                      {res.subLinks?.length} Lessons
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-2 mb-8">
+                                <h4 className="text-sm font-black text-white group-hover:text-primary transition-colors duration-300">
+                                  {res.title}
+                                </h4>
+                                <p className="text-[11px] text-white/40 font-medium leading-relaxed line-clamp-2">
+                                  {res.description}
+                                </p>
+                              </div>
+
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                  <span className="text-white/20">Progress</span>
+                                  <span className="text-white">{res.progress || 0}%</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${res.progress || 0}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    className={`h-full rounded-full ${
+                                      res.type === 'video' ? 'bg-amber-500' :
+                                      res.type === 'reading' ? 'bg-indigo-500' :
+                                      'bg-emerald-500'
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Expandable Lessons List */}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                                  className="border-t border-white/5 bg-black/20"
+                                >
+                                  <div className="p-6 space-y-2">
+                                    {hasSubLinks ? (
+                                      res.subLinks?.map((link, idx) => (
+                                        <a
+                                          key={link.id}
+                                          href={link.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group/link"
+                                        >
+                                          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black text-white/40 group-hover/link:bg-primary/20 group-hover/link:text-primary transition-all">
+                                            {idx + 1}
+                                          </div>
+                                          <div className="flex-1">
+                                            <p className="text-[11px] font-bold text-white group-hover/link:text-primary transition-colors">
+                                              {link.title}
+                                            </p>
+                                          </div>
+                                          <ArrowRight className="w-3 h-3 text-white/20 group-hover/link:translate-x-1 group-hover/link:text-primary transition-all" />
+                                        </a>
+                                      ))
+                                    ) : (
+                                      <a
+                                        href={res.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group/link"
+                                      >
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 group-hover/link:bg-primary/20 group-hover/link:text-primary">
+                                          <Play className="w-3 h-3" />
+                                        </div>
+                                        <p className="text-[11px] font-bold text-white group-hover/link:text-primary">
+                                          Watch Main Content
+                                        </p>
+                                        <ArrowRight className="w-3 h-3 text-white/20 ml-auto" />
+                                      </a>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+                      {(!model.moodleResources || model.moodleResources.length === 0) && (
+                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center border border-white/5 rounded-[40px] bg-[#1A1F2E]/50">
+                          <GraduationCap className="w-12 h-12 text-white/10 mb-5" />
+                          <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.25em]">
+                            Curriculum Pending
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -295,10 +612,23 @@ export function StrategyDetail({
                 {groupedConfluences.narrative.map((label) => (
                   <div
                     key={label}
-                    className="flex items-center gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5"
+                    className="flex items-center justify-between gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5 group"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                    {label}
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                      {label}
+                    </div>
+                    {model.moodleResources?.find(r => r.title.toLowerCase().includes(label.toLowerCase())) && (
+                      <a 
+                        href={model.moodleResources.find(r => r.title.toLowerCase().includes(label.toLowerCase()))?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-40 group-hover:opacity-100 p-1.5 hover:bg-primary/10 rounded-lg transition-all"
+                        title="View Lesson"
+                      >
+                        <LinkIcon className="w-3.5 h-3.5 text-primary" />
+                      </a>
+                    )}
                   </div>
                 ))}
                 {groupedConfluences.narrative.length === 0 && (
@@ -323,10 +653,23 @@ export function StrategyDetail({
                 {groupedConfluences.liquidity.map((label) => (
                   <div
                     key={label}
-                    className="flex items-center gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5"
+                    className="flex items-center justify-between gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5 group"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    {label}
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      {label}
+                    </div>
+                    {model.moodleResources?.find(r => r.title.toLowerCase().includes(label.toLowerCase())) && (
+                      <a 
+                        href={model.moodleResources.find(r => r.title.toLowerCase().includes(label.toLowerCase()))?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-40 group-hover:opacity-100 p-1.5 hover:bg-primary/10 rounded-lg transition-all"
+                        title="View Lesson"
+                      >
+                        <LinkIcon className="w-3.5 h-3.5 text-primary" />
+                      </a>
+                    )}
                   </div>
                 ))}
                 {groupedConfluences.liquidity.length === 0 && (
@@ -351,10 +694,22 @@ export function StrategyDetail({
                 {groupedConfluences.confirmation.map((label) => (
                   <div
                     key={label}
-                    className="flex items-center gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5"
+                    className="flex items-center justify-between gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5 group"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {label}
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {label}
+                    </div>
+                    {model.moodleResources?.find(r => r.title.toLowerCase().includes(label.toLowerCase())) && (
+                      <a 
+                        href={model.moodleResources.find(r => r.title.toLowerCase().includes(label.toLowerCase()))?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/10 rounded transition-all"
+                      >
+                        <LinkIcon className="w-3 h-3 text-primary" />
+                      </a>
+                    )}
                   </div>
                 ))}
                 {groupedConfluences.confirmation.length === 0 && (

@@ -15,6 +15,11 @@ import {
   Quote,
   Undo,
   Redo,
+  Type,
+  Eraser,
+  Minus,
+  Maximize2,
+  Link,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -169,27 +174,51 @@ export function RichEditor({ value, onChange, placeholder, className }: RichEdit
 
         <div className="w-px h-4 bg-slate-200 mx-1" />
 
-        <ToolbarButton
-          onClick={() => {
-            const url = prompt("Enter image URL:");
-            if (url) execCommand("insertImage", url);
-          }}
-          icon={<ImageIcon size={14} />}
-          title="Image URL"
-        />
+          <ToolbarButton
+            onClick={() => {
+              const url = prompt("Enter image URL:");
+              if (url) execCommand("insertImage", url);
+            }}
+            icon={<ImageIcon size={14} />}
+            title="Image URL"
+          />
 
-        <div className="ml-auto text-[9px] text-slate-400 px-3 uppercase tracking-[0.2em] font-black hidden sm:block">
-          Elite Editor Pro
+        <div className="w-px h-4 bg-slate-200 mx-1" />
+
+        <div className="flex items-center gap-1 mx-2">
+          <ToolbarButton
+            onClick={() => {
+              const url = prompt("Enter link URL:");
+              if (url) execCommand("createLink", url);
+            }}
+            icon={<Link size={14} />}
+            title="Link"
+          />
+          <ToolbarButton
+            onClick={() => execCommand("insertHorizontalRule")}
+            icon={<Minus size={14} />}
+            title="Horizontal Line"
+          />
+          <ToolbarButton
+            onClick={() => execCommand("removeFormat")}
+            icon={<Eraser size={14} />}
+            title="Clear Format"
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <div className="text-[9px] text-primary px-3 uppercase tracking-[0.2em] font-black hidden sm:block bg-primary/5 py-1.5 rounded-full border border-primary/10">
+            Elite Framework Editor
+          </div>
         </div>
       </div>
 
-      {/* Editable Area */}
       <div
         ref={editorRef}
         contentEditable
         onInput={handleInput}
         onPaste={handlePaste}
-        className="min-h-[400px] p-8 text-sm text-slate-700 outline-none rich-content max-w-none overflow-y-auto"
+        className="min-h-[500px] p-10 text-base text-black font-black outline-none rich-content max-w-none overflow-y-auto selection:bg-primary/20 leading-relaxed"
         data-placeholder={placeholder}
       />
 
@@ -198,6 +227,40 @@ export function RichEditor({ value, onChange, placeholder, className }: RichEdit
           content: attr(data-placeholder);
           color: #cbd5e1;
           pointer-events: none;
+          font-weight: 400;
+        }
+        .rich-content img {
+          max-width: 100%;
+          border-radius: 1rem;
+          margin: 1.5rem 0;
+          box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+        }
+        .rich-content h1 {
+          font-size: 1.5rem;
+          font-weight: 900;
+          color: black;
+          margin: 2rem 0 1rem 0;
+          text-transform: uppercase;
+          letter-spacing: -0.02em;
+        }
+        .rich-content h2 {
+          font-size: 1.25rem;
+          font-weight: 900;
+          color: black;
+          margin: 1.5rem 0 0.75rem 0;
+        }
+        .rich-content p {
+          margin-bottom: 1rem;
+        }
+        .rich-content hr {
+          border: 0;
+          border-top: 2px solid rgba(0,0,0,0.05);
+          margin: 2rem 0;
+        }
+        .rich-content a {
+          color: #3b82f6;
+          text-decoration: underline;
+          font-weight: 900;
         }
       `}</style>
     </div>

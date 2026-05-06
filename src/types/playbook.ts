@@ -19,6 +19,16 @@ export interface ExecutionRules {
   breakEven: string;
 }
 
+export interface MoodleResource {
+  id: string;
+  title: string;
+  description?: string;
+  url: string;
+  type: "video" | "reading" | "quiz" | "external";
+  progress?: number;
+  subLinks?: { id: string; title: string; url: string }[];
+}
+
 export interface PlaybookModel {
   id: string;
   user_id?: string;
@@ -31,6 +41,7 @@ export interface PlaybookModel {
   images: PlaybookImage[];
   status: "Approved" | "Testing" | "Under Review";
   definition: string;
+  moodleResources?: MoodleResource[];
   createdAt?: string;
   updatedAt?: string;
 }

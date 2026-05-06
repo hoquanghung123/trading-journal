@@ -197,12 +197,18 @@
     }
   }
 
+  .rich-content {
+    font-weight: 900;
+    color: #000000;
+  }
   .rich-content ul,
   .rich-content ol {
     margin-left: 1.5rem;
     margin-top: 0.75rem;
     margin-bottom: 0.75rem;
     display: block;
+    font-weight: 900;
+    color: #000000;
   }
   .rich-content ul {
     list-style-type: disc;
@@ -216,8 +222,8 @@
   }
   .rich-content strong,
   .rich-content b {
-    font-weight: 800;
-    color: var(--foreground);
+    font-weight: 900;
+    color: #000000;
   }
   .rich-content em,
   .rich-content i {
@@ -226,42 +232,55 @@
   .rich-content img {
     max-width: 100%;
     height: auto;
-    border-radius: 1rem;
-    margin-top: 1.25rem;
-    margin-bottom: 1.25rem;
+    border-radius: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
     border: 1px solid var(--border);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.2);
   }
   .rich-content h1 {
-    font-size: 1.875rem;
+    font-size: 2.25rem;
     font-weight: 900;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    color: var(--foreground);
-    letter-spacing: -0.025em;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    color: #000000;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
   }
   .rich-content h2 {
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    color: var(--foreground);
-    letter-spacing: -0.025em;
+    font-size: 1.75rem;
+    font-weight: 900;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    color: #000000;
+    letter-spacing: -0.03em;
   }
   .rich-content blockquote {
-    border-left: 4px solid var(--primary);
-    padding-left: 1.5rem;
-    margin: 1.5rem 0;
+    border-left: 6px solid #000000;
+    padding-left: 2rem;
+    margin: 2.5rem 0;
     font-style: italic;
-    color: var(--muted-foreground);
-    background: var(--muted);
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-    border-radius: 0 1rem 1rem 0;
+    color: #333333;
+    background: #f8fafc;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-radius: 0 1.5rem 1.5rem 0;
+    font-weight: 700;
   }
   .rich-content p {
-    margin-bottom: 0.75rem;
-    line-height: 1.6;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+  .rich-content hr {
+    border: 0;
+    border-top: 3px solid #000000;
+    margin: 3rem 0;
+    opacity: 0.1;
+  }
+  .rich-content a {
+    color: #2563eb;
+    text-decoration: underline;
+    font-weight: 900;
   }
 
   .animate-pulse-subtle {
