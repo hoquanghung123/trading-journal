@@ -29,6 +29,13 @@ export interface MoodleResource {
   subLinks?: { id: string; title: string; url: string }[];
 }
 
+export interface LabNote {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface PlaybookModel {
   id: string;
   user_id?: string;
@@ -41,6 +48,7 @@ export interface PlaybookModel {
   images: PlaybookImage[];
   status: "Approved" | "Testing" | "Under Review";
   definition: string;
+  labNotes?: LabNote[];
   moodleResources?: MoodleResource[];
   createdAt?: string;
   updatedAt?: string;

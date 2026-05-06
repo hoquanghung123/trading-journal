@@ -138,7 +138,7 @@ export function PlaybookPage() {
   const selectedModel = models.find((m) => m.id === selectedModelId);
 
   return (
-    <div className="h-[calc(100vh-32px)] flex flex-col p-6 max-w-7xl mx-auto w-full">
+    <div className={`flex flex-col w-full ${selectedModel ? "p-0 min-h-screen" : "p-6 max-w-7xl mx-auto min-h-[calc(100vh-32px)]"}`}>
       {selectedModel ? (
         <StrategyDetail
           model={selectedModel}

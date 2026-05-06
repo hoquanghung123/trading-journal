@@ -144,12 +144,13 @@
 }
 
 @layer utilities {
-  .forest-gradient {
+  .forest-gradient,
+  [data-state="active"].data-active-forest {
     background: linear-gradient(
       135deg,
       var(--primary),
       color-mix(in oklch, var(--primary), black 15%)
-    );
+    ) !important;
   }
   .soft-shadow {
     box-shadow:
@@ -198,8 +199,8 @@
   }
 
   .rich-content {
-    font-weight: 900;
-    color: #000000;
+    font-weight: 500;
+    color: var(--foreground);
   }
   .rich-content ul,
   .rich-content ol {
@@ -207,8 +208,8 @@
     margin-top: 0.75rem;
     margin-bottom: 0.75rem;
     display: block;
-    font-weight: 900;
-    color: #000000;
+    font-weight: 500;
+    color: var(--foreground);
   }
   .rich-content ul {
     list-style-type: disc;
@@ -222,8 +223,8 @@
   }
   .rich-content strong,
   .rich-content b {
-    font-weight: 900;
-    color: #000000;
+    font-weight: 700;
+    color: var(--foreground);
   }
   .rich-content em,
   .rich-content i {
@@ -239,21 +240,20 @@
     box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.2);
   }
   .rich-content h1 {
-    font-size: 2.25rem;
-    font-weight: 900;
-    margin-top: 3rem;
-    margin-bottom: 1.5rem;
-    color: #000000;
-    letter-spacing: -0.04em;
-    text-transform: uppercase;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
+    color: var(--foreground);
+    letter-spacing: -0.03em;
   }
   .rich-content h2 {
-    font-size: 1.75rem;
-    font-weight: 900;
-    margin-top: 2.5rem;
-    margin-bottom: 1rem;
-    color: #000000;
-    letter-spacing: -0.03em;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--foreground);
+    letter-spacing: -0.02em;
   }
   .rich-content blockquote {
     border-left: 6px solid #000000;
@@ -278,9 +278,9 @@
     opacity: 0.1;
   }
   .rich-content a {
-    color: #2563eb;
+    color: var(--primary);
     text-decoration: underline;
-    font-weight: 900;
+    font-weight: 600;
   }
 
   .animate-pulse-subtle {

@@ -13,6 +13,7 @@ type Row = {
   images: any;
   status: "Approved" | "Testing" | "Under Review";
   definition: string | null;
+  lab_notes: any;
   moodle_resources: any;
   created_at: string;
   updated_at: string;
@@ -45,6 +46,7 @@ const fromRow = (r: Row): PlaybookModel => {
     images: r.images ?? [],
     status: r.status,
     definition: r.definition ?? "",
+    labNotes: Array.isArray(r.lab_notes) ? r.lab_notes : [],
     moodleResources: r.moodle_resources ?? [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -63,6 +65,7 @@ const toRow = (m: PlaybookModel, userId: string) => ({
   images: m.images,
   status: m.status,
   definition: m.definition,
+  lab_notes: m.labNotes || [],
   moodle_resources: m.moodleResources || [],
 });
 

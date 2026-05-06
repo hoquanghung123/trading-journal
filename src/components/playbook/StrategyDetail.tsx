@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PlaybookModel, PlaybookImage } from "@/types/playbook";
 import { Trade, computeOutcome, outcomeStyle } from "@/lib/trades";
 import {
@@ -27,7 +27,14 @@ import {
   Download,
   CheckCircle2,
   Lock,
-  ArrowRight
+  ArrowRight,
+  FlaskConical,
+  PlusCircle,
+  FileText as FileTextIcon,
+  Trash2 as TrashIcon,
+  ChevronRight,
+  Layout,
+  Library
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
@@ -50,7 +57,7 @@ interface StrategyDetailProps {
   trades: Trade[];
   onBack: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: (id: string) => void;
   onUpdate: (updatedModel: PlaybookModel) => void;
   onTradeClick?: (trade: Trade) => void;
 }
@@ -67,8 +74,11 @@ export function StrategyDetail({
   const [activeImageType, setActiveImageType] = useState<"perfect" | "loss" | "mistake">("perfect");
   const [definition, setDefinition] = useState(model.definition || "");
   const [isEditingDefinition, setIsEditingDefinition] = useState(false);
+  const [labNotes, setLabNotes] = useState<any[]>(model.labNotes || []);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(model.labNotes?.[0]?.id || null);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [expandedResourceId, setExpandedResourceId] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [quickAddForm, setQuickAddForm] = useState({
     title: "",
     description: "",
@@ -127,10 +137,6 @@ export function StrategyDetail({
       .sort((a, b) => +new Date(b.entryTime) - +new Date(a.entryTime));
   }, [trades, model.id]);
 
-  const groupedConfluences = useMemo(() => {
-    return model.setupConfluences;
-  }, [model.setupConfluences]);
-
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
@@ -158,789 +164,778 @@ export function StrategyDetail({
     }
   };
 
-  const removeImage = (id: string) => {
-    onUpdate({
-      ...model,
-      images: model.images.filter((img) => img.id !== id),
-    });
-    toast.success("Image removed");
-  };
-
   const saveDefinition = () => {
     onUpdate({ ...model, definition });
     setIsEditingDefinition(false);
     toast.success("Definition updated");
   };
 
-  const imagesForActiveType = model.images.filter((img) => img.type === activeImageType);
+
+  const addLabNote = () => {
+    const newNote = {
+      id: generateId(),
+      title: "New Research Item",
+      content: "",
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...labNotes, newNote];
+    setLabNotes(updated);
+    setActiveNoteId(newNote.id);
+    // Auto-save the structure
+    onUpdate({ ...model, labNotes: updated });
+  };
+
+  const updateActiveNote = (updates: any) => {
+    const updated = labNotes.map(n => 
+      n.id === activeNoteId ? { ...n, ...updates } : n
+    );
+    setLabNotes(updated);
+  };
+
+  const deleteLabNote = (id: string) => {
+    if (!confirm("Delete this research item?")) return;
+    const updated = labNotes.filter(n => n.id !== id);
+    setLabNotes(updated);
+    if (activeNoteId === id) setActiveNoteId(updated[0]?.id || null);
+    onUpdate({ ...model, labNotes: updated });
+  };
+
+  const activeNote = useMemo(() => 
+    labNotes.find(n => n.id === activeNoteId), 
+    [labNotes, activeNoteId]
+  );
+
+  // Sync state with props when model changes (e.g. initial load)
+  useEffect(() => {
+    if (model.labNotes && model.labNotes.length > 0 && labNotes.length === 0) {
+      setLabNotes(model.labNotes);
+      setActiveNoteId(model.labNotes[0].id);
+    }
+  }, [model.labNotes, labNotes.length]);
+
+  // Auto-save logic for Lab Notes
+  const [isSaving, setIsSaving] = useState(false);
+  const lastPropsNotes = JSON.stringify(model.labNotes);
+
+  useEffect(() => {
+    const currentNotesStr = JSON.stringify(labNotes);
+    if (currentNotesStr === lastPropsNotes) return;
+    
+    setIsSaving(true);
+    const timer = setTimeout(() => {
+      onUpdate({ ...model, labNotes });
+      setIsSaving(false);
+      setLastSavedAt(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    }, 2000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [labNotes, lastPropsNotes, onUpdate]);
 
   return (
-    <div
-      className="h-full flex flex-col space-y-6 mobile-pb animate-in fade-in slide-in-from-bottom-2 duration-500"
-      onPaste={handlePaste}
-      tabIndex={0}
-    >
-      {/* Institutional Header Section */}
-      <div className="relative overflow-hidden bg-primary/[0.02] border border-primary/10 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:20px_20px]" />
+    <div className="flex-1 flex flex-col bg-[#F8FAFC]">
+      {/* Premium Breadcrumb Header - Sticky for quick navigation */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-primary/5 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+          <span className="hover:text-primary cursor-pointer transition-colors" onClick={onBack}>Playbook</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-primary">{model.name}</span>
         </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onEdit}
+            className="p-2.5 hover:bg-primary/5 rounded-xl text-muted-foreground hover:text-primary transition-all active:scale-95 border border-transparent hover:border-primary/10"
+            title="Edit Setup"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(model.id)}
+            className="p-2.5 hover:bg-rose-500/5 rounded-xl text-muted-foreground hover:text-rose-500 transition-all active:scale-95 border border-transparent hover:border-rose-500/10"
+            title="Delete Setup"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
-        <div className="relative flex flex-col sm:flex-row gap-8 items-start sm:items-center">
-          {/* Cover/Thumbnail */}
-          <div className="w-full sm:w-48 aspect-video rounded-xl overflow-hidden border border-primary/20 shadow-xl shadow-primary/5 group relative bg-black/5">
-            {coverImage ? (
-              <img
-                src={coverImage}
-                alt="Strategy Cover"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
-                <LayoutDashboard className="w-12 h-12" />
-              </div>
-            )}
-          </div>
+      <div className="flex-1 overflow-y-auto scrollbar-thin scroll-smooth" onPaste={handlePaste}>
+        {/* Main Strategy Info Header */}
+        <div className="px-4 md:px-8 py-16 bg-white">
+          <div className="max-w-full mx-auto flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-12">
+            {/* Strategy Logo Area */}
+            <div className="w-32 h-32 rounded-[40px] bg-primary/5 border-2 border-primary/10 flex items-center justify-center shrink-0 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] relative group">
+              <FlaskConical className="w-12 h-12 text-primary" />
+              <div className="absolute inset-0 rounded-[40px] bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <button
-                    onClick={onBack}
-                    className="p-2 hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all shrink-0 border border-transparent hover:border-primary/20"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                  </button>
-                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground uppercase truncate">
-                    {model.name}
-                  </h2>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
-                      model.status === "Approved"
-                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
-                        : model.status === "Testing"
-                          ? "bg-amber-500/10 border-amber-500/30 text-amber-600"
-                          : "bg-indigo-500/10 border-indigo-500/30 text-indigo-600"
-                    }`}
-                  >
-                    {model.status}
+            {/* Title & Description */}
+            <div className="flex-1 space-y-6">
+              <div className="space-y-3">
+                <h1 className="text-5xl font-black tracking-tighter text-foreground uppercase leading-none">
+                  {model.name}
+                </h1>
+                <div className="flex items-center justify-center md:justify-start gap-4 text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em]">
+                  <span className="flex items-center gap-2">
+                    <Target className="w-3.5 h-3.5" /> {model.timeframe}
                   </span>
-                  <div className="h-4 w-[1px] bg-primary/10 hidden sm:block" />
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground/80 font-medium uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" /> {model.timeframe}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Activity className="w-3.5 h-3.5" /> {model.marketCondition}
-                    </span>
-                  </div>
+                  <span className="w-1 h-1 rounded-full bg-primary/20" />
+                  <span className="flex items-center gap-2">
+                    <TrendingUp className="w-3.5 h-3.5" /> {model.marketCondition}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-primary/20" />
+                  <span className="flex items-center gap-2">
+                    <History className="w-3.5 h-3.5" /> {model.killzones}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <button
-                  onClick={onEdit}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-xl text-xs font-bold text-foreground transition-all uppercase tracking-widest"
-                >
-                  <Edit className="w-4 h-4" /> Edit Model
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm("Permanently delete this strategy?")) onDelete();
-                  }}
-                  className="p-2.5 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-transparent hover:border-rose-500/20"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+            {/* High Level Stats Panel */}
+            <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+              <div className="px-10 py-8 rounded-[32px] bg-[#F8FAFC] border border-primary/5 text-center min-w-[160px] shadow-sm">
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mb-2">Win Rate</p>
+                <p className="text-4xl font-black text-primary">64%</p>
+              </div>
+              <div className="px-10 py-8 rounded-[32px] bg-emerald-500/[0.03] border border-emerald-500/5 text-center min-w-[160px] shadow-sm">
+                <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mb-2">Avg RR</p>
+                <p className="text-4xl font-black text-emerald-500">2.4</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="narrative" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="bg-primary/5 border border-primary/10 p-1 mb-8 self-start rounded-xl">
-          <TabsTrigger
-            value="narrative"
-            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
-          >
-            <FileText className="w-4 h-4 mr-2" /> DEFINITION
-          </TabsTrigger>
-          <TabsTrigger
-            value="logic"
-            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
-          >
-            <Zap className="w-4 h-4 mr-2" /> LOGIC
-          </TabsTrigger>
-          <TabsTrigger
-            value="visuals"
-            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
-          >
-            <ImageIcon className="w-4 h-4 mr-2" /> CHART STUDIES
-          </TabsTrigger>
-          <TabsTrigger
-            value="trades"
-            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm px-6 py-2 text-[10px] font-bold tracking-[0.15em] uppercase rounded-lg transition-all"
-          >
-            <History className="w-4 h-4 mr-2" /> PERFORMANCE LOG
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="lab" className="w-full">
+          {/* Navigation Tabs */}
+          <div className="bg-muted/30 border-y border-border/50 px-4 md:px-8 py-4 overflow-x-auto scrollbar-hide">
+            <div className="max-w-full mx-auto">
+              <TabsList className="bg-transparent p-0 flex items-center gap-2 h-auto w-fit">
+                <TabsTrigger
+                  value="definition"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:[background:linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_15%))]! data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:scale-[1.02] bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+                >
+                  <Layout className="w-3.5 h-3.5" /> DEFINITION
+                </TabsTrigger>
+                <TabsTrigger
+                  value="logic"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:[background:linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_15%))]! data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:scale-[1.02] bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+                >
+                  <Zap className="w-3.5 h-3.5" /> LOGIC
+                </TabsTrigger>
+                <TabsTrigger
+                  value="lab"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:[background:linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_15%))]! data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:scale-[1.02] bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+                >
+                  <FlaskConical className="w-3.5 h-3.5" /> PLAYBOOK LAB
+                </TabsTrigger>
+                <TabsTrigger
+                  value="trades"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:[background:linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_15%))]! data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:scale-[1.02] bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+                >
+                  <History className="w-3.5 h-3.5" /> PERFORMANCE LOG
+                </TabsTrigger>
+                <TabsTrigger
+                  value="resources"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 data-[state=active]:[background:linear-gradient(135deg,var(--primary),color-mix(in_oklch,var(--primary),black_15%))]! data-[state=active]:!text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:scale-[1.02] bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+                >
+                  <Library className="w-3.5 h-3.5" /> RESOURCES
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
 
-        <TabsContent value="narrative" className="flex-1 min-h-0 overflow-hidden outline-none">
-          <div className="h-full overflow-y-auto pr-2 space-y-6 scrollbar-thin">
-            <div className="bg-white border border-primary/10 rounded-2xl p-8 shadow-sm group relative">
-              <div className="flex items-center justify-between border-b border-primary/5 pb-6 mb-8">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-black tracking-[0.2em] text-foreground uppercase">
-                    Institutional Definition
-                  </h3>
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                    Framework for Bias & HTF Context
-                  </p>
-                </div>
-                {isEditingDefinition ? (
-                  <button
-                    onClick={saveDefinition}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
-                  >
-                    <Save className="w-4 h-4" /> Save Definition
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setIsEditingDefinition(true)}
-                    className="opacity-0 group-hover:opacity-100 flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 transition-all"
-                  >
-                    <Edit className="w-4 h-4" /> Edit Framework
-                  </button>
-                )}
-              </div>
-
-              {isEditingDefinition ? (
-                <div className="space-y-4">
-                  <RichEditor
-                    value={definition}
-                    onChange={setDefinition}
-                    className="min-h-[500px]"
-                    placeholder="Establish the HTF narrative, daily bias rules, and situational context..."
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                  <div
-                    className="lg:col-span-3 text-sm text-muted-foreground/90 rich-content max-w-none min-h-[300px] leading-relaxed cursor-pointer hover:text-foreground transition-colors"
-                    onClick={() => setIsEditingDefinition(true)}
-                    dangerouslySetInnerHTML={{
-                      __html: model.definition || "Establish your institutional framework here.",
-                    }}
-                  />
-                  
-                  {/* Academy Resources Sidebar */}
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                          <GraduationCap className="w-4 h-4 text-emerald-500" />
-                        </div>
-                        <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground/40 uppercase">
-                          Academy Resources
-                        </h3>
-                      </div>
-                      
-                      {/* Quick Add Modal */}
-                      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
-                        <DialogTrigger asChild>
-                          <button className="w-8 h-8 rounded-lg bg-primary/5 hover:bg-primary/10 flex items-center justify-center text-primary/40 hover:text-primary transition-all">
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-[#1A1F2E] border-white/10 text-white rounded-[32px] sm:max-w-[500px] overflow-hidden">
-                          <DialogHeader>
-                            <DialogTitle className="text-[12px] font-black uppercase tracking-[0.3em] text-primary">
-                              Pro Module Builder
-                            </DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-6 py-6 overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Title</Label>
-                                <Input 
-                                  value={quickAddForm.title}
-                                  onChange={e => setQuickAddForm(prev => ({ ...prev, title: e.target.value }))}
-                                  className="bg-white/5 border-white/10 rounded-2xl h-12 text-xs font-bold"
-                                />
-                              </div>
-                              <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Type</Label>
-                                <select 
-                                  value={quickAddForm.type}
-                                  onChange={e => setQuickAddForm(prev => ({ ...prev, type: e.target.value as any }))}
-                                  className="w-full bg-white/5 border border-white/10 rounded-2xl h-12 text-[10px] font-black uppercase tracking-widest px-4 outline-none"
-                                >
-                                  <option value="video">Video</option>
-                                  <option value="reading">Reading</option>
-                                  <option value="quiz">Quiz</option>
-                                </select>
-                              </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Description</Label>
-                              <Input 
-                                value={quickAddForm.description}
-                                onChange={e => setQuickAddForm(prev => ({ ...prev, description: e.target.value }))}
-                                className="bg-white/5 border-white/10 rounded-2xl h-12 text-xs font-bold"
-                              />
-                            </div>
-
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Module Playlist (Sub-links)</Label>
-                              <div className="space-y-3">
-                                {quickAddForm.subLinks.map((link) => (
-                                  <div key={link.id} className="flex items-center gap-2 bg-white/5 p-3 rounded-xl border border-white/5">
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[10px] font-bold truncate">{link.title}</p>
-                                    </div>
-                                    <button 
-                                      onClick={() => setQuickAddForm(prev => ({ ...prev, subLinks: prev.subLinks.filter(l => l.id !== link.id) }))}
-                                      className="text-rose-500/40 hover:text-rose-500"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                ))}
-                                <div className="flex gap-2">
-                                  <Input 
-                                    placeholder="Lesson Name"
-                                    value={newSubLink.title}
-                                    onChange={e => setNewSubLink(prev => ({ ...prev, title: e.target.value }))}
-                                    className="bg-white/5 border-white/10 rounded-2xl h-10 text-[10px] font-bold flex-[2]"
-                                  />
-                                  <Input 
-                                    placeholder="Lesson URL"
-                                    value={newSubLink.url}
-                                    onChange={e => setNewSubLink(prev => ({ ...prev, url: e.target.value }))}
-                                    className="bg-white/5 border-white/10 rounded-2xl h-10 text-[10px] font-bold flex-[3]"
-                                  />
-                                  <button 
-                                    onClick={addSubLinkToForm}
-                                    className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-3 pt-4 border-t border-white/5">
-                              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Main URL (Optional if playlist exists)</Label>
-                              <Input 
-                                value={quickAddForm.url}
-                                onChange={e => setQuickAddForm(prev => ({ ...prev, url: e.target.value }))}
-                                className="bg-white/5 border-white/10 rounded-2xl h-12 text-xs font-bold"
-                              />
-                            </div>
-
-                            <Button 
-                              onClick={handleQuickAdd}
-                              className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl h-14 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
-                            >
-                              Initialize Module
-                            </Button>
+          {/* Dynamic Content Area */}
+          <div className="px-4 md:px-8 py-16">
+            <div className="max-w-full mx-auto">
+              <TabsContent value="definition" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white border border-primary/10 rounded-[40px] p-10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.02)] relative group">
+                  <div className="max-w-full space-y-12">
+                    {/* Academy Quick Access */}
+                    {model.moodleResources && model.moodleResources.length > 0 && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <h3 className="text-[10px] font-bold tracking-[0.3em] text-primary uppercase flex items-center gap-2">
+                              <Library className="w-3.5 h-3.5" /> Linked Academy Modules
+                            </h3>
+                            <p className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-widest">Recommended Learning Path</p>
                           </div>
-                        </DialogContent>
-                      </Dialog>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {model.moodleResources.map((resource) => (
+                            <div 
+                              key={resource.id} 
+                              className={`p-6 rounded-[32px] transition-all group/resource border ${
+                                expandedResourceId === resource.id 
+                                  ? "bg-white border-primary/20 shadow-2xl" 
+                                  : "bg-primary/[0.02] border-primary/5 hover:bg-white hover:shadow-xl hover:shadow-primary/5"
+                              }`}
+                            >
+                              <div 
+                                className="flex items-center gap-4 cursor-pointer"
+                                onClick={() => setExpandedResourceId(expandedResourceId === resource.id ? null : resource.id)}
+                              >
+                                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
+                                  expandedResourceId === resource.id ? "bg-primary text-white" : "bg-primary/10 text-primary group-hover/resource:scale-110"
+                                }`}>
+                                  <GraduationCap className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-xs font-bold text-foreground uppercase tracking-tight truncate">{resource.title}</h4>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                                      {resource.subLinks?.length || 0} Lessons
+                                    </p>
+                                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest">{resource.progress || 0}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-primary/10 rounded-full overflow-hidden mt-2">
+                                    <div 
+                                      className="h-full bg-primary transition-all duration-1000 shadow-[0_0_8px_rgba(var(--primary),0.4)]" 
+                                      style={{ width: `${resource.progress || 0}%` }} 
+                                    />
+                                  </div>
+                                </div>
+                                <ChevronRight className={`w-4 h-4 text-primary/30 transition-transform duration-300 ${expandedResourceId === resource.id ? "rotate-90" : ""}`} />
+                              </div>
+
+                              <AnimatePresence>
+                                {expandedResourceId === resource.id && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden"
+                                  >
+                                    <div className="pt-6 space-y-2">
+                                      {resource.subLinks?.map((link, idx) => (
+                                        <a
+                                          key={idx}
+                                          href={link.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center justify-between p-3.5 rounded-2xl bg-primary/5 border border-primary/10 hover:border-primary/30 transition-all group/link"
+                                        >
+                                          <span className="truncate mr-4 text-[11px] font-bold text-foreground/80 group-hover/link:text-primary transition-colors">
+                                            {link.title || `Lesson ${idx + 1}`}
+                                          </span>
+                                          <ExternalLink className="w-3.5 h-3.5 text-primary opacity-40 group-hover/link:opacity-100 transition-opacity shrink-0" />
+                                        </a>
+                                      ))}
+                                      {resource.url && (
+                                        <a 
+                                          href={resource.url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-primary/5 text-primary text-[9px] font-bold uppercase tracking-widest hover:bg-primary/10 transition-all mt-2"
+                                        >
+                                          View Full Module <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="h-px bg-primary/5 w-full" />
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase flex items-center gap-3">
+                        <Layout className="w-5 h-5" /> Strategy Definition
+                      </h3>
+                      <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Core Architecture & Principles</p>
                     </div>
                     
-                    <div className="space-y-4">
-                      {model.moodleResources?.map((res) => {
-                        const isExpanded = expandedResourceId === res.id;
-                        const hasSubLinks = res.subLinks && res.subLinks.length > 0;
-                        
-                        return (
-                          <div
-                            key={res.id}
-                            className={`group relative overflow-hidden rounded-[32px] transition-all duration-500 border ${
-                              isExpanded 
-                                ? 'bg-[#1A1F2E] border-white/20 shadow-2xl shadow-black/50' 
-                                : 'bg-[#1A1F2E] border-white/5 hover:border-white/10 hover:translate-y-[-2px]'
-                            }`}
+                    {isEditingDefinition ? (
+                      <div className="space-y-6">
+                        <RichEditor
+                          value={definition}
+                          onChange={setDefinition}
+                          className="min-h-[500px]"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            onClick={saveDefinition}
+                            className="flex items-center gap-3 px-10 py-4 bg-primary text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-primary/20"
                           >
-                            {/* Card Content */}
-                            <div 
-                              className="p-8 cursor-pointer"
-                              onClick={() => setExpandedResourceId(isExpanded ? null : res.id)}
-                            >
-                              <div className="flex items-start justify-between mb-8">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-                                  res.type === 'video' ? 'bg-amber-500/10 text-amber-500' :
-                                  res.type === 'reading' ? 'bg-indigo-500/10 text-indigo-500' :
-                                  'bg-emerald-500/10 text-emerald-500'
-                                }`}>
-                                  {res.type === 'video' ? <Play className="w-6 h-6" /> : 
-                                   res.type === 'reading' ? <FileText className="w-6 h-6" /> : 
-                                   <GraduationCap className="w-6 h-6" />}
-                                </div>
-                                {hasSubLinks && (
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/20 bg-white/5 px-3 py-1.5 rounded-full">
-                                      {res.subLinks?.length} Lessons
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                            <Save className="w-4 h-4" /> Update Definition
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="text-xl text-foreground/80 leading-relaxed rich-content cursor-pointer hover:text-foreground transition-colors min-h-[400px]"
+                        onClick={() => setIsEditingDefinition(true)}
+                        dangerouslySetInnerHTML={{ __html: definition || "Click to define the core principles of this strategy..." }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
 
-                              <div className="space-y-2 mb-8">
-                                <h4 className="text-sm font-black text-white group-hover:text-primary transition-colors duration-300">
-                                  {res.title}
-                                </h4>
-                                <p className="text-[11px] text-white/40 font-medium leading-relaxed line-clamp-2">
-                                  {res.description}
-                                </p>
-                              </div>
+              <TabsContent value="logic" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                  {/* Confluences Column */}
+                  <div className="lg:col-span-8 space-y-12">
+                    <div className="bg-white border border-primary/10 rounded-[40px] p-12 shadow-sm relative group">
+                      <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase mb-10 flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5" /> Setup Confluences
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        {Object.entries(model.setupConfluences).map(([key, value]) => (
+                          <div key={key} className="p-6 rounded-3xl bg-primary/[0.01] border border-primary/5 flex items-start gap-4 transition-all hover:bg-primary/[0.03]">
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{key}</p>
+                              <p className="text-base font-bold text-foreground leading-relaxed">{value || "NOT_DEFINED"}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                  <span className="text-white/20">Progress</span>
-                                  <span className="text-white">{res.progress || 0}%</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                  <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${res.progress || 0}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className={`h-full rounded-full ${
-                                      res.type === 'video' ? 'bg-amber-500' :
-                                      res.type === 'reading' ? 'bg-indigo-500' :
-                                      'bg-emerald-500'
-                                    }`}
-                                  />
-                                </div>
+                    <div className="bg-white border border-primary/10 rounded-[40px] p-12 shadow-sm relative group">
+                      <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase mb-10 flex items-center gap-3">
+                        <Zap className="w-5 h-5" /> Execution Protocol
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-12">
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Entry Confirmation</p>
+                          <p className="text-lg font-bold text-foreground leading-relaxed">
+                            {model.executionRules.entrySignal || "NOT_DEFINED"}
+                          </p>
+                        </div>
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Stop Loss Protocol</p>
+                          <p className="text-lg font-bold text-foreground leading-relaxed">
+                            {model.executionRules.stopLoss || "NOT_DEFINED"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Management Sidebar */}
+                  <div className="lg:col-span-4">
+                    <div className="bg-white border border-primary/10 rounded-[40px] p-10 shadow-sm sticky top-24">
+                      <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase mb-10 flex items-center gap-3">
+                        <Shield className="w-5 h-5" /> Risk Management
+                      </h3>
+                      <div className="space-y-10">
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Take Profit Strategy</p>
+                          <p className="text-lg font-bold text-foreground">{model.executionRules.takeProfit || "NOT_DEFINED"}</p>
+                        </div>
+                        <div className="h-px bg-primary/5" />
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Break Even Protocol</p>
+                          <p className="text-lg font-bold text-foreground">{model.executionRules.breakEven || "NOT_DEFINED"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="lab" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white border border-primary/10 rounded-[40px] min-h-[900px] flex overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.03)] relative">
+                  {/* Notebook Sidebar - Sticky behavior */}
+                  <div className="w-96 border-r border-primary/5 bg-primary/[0.01] flex flex-col shrink-0">
+                    <div className="p-6 border-b border-primary/5 flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-[10px] font-bold tracking-[0.3em] text-foreground/30 uppercase">
+                          Research Index
+                        </h3>
+                        <p className="text-[8px] font-bold text-primary/40 uppercase tracking-[0.2em]">
+                          {labNotes.length} Items Found
+                        </p>
+                      </div>
+                      <button 
+                        onClick={addLabNote}
+                        className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        <PlusCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-3 scrollbar-thin">
+                      {labNotes.map((note) => (
+                        <div
+                          key={note.id}
+                          onClick={() => {
+                            setActiveNoteId(note.id);
+                          }}
+                          className={`group/item relative p-6 rounded-[32px] cursor-pointer transition-all border ${
+                            activeNoteId === note.id 
+                              ? "bg-white border-primary/20 shadow-2xl translate-x-2" 
+                              : "border-transparent hover:bg-primary/5 text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${activeNoteId === note.id ? "bg-primary/10 text-primary shadow-inner" : "bg-primary/5 opacity-40"}`}>
+                              <FileTextIcon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-bold truncate tracking-tight ${activeNoteId === note.id ? "text-foreground" : ""}`}>
+                                {note.title || "Untitled Item"}
+                              </p>
+                              <p className="text-[9px] font-bold uppercase tracking-widest opacity-30 mt-1">
+                                {new Date(note.createdAt).toLocaleDateString('en-GB')}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteLabNote(note.id);
+                            }}
+                            className="absolute -right-1 -top-1 w-8 h-8 bg-white border border-primary/10 shadow-xl flex items-center justify-center opacity-0 group-hover/item:opacity-100 text-rose-500 hover:bg-rose-500 hover:text-white rounded-full transition-all scale-75 group-hover/item:scale-100"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Main Research Content Area */}
+                  <div className="flex-1 flex flex-col min-w-0 bg-white">
+                    {activeNote ? (
+                      <>
+                         <div className="px-10 py-10 border-b border-primary/5 flex items-center justify-between shrink-0 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                          <div className="flex-1 mr-12">
+                              <input
+                                value={activeNote.title}
+                                onChange={(e) => updateActiveNote({ title: e.target.value })}
+                                className="w-full bg-transparent text-xl font-bold text-foreground outline-none border-b-2 border-transparent focus:border-primary/20 transition-all tracking-tighter hover:border-primary/10"
+                                placeholder="Case Study Title..."
+                              />
+                              <p className="text-[10px] text-muted-foreground/40 font-bold uppercase tracking-[0.3em] mt-1">
+                                Deep Research Case Study
+                              </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            {isSaving ? (
+                              <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 px-4 py-2 rounded-full border border-primary/10 animate-pulse">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Syncing...
+                              </div>
+                            ) : lastSavedAt ? (
+                              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] bg-emerald-500/5 px-4 py-2 rounded-full border border-emerald-500/10">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Saved at {lastSavedAt}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="flex-1 p-10">
+                          <RichEditor
+                            value={activeNote.content}
+                            onChange={(content) => updateActiveNote({ content })}
+                            className="min-h-[700px] border-none shadow-none ring-0"
+                            placeholder="Record your case studies, market observations, and deep research findings here..."
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-24 text-center">
+                        <div className="w-32 h-32 rounded-[48px] bg-primary/[0.02] flex items-center justify-center mb-12 shadow-inner border border-primary/5">
+                          <FlaskConical className="w-16 h-16 text-primary opacity-20" />
+                        </div>
+                        <h4 className="text-2xl font-black text-foreground uppercase tracking-[0.3em] mb-6 leading-none">
+                          Playbook Lab
+                        </h4>
+                        <p className="text-base font-medium text-muted-foreground/60 max-w-sm leading-relaxed mb-12">
+                          Choose a research entry from the index or initialize a new deep dive to begin your analysis.
+                        </p>
+                        <button
+                          onClick={addLabNote}
+                          className="px-12 py-5 bg-primary text-white rounded-[24px] text-[11px] font-black uppercase tracking-[0.3em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 transition-all"
+                        >
+                          Initialize New Study
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="trades" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white border border-primary/10 rounded-[40px] p-12 shadow-sm">
+                  <div className="flex items-center justify-between mb-12">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-black tracking-[0.3em] text-primary uppercase flex items-center gap-3">
+                        <History className="w-5 h-5" /> Performance History
+                      </h3>
+                      <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Global Sample Size: {filteredTrades.length} Trades</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredTrades.map((trade) => {
+                      const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl);
+                      const style = outcomeStyle[outcome.color];
+                      return (
+                        <div
+                          key={trade.id}
+                          onClick={() => onTradeClick?.(trade)}
+                          className="group p-6 rounded-3xl bg-[#F8FAFC] border border-primary/5 flex items-center justify-between cursor-pointer hover:bg-white hover:shadow-xl hover:shadow-primary/5 transition-all"
+                        >
+                          <div className="flex items-center gap-8">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${style}`}>
+                              {outcome.label}
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-base font-black text-foreground uppercase tracking-tight">{trade.symbol}</p>
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                {new Date(trade.entryTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-12">
+                            <div className="text-right">
+                              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 mb-1">Result</p>
+                              <p className={`text-lg font-black ${trade.actualRr > 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                                {trade.actualRr > 0 ? "+" : ""}{trade.actualRr.toFixed(1)}R
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 mb-1">Compliance</p>
+                              <div className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${trade.complianceCheck ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                                {trade.complianceCheck ? "Pass" : "Fail"}
                               </div>
                             </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground/20 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
 
-                            {/* Expandable Lessons List */}
+              <TabsContent value="resources" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white border border-primary/10 rounded-[40px] p-12 shadow-sm">
+                  <div className="flex items-center justify-between mb-12">
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-black tracking-[0.3em] text-primary uppercase flex items-center gap-3">
+                        <Library className="w-5 h-5" /> Academy Resources
+                      </h3>
+                      <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Learning Curriculum & Asset Library</p>
+                    </div>
+                    <button
+                      onClick={() => setIsQuickAddOpen(true)}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-lg shadow-primary/20"
+                    >
+                      <Plus className="w-4 h-4" /> Add Module
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {model.moodleResources?.map((resource) => (
+                      <div key={resource.id} className="p-10 rounded-[40px] bg-[#F8FAFC] border border-primary/5 space-y-8 hover:bg-white hover:shadow-2xl transition-all group">
+                        <div className="flex items-center justify-between">
+                          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                            <GraduationCap className="w-6 h-6" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <a href={resource.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-white rounded-xl shadow-sm hover:text-primary transition-all">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                             <button
+                              onClick={() => {
+                                onUpdate({
+                                  ...model,
+                                  moodleResources: model.moodleResources?.filter((r) => r.id !== resource.id)
+                                });
+                                toast.success("Module removed");
+                              }}
+                              className="p-3 bg-white border border-rose-500/5 rounded-xl text-muted-foreground hover:text-rose-500 hover:border-rose-500/20 transition-all shadow-sm"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <h4 className="text-xl font-black text-foreground uppercase tracking-tight leading-none">{resource.title}</h4>
+                            <p className="text-sm font-medium text-muted-foreground/60 line-clamp-2 leading-relaxed">{resource.description}</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-primary/60">
+                              <span>Module Completion</span>
+                              <span>{resource.progress || 0}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-primary/5 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all duration-1000" 
+                                style={{ width: `${resource.progress || 0}%` }} 
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Lessons Accordion Style */}
+                        {resource.subLinks && resource.subLinks.length > 0 && (
+                          <div className="space-y-3 pt-4">
+                            <div
+                              className="flex items-center justify-between cursor-pointer group/label"
+                              onClick={() => setExpandedResourceId(expandedResourceId === resource.id ? null : resource.id)}
+                            >
+                              <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Play className="w-3 h-3" /> {resource.subLinks.length} Lessons
+                              </p>
+                              <ChevronRight className={`w-4 h-4 text-primary/30 transition-transform duration-300 ${expandedResourceId === resource.id ? "rotate-90" : ""}`} />
+                            </div>
+                            
                             <AnimatePresence>
-                              {isExpanded && (
+                              {expandedResourceId === resource.id && (
                                 <motion.div
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: "auto", opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.4, ease: "easeInOut" }}
-                                  className="border-t border-white/5 bg-black/20"
+                                  className="overflow-hidden space-y-2"
                                 >
-                                  <div className="p-6 space-y-2">
-                                    {hasSubLinks ? (
-                                      res.subLinks?.map((link, idx) => (
-                                        <a
-                                          key={link.id}
-                                          href={link.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group/link"
-                                        >
-                                          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black text-white/40 group-hover/link:bg-primary/20 group-hover/link:text-primary transition-all">
-                                            {idx + 1}
-                                          </div>
-                                          <div className="flex-1">
-                                            <p className="text-[11px] font-bold text-white group-hover/link:text-primary transition-colors">
-                                              {link.title}
-                                            </p>
-                                          </div>
-                                          <ArrowRight className="w-3 h-3 text-white/20 group-hover/link:translate-x-1 group-hover/link:text-primary transition-all" />
-                                        </a>
-                                      ))
-                                    ) : (
-                                      <a
-                                        href={res.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/5 transition-all group/link"
-                                      >
-                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 group-hover/link:bg-primary/20 group-hover/link:text-primary">
-                                          <Play className="w-3 h-3" />
-                                        </div>
-                                        <p className="text-[11px] font-bold text-white group-hover/link:text-primary">
-                                          Watch Main Content
-                                        </p>
-                                        <ArrowRight className="w-3 h-3 text-white/20 ml-auto" />
-                                      </a>
-                                    )}
-                                  </div>
+                                  {resource.subLinks.map((link) => (
+                                    <a
+                                      key={link.id}
+                                      href={link.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-between p-4 rounded-2xl bg-white border border-primary/5 hover:border-primary/20 hover:shadow-md transition-all group/link"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-primary/20 group-hover/link:bg-primary transition-colors" />
+                                        <span className="text-[11px] font-bold text-muted-foreground group-hover/link:text-foreground transition-colors uppercase tracking-wide">
+                                          {link.title}
+                                        </span>
+                                      </div>
+                                      <ArrowRight className="w-3.5 h-3.5 text-primary/0 group-hover/link:text-primary group-hover/link:opacity-100 transition-all" />
+                                    </a>
+                                  ))}
                                 </motion.div>
                               )}
                             </AnimatePresence>
                           </div>
-                        );
-                      })}
-                      {(!model.moodleResources || model.moodleResources.length === 0) && (
-                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center border border-white/5 rounded-[40px] bg-[#1A1F2E]/50">
-                          <GraduationCap className="w-12 h-12 text-white/10 mb-5" />
-                          <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.25em]">
-                            Curriculum Pending
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent
-          value="logic"
-          className="flex-1 overflow-y-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 outline-none pb-12"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Definition Group */}
-            <div className="bg-white border border-primary/10 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 border-b border-primary/5 pb-4 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-indigo-500" />
-                </div>
-                <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase">
-                  HTF Analyst
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {groupedConfluences.narrative.map((label) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5 group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                      {label}
-                    </div>
-                    {model.moodleResources?.find(r => r.title.toLowerCase().includes(label.toLowerCase())) && (
-                      <a 
-                        href={model.moodleResources.find(r => r.title.toLowerCase().includes(label.toLowerCase()))?.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-40 group-hover:opacity-100 p-1.5 hover:bg-primary/10 rounded-lg transition-all"
-                        title="View Lesson"
-                      >
-                        <LinkIcon className="w-3.5 h-3.5 text-primary" />
-                      </a>
-                    )}
-                  </div>
-                ))}
-                {groupedConfluences.narrative.length === 0 && (
-                  <p className="text-[10px] text-muted-foreground/50 italic py-4 text-center">
-                    No narrative confluences defined.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Context Area Group */}
-            <div className="bg-white border border-primary/10 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 border-b border-primary/5 pb-4 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-amber-500" />
-                </div>
-                <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase">
-                  Context Area
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {groupedConfluences.liquidity.map((label) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5 group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      {label}
-                    </div>
-                    {model.moodleResources?.find(r => r.title.toLowerCase().includes(label.toLowerCase())) && (
-                      <a 
-                        href={model.moodleResources.find(r => r.title.toLowerCase().includes(label.toLowerCase()))?.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-40 group-hover:opacity-100 p-1.5 hover:bg-primary/10 rounded-lg transition-all"
-                        title="View Lesson"
-                      >
-                        <LinkIcon className="w-3.5 h-3.5 text-primary" />
-                      </a>
-                    )}
-                  </div>
-                ))}
-                {groupedConfluences.liquidity.length === 0 && (
-                  <p className="text-[10px] text-muted-foreground/50 italic py-4 text-center">
-                    No context area defined.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Logic Group */}
-            <div className="bg-white border border-primary/10 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 border-b border-primary/5 pb-4 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <Target className="w-4 h-4 text-emerald-500" />
-                </div>
-                <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase">
-                  Confirmation (LTF)
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {groupedConfluences.confirmation.map((label) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between gap-3 text-xs font-semibold text-foreground/80 bg-primary/[0.02] p-4 rounded-xl border border-primary/5 group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {label}
-                    </div>
-                    {model.moodleResources?.find(r => r.title.toLowerCase().includes(label.toLowerCase())) && (
-                      <a 
-                        href={model.moodleResources.find(r => r.title.toLowerCase().includes(label.toLowerCase()))?.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/10 rounded transition-all"
-                      >
-                        <LinkIcon className="w-3 h-3 text-primary" />
-                      </a>
-                    )}
-                  </div>
-                ))}
-                {groupedConfluences.confirmation.length === 0 && (
-                  <p className="text-[10px] text-muted-foreground/50 italic py-4 text-center">
-                    No entry triggers defined.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Execution Protocol Grid */}
-          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-8">
-            <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase mb-8 flex items-center gap-3">
-              <Settings2 className="w-4 h-4 text-primary" /> Execution Protocol
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
-              <div className="space-y-2">
-                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
-                  Primary Entry
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {model.executionRules.entry || "PROTOCOL_UNDEFINED"}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
-                  Defensive Stop
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {model.executionRules.stopLoss || "PROTOCOL_UNDEFINED"}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
-                  Take Profit
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {model.executionRules.takeProfit || "PROTOCOL_UNDEFINED"}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
-                  Risk Allocation
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {model.executionRules.riskPercent || "PROTOCOL_UNDEFINED"}
-                </p>
-              </div>
-              <div className="sm:col-span-4 space-y-2 pt-6 border-t border-primary/10">
-                <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em]">
-                  Trade Management & Break Even
-                </p>
-                <p className="text-sm font-bold text-foreground leading-relaxed">
-                  {model.executionRules.breakEven || "PROTOCOL_UNDEFINED"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="visuals" className="flex-1 min-h-0 overflow-hidden outline-none pb-8">
-          <div className="bg-white border border-primary/10 rounded-2xl h-full flex flex-col overflow-hidden shadow-sm relative">
-            <div className="px-6 py-4 border-b border-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h3 className="text-[10px] font-black tracking-[0.2em] text-foreground uppercase flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-primary" /> Strategy Visuals
-              </h3>
-              <div className="flex gap-2">
-                {[
-                  { id: "perfect", label: "Model A+" },
-                  { id: "loss", label: "Model Loss" },
-                  { id: "mistake", label: "Compliance Failure" },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveImageType(tab.id as "perfect" | "loss" | "mistake")}
-                    className={`px-4 py-2 rounded-lg text-[9px] font-bold tracking-widest transition-all uppercase border ${
-                      activeImageType === tab.id
-                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                        : "bg-primary/5 text-muted-foreground border-transparent hover:bg-primary/10 hover:text-foreground"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-8 scrollbar-thin">
-              {imagesForActiveType.length === 0 ? (
-                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-muted-foreground/30 border-2 border-dashed border-primary/10 rounded-2xl p-12 text-center">
-                  <ImageIcon className="w-16 h-16 mb-6 opacity-10" />
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2">
-                    No studies captured
-                  </p>
-                  <p className="text-[9px] font-medium uppercase tracking-widest opacity-60">
-                    Paste image (Cmd+V) to build your visual library
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  {imagesForActiveType.map((img) => (
-                    <div
-                      key={img.id}
-                      className="relative group rounded-2xl overflow-hidden border border-primary/10 bg-black/5 shadow-md aspect-video"
-                    >
-                      <img
-                        src={img.url}
-                        alt="Study"
-                        className="w-full h-full object-contain bg-black/20"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-[2px]">
-                        <button
-                          onClick={() => removeImage(img.id)}
-                          className="p-4 bg-rose-500 text-white rounded-2xl hover:bg-rose-600 transition-all transform scale-90 group-hover:scale-100 shadow-xl"
-                        >
-                          <Trash2 className="w-6 h-6" />
-                        </button>
+                        )}
                       </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+            </div>
+          </div>
+        </Tabs>
+      </div>
+
+       {/* Quick Add Resource Dialog */}
+      <Dialog open={isQuickAddOpen} onOpenChange={setIsQuickAddOpen}>
+        <DialogContent className="sm:max-w-[600px] bg-white rounded-[40px] border-primary/10 p-10">
+          <DialogHeader className="mb-8">
+            <DialogTitle className="text-2xl font-black tracking-tight text-foreground uppercase flex items-center gap-3">
+              <GraduationCap className="w-8 h-8 text-primary" /> New Academy Module
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Module Title</Label>
+                <Input
+                  value={quickAddForm.title}
+                  onChange={(e) => setQuickAddForm({ ...quickAddForm, title: e.target.value })}
+                  placeholder="Module Name..."
+                  className="bg-primary/5 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl h-12 px-6 text-sm font-bold transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Main URL (Optional)</Label>
+                <Input
+                  value={quickAddForm.url}
+                  onChange={(e) => setQuickAddForm({ ...quickAddForm, url: e.target.value })}
+                  placeholder="https://..."
+                  className="bg-primary/5 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl h-12 px-6 text-sm font-bold transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Description</Label>
+              <Input
+                value={quickAddForm.description}
+                onChange={(e) => setQuickAddForm({ ...quickAddForm, description: e.target.value })}
+                placeholder="Brief module description..."
+                className="bg-primary/5 border-transparent focus:bg-white focus:border-primary/20 rounded-2xl h-12 px-6 text-sm font-bold transition-all"
+              />
+            </div>
+
+            {/* Sub-links builder */}
+            <div className="p-6 rounded-3xl bg-primary/[0.02] border border-primary/5 space-y-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <Play className="w-3 h-3" /> Lesson Builder
+              </Label>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  value={newSubLink.title}
+                  onChange={(e) => setNewSubLink({ ...newSubLink, title: e.target.value })}
+                  placeholder="Lesson Title"
+                  className="bg-white border-primary/10 rounded-xl h-10 px-4 text-xs"
+                />
+                <div className="flex gap-2">
+                  <Input
+                    value={newSubLink.url}
+                    onChange={(e) => setNewSubLink({ ...newSubLink, url: e.target.value })}
+                    placeholder="URL"
+                    className="bg-white border-primary/10 rounded-xl h-10 px-4 text-xs flex-1"
+                  />
+                  <button
+                    onClick={addSubLinkToForm}
+                    className="p-2 bg-primary text-white rounded-xl hover:opacity-90 shadow-lg shadow-primary/20"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {quickAddForm.subLinks.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {quickAddForm.subLinks.map((link) => (
+                    <div key={link.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-primary/5">
+                      <span className="text-[11px] font-bold text-foreground">{link.title}</span>
+                      <button
+                        onClick={() => setQuickAddForm(prev => ({
+                          ...prev,
+                          subLinks: prev.subLinks.filter(l => l.id !== link.id)
+                        }))}
+                        className="text-rose-500 p-1 hover:bg-rose-50 rounded-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
-
-                  <div className="border-2 border-dashed border-primary/10 rounded-2xl flex flex-col items-center justify-center p-8 bg-primary/[0.02] text-muted-foreground/40 hover:bg-primary/[0.04] transition-all cursor-pointer">
-                    <Plus className="w-8 h-8 mb-3 opacity-20" />
-                    <p className="text-[9px] font-bold uppercase tracking-widest">
-                      Add more studies
-                    </p>
-                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </TabsContent>
 
-        <TabsContent
-          value="trades"
-          className="flex-1 min-h-0 flex flex-col gap-6 overflow-hidden outline-none pb-8"
-        >
-          <div className="bg-white border border-primary/10 rounded-2xl flex-1 flex flex-col overflow-hidden shadow-sm">
-            <div className="px-8 py-6 border-b border-primary/5 flex items-center justify-between shrink-0">
-              <div className="space-y-1">
-                <h3 className="text-sm font-black tracking-[0.2em] text-foreground uppercase">
-                  Performance History
-                </h3>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                  Historical Execution Records
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 uppercase tracking-widest">
-                  {filteredTrades.length} Samples
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
-              {filteredTrades.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground/30 p-20 text-center">
-                  <History className="w-16 h-16 mb-6 opacity-10" />
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]">
-                    Log currently empty
-                  </p>
-                </div>
-              ) : (
-                <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-white/95 backdrop-blur-md z-10 border-b border-primary/10">
-                    <tr className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                      <th className="p-6">Execution Date</th>
-                      <th className="p-6">Outcome Status</th>
-                      <th className="p-6">Asset Symbol</th>
-                      <th className="p-6 text-right">Net PnL</th>
-                      <th className="p-6 text-right">RR Ratio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-primary/5">
-                    {filteredTrades.map((t) => {
-                      const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
-                      return (
-                        <tr
-                          key={t.id}
-                          onClick={() => onTradeClick?.(t)}
-                          className="hover:bg-primary/[0.02] transition-all group cursor-pointer"
-                        >
-                          <td className="p-6 text-xs font-bold text-muted-foreground/70">
-                            {new Date(t.entryTime).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "2-digit",
-                            })}
-                          </td>
-                          <td className="p-6">
-                            <span
-                              className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${outcomeStyle[outcome.color]}`}
-                            >
-                              {outcome.label}
-                            </span>
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-black text-foreground">{t.symbol}</span>
-                              <span
-                                className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${
-                                  t.side === "buy"
-                                    ? "bg-indigo-500/10 text-indigo-500"
-                                    : "bg-rose-500/10 text-rose-500"
-                                }`}
-                              >
-                                {t.side}
-                              </span>
-                            </div>
-                          </td>
-                          <td
-                            className={`p-6 text-sm font-black text-right tabular-nums ${t.netPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
-                          >
-                            {t.netPnl >= 0 ? "+" : ""}
-                            {t.netPnl.toFixed(2)}
-                          </td>
-                          <td className="p-6 text-xs font-bold text-muted-foreground/60 text-right tabular-nums">
-                            {t.actualRr.toFixed(2)} <span className="opacity-30">/</span>{" "}
-                            {t.maxRr.toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleQuickAdd}
+                className="px-10 h-14 bg-primary text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] hover:opacity-90 active:scale-95 transition-all"
+              >
+                Create Academy Module
+              </Button>
             </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
