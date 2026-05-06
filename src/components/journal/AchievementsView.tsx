@@ -22,7 +22,14 @@ import {
   Flame,
   CheckCircle2,
   Check,
+  Info,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 
 const CATEGORY_ICONS = {
@@ -261,105 +268,140 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
   });
 
   return (
-    <motion.div
-      whileHover={{ y: -8, scale: 1.01 }}
-      className={`rounded-[32px] p-8 shadow-sm border flex flex-col gap-6 relative overflow-hidden group transition-all duration-500 ${styles.card}`}
-    >
-      {/* Dynamic Background Glow for high levels */}
-      {achievement.level !== "None" && achievement.level !== "Bronze" && (
-        <div className={`absolute -top-24 -left-24 w-48 h-48 blur-[80px] opacity-20 transition-all duration-700 group-hover:scale-150 ${
-          achievement.level === "Diamond" ? "bg-blue-500" : achievement.level === "Gold" ? "bg-yellow-500" : "bg-slate-400"
-        }`} />
-      )}
-
-      <div className="flex items-start justify-between relative z-10">
-        <div className="flex items-center gap-6">
+    <TooltipProvider>
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>
           <motion.div
-            whileHover={{ rotate: [0, -10, 10, 0] }}
-            className={`w-16 h-16 rounded-[22px] flex items-center justify-center transition-transform duration-500 ${styles.container}`}
+            whileHover={{ y: -8, scale: 1.01 }}
+            className={`rounded-[32px] p-8 shadow-sm border flex flex-col gap-6 relative overflow-hidden group transition-all duration-500 ${styles.card}`}
           >
-            <div className={`${styles.icon} scale-110 drop-shadow-md`}>
-              {achievement.icon}
-            </div>
-          </motion.div>
-          
-          <div className="space-y-1.5">
-            <h4 className={`text-xl font-black leading-tight tracking-tight ${styles.title}`}>
-              {achievement.name}
-            </h4>
-            <div className="flex items-center gap-3">
-              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-sm ${styles.badge}`}>
-                {achievement.level === "None" ? "Locked" : achievement.level}
-              </span>
-              
-              {isDiamond && (
-                <div className="relative overflow-hidden group/title rounded-lg">
-                  <button
-                    onClick={() => setTitleMutation.mutate(achievement.title)}
-                    className={`relative flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-all overflow-hidden ${
-                      isActive 
-                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" 
-                        : "bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white"
-                    }`}
-                  >
-                    {/* Shimmer Effect for Diamond Title */}
-                    <motion.div
-                      animate={{ x: ["-100%", "100%"] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
-                    />
-                    <span className="relative z-10 flex items-center gap-1">
-                      {isActive ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                      {isActive ? "Active Title" : `Unlock: ${achievement.title}`}
+            {/* Dynamic Background Glow for high levels */}
+            {achievement.level !== "None" && achievement.level !== "Bronze" && (
+              <div className={`absolute -top-24 -left-24 w-48 h-48 blur-[80px] opacity-20 transition-all duration-700 group-hover:scale-150 ${
+                achievement.level === "Diamond" ? "bg-blue-500" : achievement.level === "Gold" ? "bg-yellow-500" : "bg-slate-400"
+              }`} />
+            )}
+
+            <div className="flex items-start justify-between relative z-10">
+              <div className="flex items-center gap-6">
+                <motion.div
+                  whileHover={{ rotate: [0, -10, 10, 0] }}
+                  className={`w-16 h-16 rounded-[22px] flex items-center justify-center transition-transform duration-500 ${styles.container}`}
+                >
+                  <div className={`${styles.icon} scale-110 drop-shadow-md`}>
+                    {achievement.icon}
+                  </div>
+                </motion.div>
+                
+                <div className="space-y-1.5">
+                  <h4 className={`text-xl font-black leading-tight tracking-tight ${styles.title}`}>
+                    {achievement.name}
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-sm ${styles.badge}`}>
+                      {achievement.level === "None" ? "Locked" : achievement.level}
                     </span>
-                  </button>
+                    
+                    {isDiamond && (
+                      <div className="relative overflow-hidden group/title rounded-lg">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTitleMutation.mutate(achievement.title);
+                          }}
+                          className={`relative flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-all overflow-hidden ${
+                            isActive 
+                              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" 
+                              : "bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white"
+                          }`}
+                        >
+                          {/* Shimmer Effect for Diamond Title */}
+                          <motion.div
+                            animate={{ x: ["-100%", "100%"] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                          />
+                          <span className="relative z-10 flex items-center gap-1">
+                            {isActive ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                            {isActive ? "Active Title" : `Unlock: ${achievement.title}`}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </div>
+
+              {achievement.level !== "None" && (
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-100 shadow-sm"
+                >
+                  <CheckCircle2 className="w-6 h-6" />
+                </motion.div>
               )}
             </div>
-          </div>
-        </div>
 
-        {achievement.level !== "None" && (
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-100 shadow-sm"
-          >
-            <CheckCircle2 className="w-6 h-6" />
+            <p className={`text-sm font-medium leading-relaxed relative z-10 pr-4 ${styles.desc}`}>
+              {achievement.description}
+            </p>
+
+            <div className="space-y-3 relative z-10 mt-auto">
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Progress Tracking
+                </span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-black text-slate-800">
+                    {Math.round(achievement.progress).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    / {achievement.target.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-0.5">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 1.5, ease: "circOut" }}
+                  className={`h-full rounded-full relative overflow-hidden ${styles.bar}`}
+                >
+                  {/* Subtle light effect on progress bar */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+                </motion.div>
+              </div>
+            </div>
           </motion.div>
-        )}
-      </div>
-
-      <p className={`text-sm font-medium leading-relaxed relative z-10 pr-4 ${styles.desc}`}>
-        {achievement.description}
-      </p>
-
-      <div className="space-y-3 relative z-10 mt-auto">
-        <div className="flex justify-between items-end">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Progress Tracking
-          </span>
-          <div className="flex items-baseline gap-1">
-            <span className="text-lg font-black text-slate-800">
-              {Math.round(achievement.progress).toLocaleString()}
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase">
-              / {achievement.target.toLocaleString()}
-            </span>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="p-4 bg-slate-900/95 backdrop-blur-md border-slate-800 shadow-2xl">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+              <Trophy className="w-3.5 h-3.5 text-yellow-500" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Milestones</p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-orange-500 uppercase tracking-tighter">Bronze</span>
+                <span className="text-xs font-black text-slate-100">{achievement.milestones.Bronze.toLocaleString()}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Silver</span>
+                <span className="text-xs font-black text-slate-100">{achievement.milestones.Silver.toLocaleString()}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-tighter">Gold</span>
+                <span className="text-xs font-black text-slate-100">{achievement.milestones.Gold.toLocaleString()}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Diamond</span>
+                <span className="text-xs font-black text-slate-100">{achievement.milestones.Diamond.toLocaleString()}</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-0.5">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 1.5, ease: "circOut" }}
-            className={`h-full rounded-full relative overflow-hidden ${styles.bar}`}
-          >
-            {/* Subtle light effect on progress bar */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
-          </motion.div>
-        </div>
-      </div>
-    </motion.div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
