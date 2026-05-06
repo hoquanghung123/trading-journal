@@ -11,6 +11,7 @@ import { Underline } from '@tiptap/extension-underline'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { Subscript } from '@tiptap/extension-subscript'
 import { Superscript } from '@tiptap/extension-superscript'
+
 import {
   Bold,
   Italic,
@@ -40,7 +41,7 @@ import {
   Eraser
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,11 +62,26 @@ interface RichEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  uploadImage?: (file: File) => Promise<string>;
 }
 
-export function RichEditor({ value, onChange, placeholder, className }: RichEditorProps) {
+// Default upload: convert to base64 (fallback if no uploadImage provided)
+const defaultUploadImage = (file: File): Promise<string> =>
+  new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.readAsDataURL(file);
+  });
+
+export function RichEditor({ value, onChange, placeholder, className, uploadImage }: RichEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Stable ref to uploadImage to avoid stale closures in plugin
+  const uploadRef = React.useRef(uploadImage ?? defaultUploadImage);
+  React.useEffect(() => { uploadRef.current = uploadImage ?? defaultUploadImage; }, [uploadImage]);
+
 
   const editor = useEditor({
     extensions: [
@@ -108,13 +124,32 @@ export function RichEditor({ value, onChange, placeholder, className }: RichEdit
       attributes: {
         class: 'tiptap rich-content focus:outline-none min-h-[500px] p-10 max-w-none font-medium text-foreground selection:bg-primary/10',
       },
+      handlePaste(_view, event) {
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const imageItems = items.filter((item) => item.type.startsWith('image/'));
+        if (imageItems.length === 0) return false;
+
+        event.preventDefault();
+        imageItems.forEach((item) => {
+          const file = item.getAsFile();
+          if (!file) return;
+          setIsUploading(true);
+          uploadRef.current(file)
+            .then((url) => {
+              editor?.chain().focus().setImage({ src: url }).run();
+            })
+            .catch((err) => console.error('[RichEditor] Image paste upload failed:', err))
+            .finally(() => setIsUploading(false));
+        });
+        return true;
+      },
     },
   })
 
   // Sync value from outside if it changes
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, false)
+      editor.commands.setContent(value, false, { preserveWhitespace: 'full' })
     }
   }, [value, editor])
 
@@ -164,6 +199,12 @@ export function RichEditor({ value, onChange, placeholder, className }: RichEdit
 
   return (
     <div className={cn("flex flex-col border border-primary/5 rounded-[40px] overflow-hidden bg-white shadow-2xl shadow-primary/5 relative", className)}>
+      {/* Upload progress indicator */}
+      {isUploading && (
+        <div className="absolute inset-x-0 top-0 z-30 h-1 bg-primary/10">
+          <div className="h-full bg-primary animate-pulse" style={{ width: '60%' }} />
+        </div>
+      )}
       {/* TipTap Style Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 bg-white/80 backdrop-blur-md border-b border-primary/5 sticky top-0 z-20 justify-center">
         {/* History Group */}

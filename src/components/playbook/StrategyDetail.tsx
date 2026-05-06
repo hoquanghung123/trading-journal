@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
+import { uploadChartImage, getChartUrl } from "@/lib/journal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { motion, AnimatePresence } from "framer-motion";
@@ -88,6 +89,12 @@ export function StrategyDetail({
     subLinks: [] as { id: string; title: string; url: string }[]
   });
   const [newSubLink, setNewSubLink] = useState({ title: "", url: "" });
+
+  /** Upload an image file to R2 and return its display URL for the editor */
+  const uploadImageForEditor = async (file: File): Promise<string> => {
+    const path = await uploadChartImage(file);
+    return getChartUrl(path);
+  };
 
   const handleQuickAdd = () => {
     if (!quickAddForm.title || (!quickAddForm.url && quickAddForm.subLinks.length === 0)) {
@@ -455,6 +462,7 @@ export function StrategyDetail({
                         <RichEditor
                           value={definition}
                           onChange={setDefinition}
+                          uploadImage={uploadImageForEditor}
                           className="min-h-[500px]"
                         />
                         <div className="flex justify-end">
@@ -638,6 +646,7 @@ export function StrategyDetail({
                           <RichEditor
                             value={activeNote.content}
                             onChange={(content) => updateActiveNote({ content })}
+                            uploadImage={uploadImageForEditor}
                             className="min-h-[700px] border-none shadow-none ring-0"
                             placeholder="Record your case studies, market observations, and deep research findings here..."
                           />
