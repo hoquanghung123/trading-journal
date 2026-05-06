@@ -10,32 +10,32 @@ export interface UserAchievement {
 
 export const ACHIEVEMENT_CONFIG = {
   risk_manager: {
-    name: "Risk Manager",
+    name: "Kẻ Nhát Gan Có Kỷ Luật",
     category: "Psychology",
-    description: "Trades with <= 1% risk and 1 trade/day",
+    description: "Đi lệnh <= 1% để tối ngủ ngon không cần dùng thuốc trợ tim",
     milestones: { Bronze: 5, Silver: 10, Gold: 15, Diamond: 20 },
-    title: "Risk Sentinel",
+    title: "Thần Hộ Mệnh Tài Khoản",
   },
   win_streak: {
-    name: "Streak Master",
+    name: "Chuỗi Thắng Ảo Ma",
     category: "Performance",
-    description: "Consecutive winning trades",
+    description: "Thắng liên tiếp nhiều lệnh (coi chừng ảo tưởng sức mạnh đó nha)",
     milestones: { Bronze: 3, Silver: 5, Gold: 8, Diamond: 12 },
-    title: "Unstoppable",
+    title: "Cụ Tổ Ngành Nến",
   },
   pnl_growth: {
-    name: "Wealth Builder",
+    name: "Máy In Tiền Chạy Cơm",
     category: "Performance",
-    description: "Total net profit milestones",
+    description: "Gom góp bạc lẻ chờ ngày mua Roll-Royce, hiện tại đủ mua mì tôm",
     milestones: { Bronze: 1000, Silver: 5000, Gold: 10000, Diamond: 50000 },
-    title: "Market Whale",
+    title: "Cá Voi Quận Cam",
   },
   knowledge_base: {
-    name: "Research Scholar",
+    name: "Chiến Thần Soi Chart",
     category: "Knowledge",
-    description: "Total images logged across all timeframes",
+    description: "Soi nến kỹ hơn soi người yêu, ảnh nhiều đến mức Google Photos cũng sợ",
     milestones: { Bronze: 1000, Silver: 5000, Gold: 10000, Diamond: 20000 },
-    title: "Alpha Sage",
+    title: "Trùm Cuối Soi Kèo",
   },
 } as const;
 

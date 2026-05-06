@@ -122,11 +122,11 @@ export function AchievementsView() {
           >
             <Award className="w-4 h-4 text-yellow-400" />
             <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400">
-              Elite Trophy Room
+              Phòng Truyền Thống Đại Gia
             </span>
           </motion.div>
           <div className="space-y-2">
-            <h2 className="text-5xl font-black tracking-tight leading-none">Your Legacy</h2>
+            <h2 className="text-5xl font-black tracking-tight leading-none">Huyền Thoại Trader</h2>
             {profile?.active_title && (
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
@@ -134,7 +134,7 @@ export function AchievementsView() {
                 className="flex items-center gap-3 pt-2"
               >
                 <span className="text-xs font-black uppercase tracking-widest text-slate-500">
-                  Current Title:
+                  Danh hiệu hiện tại:
                 </span>
                 <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-sm font-black uppercase tracking-tight border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                   {profile.active_title}
@@ -143,8 +143,8 @@ export function AchievementsView() {
             )}
           </div>
           <p className="text-slate-400 max-w-xl text-lg font-medium leading-relaxed">
-            The path of a professional trader is built on discipline and research. 
-            Earn your titles and showcase your mastery to the community.
+            Con đường của một Trader chuyên nghiệp được xây dựng từ kỷ luật và sự kiên trì.
+            Hãy thu thập các danh hiệu để khẳng định đẳng cấp của bạn trong cộng đồng.
           </p>
         </div>
         {/* Abstract Background Shapes */}
@@ -299,7 +299,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                   </h4>
                   <div className="flex items-center gap-3">
                     <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border shadow-sm ${styles.badge}`}>
-                      {achievement.level === "None" ? "Locked" : achievement.level}
+                      {achievement.level === "None" ? "Chưa Đạt" : achievement.level}
                     </span>
                     
                     {isDiamond && (
@@ -323,7 +323,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                           />
                           <span className="relative z-10 flex items-center gap-1">
                             {isActive ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                            {isActive ? "Active Title" : `Unlock: ${achievement.title}`}
+                            {isActive ? "Đang Sử Dụng" : `Mở Khóa: ${achievement.title}`}
                           </span>
                         </button>
                       </div>
@@ -350,7 +350,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
             <div className="space-y-3 relative z-10 mt-auto">
               <div className="flex justify-between items-end">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Progress Tracking
+                  Tiến độ hiện tại
                 </span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-black text-slate-800">
@@ -379,7 +379,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
           <div className="space-y-3">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
               <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Target Milestones</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cột Mốc Mục Tiêu</p>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2">
               <div className="flex flex-col">
