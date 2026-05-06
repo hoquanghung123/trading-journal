@@ -83,7 +83,7 @@ export function AchievementsView() {
   const achievements = Object.entries(ACHIEVEMENT_CONFIG).map(([key, config]) => {
     const userStat = userAchievements.find((a) => a.achievementKey === key);
     const currentValue = userStat?.currentValue || 0;
-    const currentLevel = userStat?.highestLevel || "None";
+    const currentLevel = calculateLevel(key as any, currentValue);
 
     // Calculate target for current level
     const milestones = config.milestones;

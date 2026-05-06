@@ -15,7 +15,9 @@ export function useAchievementTracker() {
       // Fetch current achievements to compare levels later
       const prevAchievements = await fetchUserAchievements();
       const trades = await fetchTrades();
-      const { data: journalEntries } = await supabase.from("journal_entries").select("id");
+      const { data: journalEntries } = await supabase
+        .from("journal_entries")
+        .select("yearly_img, monthly_img, weekly_img, daily_img, h4");
 
       // 0. Discipline Check (Specific to the current trade)
       if (currentTrade) {
@@ -84,10 +86,22 @@ export function useAchievementTracker() {
       const pnlLevel = calculateLevel("pnl_growth", totalPnl);
       await updateAchievement("pnl_growth", totalPnl, pnlLevel);
 
-      // 4. Research Scholar (Knowledge)
-      const totalEntries = journalEntries?.length || 0;
-      const researchLevel = calculateLevel("knowledge_base", totalEntries);
-      await updateAchievement("knowledge_base", totalEntries, researchLevel);
+      // 4. Research Scholar (Knowledge - Count total images)
+      let totalImages = 0;
+      journalEntries?.forEach((entry: any) => {
+        if (entry.yearly_img) totalImages++;
+        if (entry.monthly_img) totalImages++;
+        if (entry.weekly_img) totalImages++;
+        if (entry.daily_img) totalImages++;
+        if (entry.h4 && typeof entry.h4 === "object") {
+          Object.values(entry.h4).forEach((session: any) => {
+            if (typeof session === "string" && session) totalImages++;
+            else if (session?.img) totalImages++;
+          });
+        }
+      });
+      const researchLevel = calculateLevel("knowledge_base", totalImages);
+      await updateAchievement("knowledge_base", totalImages, researchLevel);
 
       // Notification logic for new levels
       const newLevels = [

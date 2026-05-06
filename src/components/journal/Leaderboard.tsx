@@ -1,18 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchLeaderboard, fetchMyProfile, Profile } from "@/lib/journal";
+import { fetchLeaderboard, fetchMyProfile, Profile, fetchWeeklyActivity, WeeklyActivity } from "@/lib/journal";
 import { Trophy, Flame, User, Medal } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
 export function Leaderboard() {
   const { data: leaderboard, isLoading: loadingLeaderboard } = useQuery({
     queryKey: ["streak_leaderboard"],
     queryFn: fetchLeaderboard,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   const { data: myProfile } = useQuery({
     queryKey: ["my_profile"],
     queryFn: fetchMyProfile,
+  });
+
+  const { data: activityData = [] } = useQuery({
+    queryKey: ["weekly_activity"],
+    queryFn: fetchWeeklyActivity,
+    refetchInterval: 60000,
   });
 
   if (loadingLeaderboard) {
@@ -24,7 +38,7 @@ export function Leaderboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -52,6 +66,8 @@ export function Leaderboard() {
         ))}
       </div>
 
+      {activityData.length > 0 && <WeeklyActivityChart data={activityData} />}
+
       {myProfile && !leaderboard?.find((p) => p.id === myProfile.id) && (
         <>
           <div className="flex items-center gap-2 py-2">
@@ -66,6 +82,116 @@ export function Leaderboard() {
       )}
     </div>
   );
+}
+
+function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
+  // Flatten the data for Recharts to handle names with periods correctly
+  const chartData = data.map(d => ({
+    date: d.date,
+    ...d.users
+  }));
+
+  const usernames = Array.from(new Set(data.flatMap((d) => Object.keys(d.users))));
+
+  const colors: Record<string, string> = {
+    You: "#94A3B8",
+  };
+
+  const palette = ["#EAB308", "#3B82F6", "#10B981", "#F43F5E", "#8B5CF6"];
+  usernames
+    .filter((u) => u !== "You")
+    .forEach((u, i) => {
+      colors[u] = palette[i % palette.length];
+    });
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Trophy className="w-6 h-6 text-blue-500" />
+          </motion.div>
+        </div>
+        <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
+          Weekly Progress
+        </h2>
+      </div>
+
+      <div className="bg-white rounded-[32px] p-8 border border-border shadow-sm space-y-6">
+
+      <div className="h-[200px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+            <XAxis
+              dataKey="date"
+              tickFormatter={(val) => {
+                const d = new Date(val + "T00:00:00");
+                return ["Su", "M", "Tu", "W", "Th", "F", "Sa"][d.getDay()];
+              }}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fontWeight: 800, fill: "#94A3B8" }}
+              dy={10}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fontWeight: 800, fill: "#94A3B8" }}
+            />
+            <Tooltip
+              contentStyle={{
+                borderRadius: "16px",
+                border: "none",
+                boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                padding: "12px",
+              }}
+              itemStyle={{ fontSize: "10px", fontWeight: 800, textTransform: "uppercase" }}
+              labelStyle={{ fontSize: "10px", fontWeight: 800, marginBottom: "4px" }}
+            />
+            {usernames.map((user) => (
+              <Line
+                key={user}
+                type="monotone"
+                dataKey={user}
+                name={user}
+                stroke={colors[user]}
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+                animationDuration={1500}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="flex flex-wrap gap-x-6 gap-y-3 pt-6 border-t border-slate-100">
+        {usernames.map((user) => {
+          const totalXp = data.reduce((sum, d) => sum + (d.users[user] || 0), 0);
+          return (
+            <div key={user} className="flex items-center gap-2">
+              <div
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: colors[user] }}
+              />
+              <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">
+                {user}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400">{totalXp} XP</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </motion.div>
+);
 }
 
 function LeaderboardItem({

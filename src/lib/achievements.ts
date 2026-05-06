@@ -33,8 +33,8 @@ export const ACHIEVEMENT_CONFIG = {
   knowledge_base: {
     name: "Research Scholar",
     category: "Knowledge",
-    description: "Total bias entries logged",
-    milestones: { Bronze: 10, Silver: 30, Gold: 50, Diamond: 100 },
+    description: "Total images logged across all timeframes",
+    milestones: { Bronze: 1000, Silver: 5000, Gold: 10000, Diamond: 20000 },
     title: "Alpha Sage",
   },
 } as const;

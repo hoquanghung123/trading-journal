@@ -466,3 +466,14 @@ export async function fetchMyProfile(): Promise<Profile | null> {
   if (!data) return null;
   return fromProfileRow(data);
 }
+
+export interface WeeklyActivity {
+  date: string;
+  users: Record<string, number>;
+}
+
+export async function fetchWeeklyActivity(): Promise<WeeklyActivity[]> {
+  const { data, error } = await supabase.rpc("get_leaderboard_activity");
+  if (error) throw error;
+  return data as WeeklyActivity[];
+}

@@ -32,6 +32,7 @@ import { CelebrationModal } from "./CelebrationModal";
 import { onBiasFocus, onShowCelebration } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
+import { useAchievementTracker } from "@/hooks/useAchievementTracker";
 
 const newEntry = (asset: string): DayEntry => ({
   id: uid(),
@@ -74,6 +75,7 @@ export function JournalView() {
   // Morning Psychology Prompt Logic
   const [showPsychPrompt, setShowPsychPrompt] = useState(false);
   const [todayLog, setTodayLog] = useState<PsychologyLog | undefined>();
+  const { track } = useAchievementTracker();
 
   useEffect(() => {
     const checkPsych = async () => {
@@ -232,6 +234,7 @@ export function JournalView() {
         setShowCelebration(true);
       }
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      track();
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -241,6 +244,7 @@ export function JournalView() {
     try {
       await deleteEntry(id);
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      track();
     } catch (err: any) {
       toast.error(err.message);
     }
