@@ -127,40 +127,45 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
       handlePaste(_view, event) {
         const items = Array.from(event.clipboardData?.items ?? []);
         const imageItems = items.filter((item) => item.type.startsWith('image/'));
-
-        // No image files in clipboard → let TipTap handle normally
-        if (imageItems.length === 0) return false;
-
         const htmlItem = items.find((item) => item.type === 'text/html');
 
-        event.preventDefault();
-
+        // ── Case 1 & 2: HTML paste (may or may not have image files) ─────────
+        // Always check HTML first — Ctrl+A from Notion has html but NO image files
         if (htmlItem) {
-          // ── Notion / rich-content paste ──────────────────────────────────
-          // Clipboard has BOTH text/html (with attachment: img srcs) and image files.
-          // We need to: parse HTML → upload images → replace broken srcs → insert.
           htmlItem.getAsString(async (html) => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
+
+            // Broken images = attachment: or blob: or relative srcs (non-http, non-data)
             const brokenImgs = Array.from(doc.querySelectorAll('img')).filter(
               (img) => img.src && !img.src.startsWith('http') && !img.src.startsWith('data:')
             );
 
-            if (brokenImgs.length > 0) {
+            if (brokenImgs.length === 0) {
+              // No broken images → standard rich-text paste
+              editor?.commands.insertContent(html);
+              return;
+            }
+
+            // ── Case 1: Notion single-image copy (html + image binary files) ──
+            if (imageItems.length > 0) {
               setIsUploading(true);
               try {
                 const files = imageItems
                   .map((i) => i.getAsFile())
                   .filter((f): f is File => f !== null);
 
-                // Upload all images in parallel, preserving order
                 const uploadedUrls = await Promise.all(
                   files.map((f) => uploadRef.current(f))
                 );
 
-                // Replace broken attachment: URLs with real R2 URLs
+                // Replace broken srcs in document order
                 brokenImgs.forEach((img, idx) => {
-                  if (uploadedUrls[idx]) img.setAttribute('src', uploadedUrls[idx]);
+                  if (uploadedUrls[idx]) {
+                    img.setAttribute('src', uploadedUrls[idx]);
+                  } else {
+                    img.remove(); // no matching file → drop the broken img
+                  }
                 });
 
                 editor?.commands.insertContent(doc.body.innerHTML);
@@ -169,15 +174,24 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
               } finally {
                 setIsUploading(false);
               }
-            } else {
-              // HTML has no broken images → insert as-is (normal rich paste)
-              editor?.commands.insertContent(html);
+              return;
             }
+
+            // ── Case 2: Ctrl+A from Notion (html only, no image binaries) ────
+            // Images in clipboard are unreachable (attachment: / auth-gated).
+            // Drop broken <img> nodes and preserve the surrounding text/structure.
+            brokenImgs.forEach((img) => img.remove());
+            editor?.commands.insertContent(doc.body.innerHTML);
           });
+
+          event.preventDefault();
           return true;
         }
 
-        // ── Pure image file paste (screenshot, drag-drop) ─────────────────
+        // ── Case 3: Pure image-file paste (screenshot, drag-drop) ────────────
+        if (imageItems.length === 0) return false;
+
+        event.preventDefault();
         imageItems.forEach((item) => {
           const file = item.getAsFile();
           if (!file) return;
