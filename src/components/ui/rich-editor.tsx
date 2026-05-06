@@ -455,8 +455,6 @@ export function RichEditor({ value, onChange, placeholder, className }: RichEdit
         .tiptap img.ProseMirror-selectednode {
           outline: 1px solid #6366f1;
           outline-offset: 4px;
-          box-shadow: 0 0 0 12px rgba(99, 102, 241, 0.1);
-          transform: scale(1.01);
         }
         .tiptap h1 {
           font-size: 2.25rem;
