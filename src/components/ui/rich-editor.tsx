@@ -564,7 +564,6 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
           margin-top: 2.5rem;
           margin-bottom: 1.5rem;
           letter-spacing: -0.02em;
-          text-transform: uppercase;
         }
         .tiptap h2 {
           font-size: 1.5rem;
@@ -573,7 +572,6 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
           margin-top: 2rem;
           margin-bottom: 1rem;
           letter-spacing: -0.01em;
-          text-transform: uppercase;
         }
         .tiptap h3 {
           font-size: 1.25rem;
@@ -582,7 +580,6 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
           margin-top: 1.5rem;
           margin-bottom: 0.75rem;
           letter-spacing: -0.01em;
-          text-transform: uppercase;
         }
         .tiptap h4 {
           font-size: 1.1rem;
@@ -591,7 +588,6 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
           margin-top: 1rem;
           margin-bottom: 0.5rem;
           letter-spacing: 0.01em;
-          text-transform: uppercase;
         }
         .tiptap p {
           margin-bottom: 1.25rem;
