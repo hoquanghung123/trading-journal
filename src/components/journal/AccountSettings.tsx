@@ -9,14 +9,17 @@ import {
   Sparkles,
   Save,
   Bell,
-  Clock,
   Send,
   HelpCircle,
+  ShieldAlert,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings, type UserSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { BackupButton } from "@/components/dashboard/BackupButton";
+
+const ADMIN_EMAIL = "bsleducduy@gmail.com";
 
 const PRESET_COLORS = [
   { name: "Forest Green", hex: "#4C763B" },
@@ -460,6 +463,34 @@ export function AccountSettings() {
               )}
             </div>
           </section>
+
+          {/* Admin Zone — only visible to admin email */}
+          {user?.email === ADMIN_EMAIL && (
+            <section className="bg-rose-50 dark:bg-rose-950/20 rounded-[32px] border border-rose-200 dark:border-rose-800/40 p-8 shadow-sm space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-rose-700 dark:text-rose-300">Admin Zone</h2>
+                  <p className="text-xs text-rose-500 dark:text-rose-400 font-medium">
+                    Visible only to system administrator
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 dark:text-rose-400">
+                  Database Backup
+                </p>
+                <p className="text-xs text-rose-600/70 dark:text-rose-400/70 font-medium leading-relaxed">
+                  Export toàn bộ database thành file SQL và lưu đồng thời lên Cloudflare R2.
+                  File sẽ được tải về máy ngay sau khi hoàn tất.
+                </p>
+                <BackupButton />
+              </div>
+            </section>
+          )}
 
           {/* Save Button */}
           <div className="pt-4">

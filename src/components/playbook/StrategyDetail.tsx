@@ -530,18 +530,30 @@ export function StrategyDetail({
                       <h3 className="text-sm font-bold tracking-[0.3em] text-primary uppercase mb-10 flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5" /> Setup Confluences
                       </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                        {Object.entries(model.setupConfluences).map(([key, value]) => (
-                          <div key={key} className="p-6 rounded-3xl bg-primary/[0.01] border border-primary/5 flex items-start gap-4 transition-all hover:bg-primary/[0.03]">
-                            <div className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                        {model.confluenceOrder.map((groupKey) => {
+                          const items = model.setupConfluences[groupKey] || [];
+                          return (
+                            <div key={groupKey} className="space-y-3">
+                              <p className="text-[10px] font-bold text-primary uppercase tracking-widest opacity-70 flex items-center gap-2">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                {groupKey}
+                              </p>
+                              {items.length === 0 ? (
+                                <p className="text-xs text-muted-foreground/30 italic">No rules defined</p>
+                              ) : (
+                                <ul className="space-y-2">
+                                  {items.map((item) => (
+                                    <li key={item} className="flex items-start gap-2 p-3 rounded-2xl bg-primary/[0.01] border border-primary/5 hover:bg-primary/[0.03] transition-all">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                                      <span className="text-sm font-medium text-foreground leading-relaxed">{item}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
-                            <div className="space-y-1">
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{key}</p>
-                              <p className="text-base font-bold text-foreground leading-relaxed">{value || "NOT_DEFINED"}</p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 

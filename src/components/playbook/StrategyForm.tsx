@@ -1,5 +1,18 @@
 import { useState } from "react";
-import { PlaybookModel, SetupConfluences, ExecutionRules } from "@/types/playbook";
+import { PlaybookModel, SetupConfluences, ExecutionRules, DEFAULT_CONFLUENCE_KEYS } from "@/types/playbook";
+import { toast } from "sonner";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+  DragOverlay,
+  useDroppable,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import {
   X,
   Save,
@@ -17,6 +30,7 @@ import {
   Edit,
   Shield,
   CheckCircle2,
+  GripVertical,
 } from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { RichEditor } from "@/components/ui/rich-editor";
@@ -45,12 +59,19 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
     initialData?.images.find((img) => img.type === "perfect")?.url || "",
   );
 
+  // Dynamic confluence groups
+  const defaultKeys = [...DEFAULT_CONFLUENCE_KEYS];
   const [confluences, setConfluences] = useState<SetupConfluences>(
-    initialData?.setupConfluences || { narrative: [], liquidity: [], confirmation: [] },
+    initialData?.setupConfluences || Object.fromEntries(defaultKeys.map((k) => [k, []]))
   );
-  const [newNarrative, setNewNarrative] = useState("");
-  const [newLiquidity, setNewLiquidity] = useState("");
-  const [newConfirmation, setNewConfirmation] = useState("");
+  const [confluenceOrder, setConfluenceOrder] = useState<string[]>(
+    initialData?.confluenceOrder || defaultKeys
+  );
+  // Per-group input values: { [groupKey]: string }
+  const [groupInputs, setGroupInputs] = useState<Record<string, string>>({});
+  // Which group name is being edited: { [groupKey]: draft label }
+  const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null);
+  const [newGroupName, setNewGroupName] = useState("");
 
   const [execution, setExecution] = useState<ExecutionRules>(
     initialData?.executionRules || {
@@ -76,6 +97,40 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
   const [newSubLink, setNewSubLink] = useState({ title: "", url: "" });
   const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
 
+  // DnD state
+  const [activeItem, setActiveItem] = useState<{ item: string; fromGroup: string } | null>(null);
+  const [overGroup, setOverGroup] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  const handleDragStart = (e: DragStartEvent) => {
+    const { item, fromGroup } = e.active.data.current as { item: string; fromGroup: string };
+    setActiveItem({ item, fromGroup });
+  };
+
+  const handleDragOver = (e: DragOverEvent) => {
+    const overId = e.over?.id as string | undefined;
+    setOverGroup(overId ?? null);
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveItem(null);
+    setOverGroup(null);
+    const { item, fromGroup } = (e.active.data.current ?? {}) as { item: string; fromGroup: string };
+    const toGroup = e.over?.id as string | undefined;
+    if (!toGroup || toGroup === fromGroup) return;
+    setConfluences((prev) => {
+      const next = { ...prev };
+      next[fromGroup] = (next[fromGroup] || []).filter((c) => c !== item);
+      if (!(next[toGroup] || []).includes(item)) {
+        next[toGroup] = [...(next[toGroup] || []), item];
+      }
+      return next;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
@@ -89,6 +144,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
       status,
       definition,
       setupConfluences: confluences,
+      confluenceOrder,
       executionRules: execution,
       moodleResources,
       images: thumbnail
@@ -102,24 +158,65 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
     onSave(model);
   };
 
-  const addConfluence = (type: keyof SetupConfluences, value: string) => {
+  /** Add item to a group */
+  const addConfluence = (groupKey: string, value: string) => {
     if (!value.trim()) return;
-    if (confluences[type].includes(value.trim())) return;
+    if ((confluences[groupKey] || []).includes(value.trim())) return;
     setConfluences((prev) => ({
       ...prev,
-      [type]: [...prev[type], value.trim()],
+      [groupKey]: [...(prev[groupKey] || []), value.trim()],
     }));
-
-    if (type === "narrative") setNewNarrative("");
-    if (type === "liquidity") setNewLiquidity("");
-    if (type === "confirmation") setNewConfirmation("");
+    setGroupInputs((prev) => ({ ...prev, [groupKey]: "" }));
   };
 
-  const removeConfluence = (type: keyof SetupConfluences, item: string) => {
+  /** Remove item from a group */
+  const removeConfluence = (groupKey: string, item: string) => {
     setConfluences((prev) => ({
       ...prev,
-      [type]: prev[type].filter((c) => c !== item),
+      [groupKey]: (prev[groupKey] || []).filter((c) => c !== item),
     }));
+  };
+
+  /** Rename a group key */
+  const renameGroup = (oldKey: string, newKey: string) => {
+    const trimmed = newKey.trim();
+    if (!trimmed || trimmed === oldKey) { setEditingGroupKey(null); return; }
+    if (confluenceOrder.includes(trimmed)) { setEditingGroupKey(null); return; }
+
+    setConfluences((prev) => {
+      const next: SetupConfluences = {};
+      for (const k of Object.keys(prev)) {
+        next[k === oldKey ? trimmed : k] = prev[k];
+      }
+      return next;
+    });
+    setConfluenceOrder((prev) => prev.map((k) => (k === oldKey ? trimmed : k)));
+    setGroupInputs((prev) => {
+      const next = { ...prev };
+      if (next[oldKey] !== undefined) { next[trimmed] = next[oldKey]; delete next[oldKey]; }
+      return next;
+    });
+    setEditingGroupKey(null);
+  };
+
+  /** Add a new group */
+  const addGroup = () => {
+    const key = newGroupName.trim();
+    if (!key || confluenceOrder.includes(key)) return;
+    setConfluences((prev) => ({ ...prev, [key]: [] }));
+    setConfluenceOrder((prev) => [...prev, key]);
+    setNewGroupName("");
+  };
+
+  /** Remove an entire group */
+  const removeGroup = (groupKey: string) => {
+    if (confluenceOrder.length <= 1) return; // keep at least 1
+    setConfluences((prev) => {
+      const next = { ...prev };
+      delete next[groupKey];
+      return next;
+    });
+    setConfluenceOrder((prev) => prev.filter((k) => k !== groupKey));
   };
 
   const handleExecutionChange = (key: keyof ExecutionRules, value: string) => {
@@ -174,7 +271,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
 
   const cancelEdit = () => {
     setEditingResourceId(null);
-    setNewResource({ title: "", description: "", url: "", type: "video", progress: 0 });
+    setNewResource({ title: "", description: "", url: "", type: "video", progress: 0, subLinks: [] });
   };
 
   const removeResource = (id: string) => {
@@ -397,136 +494,64 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
               value="logic"
               className="m-0 space-y-10 animate-in fade-in-50 duration-500"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* HTF Analyst Section */}
-                <div className="space-y-6 bg-primary/[0.02] border border-primary/5 p-6 rounded-[32px]">
-                  <SectionHeader title="HTF Analyst" />
-                  <div className="flex gap-2">
+              {/* Dynamic Confluence Groups — DnD */}
+              <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {confluenceOrder.map((groupKey) => (
+                    <DroppableGroup
+                      key={groupKey}
+                      groupKey={groupKey}
+                      isOver={overGroup === groupKey}
+                      isEditing={editingGroupKey === groupKey}
+                      canDelete={confluenceOrder.length > 1}
+                      items={confluences[groupKey] || []}
+                      inputValue={groupInputs[groupKey] || ""}
+                      onInputChange={(v) => setGroupInputs((prev) => ({ ...prev, [groupKey]: v }))}
+                      onAddItem={() => addConfluence(groupKey, groupInputs[groupKey] || "")}
+                      onRemoveItem={(item) => removeConfluence(groupKey, item)}
+                      onStartEdit={() => setEditingGroupKey(groupKey)}
+                      onRename={(newKey) => renameGroup(groupKey, newKey)}
+                      onCancelEdit={() => setEditingGroupKey(null)}
+                      onRemoveGroup={() => removeGroup(groupKey)}
+                    />
+                  ))}
+
+                  {/* Add new group card */}
+                  <div className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-primary/10 rounded-[32px] p-6 min-h-[120px] hover:border-primary/30 transition-colors">
                     <Input
-                      value={newNarrative}
-                      onChange={(e) => setNewNarrative(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        (e.preventDefault(), addConfluence("narrative", newNarrative))
-                      }
-                      placeholder="e.g., Daily Bias"
-                      className="h-10 bg-white border-border rounded-xl font-bold px-4 flex-1 text-xs"
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGroup())}
+                      placeholder="New group name..."
+                      className="h-10 bg-white border-border rounded-xl font-bold px-4 text-xs text-center"
                     />
                     <button
                       type="button"
-                      onClick={() => addConfluence("narrative", newNarrative)}
-                      className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
+                      onClick={addGroup}
+                      className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all active:scale-95"
                     >
-                      +
+                      <Plus className="w-3.5 h-3.5" /> Add Group
                     </button>
-                  </div>
-                  <div className="space-y-2">
-                    {confluences.narrative.map((item) => (
-                      <div
-                        key={item}
-                        className="group flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-white hover:border-primary/20 transition-all"
-                      >
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground truncate">
-                          {item}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeConfluence("narrative", item)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 </div>
 
-                {/* Context Area Section */}
-                <div className="space-y-6 bg-primary/[0.02] border border-primary/5 p-6 rounded-[32px]">
-                  <SectionHeader title="Context Area" />
-                  <div className="flex gap-2">
-                    <Input
-                      value={newLiquidity}
-                      onChange={(e) => setNewLiquidity(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        (e.preventDefault(), addConfluence("liquidity", newLiquidity))
-                      }
-                      placeholder="e.g., BSL / SSL"
-                      className="h-10 bg-white border-border rounded-xl font-bold px-4 flex-1 text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addConfluence("liquidity", newLiquidity)}
-                      className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {confluences.liquidity.map((item) => (
-                      <div
-                        key={item}
-                        className="group flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-white hover:border-primary/20 transition-all"
-                      >
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground truncate">
-                          {item}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeConfluence("liquidity", item)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Confirmation Section */}
-                <div className="space-y-6 bg-primary/[0.02] border border-primary/5 p-6 rounded-[32px]">
-                  <SectionHeader title="Confirmation (LTF)" />
-                  <div className="flex gap-2">
-                    <Input
-                      value={newConfirmation}
-                      onChange={(e) => setNewConfirmation(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" &&
-                        (e.preventDefault(), addConfluence("confirmation", newConfirmation))
-                      }
-                      placeholder="e.g., MSS / FVG"
-                      className="h-10 bg-white border-border rounded-xl font-bold px-4 flex-1 text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => addConfluence("confirmation", newConfirmation)}
-                      className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {confluences.confirmation.map((item) => (
-                      <div
-                        key={item}
-                        className="group flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-white hover:border-primary/20 transition-all"
-                      >
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground truncate">
-                          {item}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeConfluence("confirmation", item)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                {/* Drag overlay — ghost card */}
+                <DragOverlay dropAnimation={{ duration: 180, easing: "ease" }}>
+                  {activeItem && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/30 bg-white shadow-xl shadow-primary/10 opacity-95 rotate-1">
+                      <GripVertical className="w-3.5 h-3.5 text-primary/40 shrink-0" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                        {activeItem.item}
+                      </span>
+                    </div>
+                  )}
+                </DragOverlay>
+              </DndContext>
 
               <div className="space-y-6 pt-10 border-t border-border/30">
                 <SectionHeader title="Entry & Management" />
@@ -853,6 +878,169 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </Label>
       {children}
+    </div>
+  );
+}
+
+// ─── DnD Sub-components ───────────────────────────────────────────────────────
+
+interface DroppableGroupProps {
+  groupKey: string;
+  isOver: boolean;
+  isEditing: boolean;
+  canDelete: boolean;
+  items: string[];
+  inputValue: string;
+  onInputChange: (v: string) => void;
+  onAddItem: () => void;
+  onRemoveItem: (item: string) => void;
+  onStartEdit: () => void;
+  onRename: (newKey: string) => void;
+  onCancelEdit: () => void;
+  onRemoveGroup: () => void;
+}
+
+function DroppableGroup({
+  groupKey, isOver, isEditing, canDelete,
+  items, inputValue, onInputChange, onAddItem, onRemoveItem,
+  onStartEdit, onRename, onCancelEdit, onRemoveGroup,
+}: DroppableGroupProps) {
+  const { setNodeRef, isOver: dndIsOver } = useDroppable({ id: groupKey });
+
+  const highlighted = isOver || dndIsOver;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`space-y-4 border p-6 rounded-[32px] group/card transition-all duration-200 ${
+        highlighted
+          ? "bg-primary/[0.06] border-primary/30 shadow-lg shadow-primary/10 scale-[1.01]"
+          : "bg-primary/[0.02] border-primary/5"
+      }`}
+    >
+      {/* Group Header — editable title */}
+      <div className="flex items-center justify-between gap-2">
+        {isEditing ? (
+          <input
+            autoFocus
+            defaultValue={groupKey}
+            className="flex-1 bg-white border border-primary/20 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/20"
+            onBlur={(e) => onRename(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onRename(e.currentTarget.value);
+              if (e.key === "Escape") onCancelEdit();
+            }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={onStartEdit}
+            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-foreground/60 hover:text-primary transition-colors group/title"
+            title="Click to rename"
+          >
+            <span>{groupKey}</span>
+            <Edit className="w-3 h-3 opacity-0 group-hover/title:opacity-60 transition-opacity" />
+          </button>
+        )}
+        {canDelete && (
+          <button
+            type="button"
+            onClick={onRemoveGroup}
+            className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover/card:opacity-100"
+            title="Remove group"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Drop hint when dragging */}
+      {highlighted && (
+        <p className="text-[9px] font-black text-primary uppercase tracking-widest text-center py-1 animate-pulse">
+          Drop here
+        </p>
+      )}
+
+      {/* Add item input */}
+      <div className="flex gap-2">
+        <input
+          value={inputValue}
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={(e) =>
+            e.key === "Enter" && (e.preventDefault(), onAddItem())
+          }
+          placeholder="Add confluence rule..."
+          className="h-10 bg-white border border-border rounded-xl font-bold px-4 flex-1 text-xs outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+        />
+        <button
+          type="button"
+          onClick={onAddItem}
+          className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:opacity-90 transition-all active:scale-95"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Draggable items */}
+      <div className="space-y-2 min-h-[32px]">
+        {items.map((item) => (
+          <DraggableItem
+            key={item}
+            item={item}
+            groupKey={groupKey}
+            onRemove={() => onRemoveItem(item)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface DraggableItemProps {
+  item: string;
+  groupKey: string;
+  onRemove: () => void;
+}
+
+function DraggableItem({ item, groupKey, onRemove }: DraggableItemProps) {
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: `${groupKey}::${item}`,
+    data: { item, fromGroup: groupKey },
+  });
+
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group/item flex items-center gap-2 p-3 rounded-xl border bg-white transition-all ${
+        isDragging
+          ? "opacity-40 border-primary/20 shadow-inner"
+          : "border-border hover:border-primary/20"
+      }`}
+    >
+      {/* Drag handle */}
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-primary/60 transition-colors shrink-0 touch-none"
+        {...listeners}
+        {...attributes}
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-foreground truncate flex-1">
+        {item}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="w-6 h-6 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover/item:opacity-100 shrink-0"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }

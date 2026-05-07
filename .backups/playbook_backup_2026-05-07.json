@@ -1,0 +1,170 @@
+{
+  "_meta": {
+    "backup_date": "2026-05-07T08:41:00+07:00",
+    "reason": "Pre-migration backup — Option B: Dynamic confluence keys (Record<string, string[]>)",
+    "tables": ["playbook_setups", "trades.missed_confluences"],
+    "restore_note": "Để restore, chạy SQL trong file restore_script.sql cùng thư mục"
+  },
+
+  "playbook_setups": [
+    {
+      "id": "7d0caa8c-d355-43dc-abd6-6cceb0d2b880",
+      "user_id": "b9d3b966-d546-4925-9a3b-32fcd1fc8e31",
+      "name": "Test Strategy",
+      "timeframe": "1H",
+      "market_condition": "Trending",
+      "killzones": "",
+      "setup_confluences": {
+        "liquidity": [],
+        "narrative": [],
+        "confirmation": []
+      },
+      "execution_rules": {
+        "entry": "",
+        "stopLoss": "",
+        "breakEven": "",
+        "takeProfit": "",
+        "riskPercent": "1%"
+      },
+      "status": "Testing",
+      "created_at": "2026-05-06T10:55:55.551447+00:00",
+      "updated_at": "2026-05-06T12:27:33.966038+00:00"
+    },
+    {
+      "id": "fa42e8e4-5a32-431a-9e66-57bcd02f2c16",
+      "user_id": "f97db8ac-0417-4631-aeb6-b97c91919b4f",
+      "name": "HP",
+      "timeframe": "",
+      "market_condition": "Trending",
+      "killzones": "",
+      "setup_confluences": {
+        "narrative": ["orderflow 3 khung đồng thuận", "không kháng cự", "News tương ứng"],
+        "liquidity": ["không kháng cự", "low resistant", "đồng thuận DX1"],
+        "confirmation": ["đi lệnh khi không còn lý do", "ST đảo orderflow"]
+      },
+      "execution_rules": {
+        "entry": "",
+        "stopLoss": "",
+        "breakEven": "",
+        "takeProfit": "",
+        "riskPercent": ""
+      },
+      "status": "Approved",
+      "created_at": "2026-04-29T05:07:29.658329+00:00",
+      "updated_at": "2026-05-03T07:24:49.167571+00:00"
+    },
+    {
+      "id": "1164c4f5-0ffe-4466-abf6-19b85d6fc03b",
+      "user_id": "a14a793c-cf04-4e80-9717-d7f077b6f5a3",
+      "name": "Filtering Stick Trading Plan",
+      "timeframe": "15m",
+      "market_condition": "Trending",
+      "killzones": "",
+      "setup_confluences": [],
+      "execution_rules": {
+        "entry": "",
+        "stopLoss": "",
+        "breakEven": "",
+        "takeProfit": "",
+        "riskPercent": "1%"
+      },
+      "status": "Testing",
+      "created_at": "2026-04-22T18:17:23.920178+00:00",
+      "updated_at": "2026-04-22T18:17:23.920178+00:00"
+    },
+    {
+      "id": "02b90086-da03-40bf-85b6-249c27e15daa",
+      "user_id": "a14a793c-cf04-4e80-9717-d7f077b6f5a3",
+      "name": "Filtering Trading Plan",
+      "timeframe": "15m",
+      "market_condition": "Trending",
+      "killzones": "Asian, London, Newyork",
+      "setup_confluences": {
+        "narrative": ["Có DOL ở Daily hoặc Weekly"],
+        "liquidity": ["Không còn resistance"],
+        "confirmation": ["Sweep liquidity hết ở FVG", "Đã vào lệnh là đợi 1 thắng 2 thua", "How To Trade Major Forex Pair"]
+      },
+      "execution_rules": {
+        "entry": "",
+        "stopLoss": "",
+        "breakEven": "Đã vào lệnh là đợi 1 thắng 2 thua",
+        "takeProfit": "",
+        "riskPercent": "1%"
+      },
+      "status": "Approved",
+      "created_at": "2026-04-22T18:16:32.434083+00:00",
+      "updated_at": "2026-05-07T01:09:27.563909+00:00"
+    },
+    {
+      "id": "90c32e0a-ca24-48d1-889a-3f3d58c497c3",
+      "user_id": "a14a793c-cf04-4e80-9717-d7f077b6f5a3",
+      "name": "Flow Trading Plan",
+      "timeframe": "1m",
+      "market_condition": "Trending",
+      "killzones": "London, Newyork",
+      "setup_confluences": {
+        "narrative": ["m5 không có resistance", "Sweep liquidity hết ở FVG"],
+        "liquidity": ["CR phải nhỏ hơn với FVG"],
+        "confirmation": []
+      },
+      "execution_rules": {
+        "entry": "",
+        "stopLoss": "",
+        "breakEven": "",
+        "takeProfit": "",
+        "riskPercent": "1%"
+      },
+      "status": "Approved",
+      "created_at": "2026-04-22T18:16:03.596142+00:00",
+      "updated_at": "2026-05-07T01:08:42.957599+00:00"
+    }
+  ],
+
+  "trades_missed_confluences": [
+    {
+      "trade_id": "259acc38-2599-4499-8dec-dd6fa3ba8c77",
+      "symbol": "NZDUSD",
+      "entry_time": "2026-04-30T04:30:00+00:00",
+      "setup_id": "fa42e8e4-5a32-431a-9e66-57bcd02f2c16",
+      "setup_name": "HP",
+      "missed_confluences": ["đồng thuận DX1"],
+      "compliance_check": false
+    },
+    {
+      "trade_id": "2c108406-8e11-4e89-a0be-fbed672e41d1",
+      "symbol": "CL1!",
+      "entry_time": "2026-04-18T02:36:00+00:00",
+      "setup_id": "02b90086-da03-40bf-85b6-249c27e15daa",
+      "setup_name": "Filtering Trading Plan",
+      "missed_confluences": ["Đã vào lệnh là đợi 1 thắng 2 thua"],
+      "compliance_check": false
+    },
+    {
+      "trade_id": "c64b5ebc-78bc-4de5-b3ab-0d5a3883ea50",
+      "symbol": "CHFJPY",
+      "entry_time": "2026-04-16T06:00:00+00:00",
+      "setup_id": "02b90086-da03-40bf-85b6-249c27e15daa",
+      "setup_name": "Filtering Trading Plan",
+      "missed_confluences": ["Không còn resistance"],
+      "compliance_check": false
+    },
+    {
+      "trade_id": "dbec07be-fec5-4752-bc69-87c2bd0feb5b",
+      "symbol": "CL1!",
+      "entry_time": "2026-04-14T02:35:00+00:00",
+      "setup_id": "02b90086-da03-40bf-85b6-249c27e15daa",
+      "setup_name": "Filtering Trading Plan",
+      "missed_confluences": ["Đã vào lệnh là đợi 1 thắng 2 thua"],
+      "compliance_check": false
+    },
+    {
+      "trade_id": "5565fc32-8627-4a6e-a99b-d9ed89d747c4",
+      "symbol": "CADJPY",
+      "entry_time": "2026-04-01T02:30:00+00:00",
+      "setup_id": "02b90086-da03-40bf-85b6-249c27e15daa",
+      "setup_name": "Filtering Trading Plan",
+      "missed_confluences": ["Đã vào lệnh là đợi 1 thắng 2 thua"],
+      "compliance_check": false
+    }
+  ]
+}

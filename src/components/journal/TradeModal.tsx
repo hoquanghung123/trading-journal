@@ -462,12 +462,9 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       if (!setup) return null;
 
                       const confluences = setup.setupConfluences;
+                      const order = setup.confluenceOrder || Object.keys(confluences || {});
                       const flatConfluences = confluences
-                        ? [
-                            ...(confluences.narrative || []),
-                            ...(confluences.liquidity || []),
-                            ...(confluences.confirmation || []),
-                          ]
+                        ? order.flatMap((key) => confluences[key] || [])
                         : [];
 
                       if (flatConfluences.length === 0) {

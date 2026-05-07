@@ -3,7 +3,7 @@ import { X, Wallet, Plus, Trash2, Loader2, Save } from "lucide-react";
 import { fetchFunding, upsertFunding, deleteFunding, type MonthlyFunding } from "@/lib/funding";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
-import { format, subMonths, addMonths, parseISO } from "date-fns";
+import { format, addMonths, parseISO } from "date-fns";
 
 interface AccountModalProps {
   onClose: () => void;

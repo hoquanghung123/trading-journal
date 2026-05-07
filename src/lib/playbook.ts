@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { PlaybookModel, PlaybookImage, SetupConfluences } from "@/types/playbook";
+import { PlaybookModel, SetupConfluences, DEFAULT_CONFLUENCE_KEYS } from "@/types/playbook";
 
 type Row = {
   id: string;
@@ -9,6 +9,7 @@ type Row = {
   market_condition: string | null;
   killzones: string | null;
   setup_confluences: any;
+  confluence_order: any;
   execution_rules: any;
   images: any;
   status: "Approved" | "Testing" | "Under Review";
@@ -21,17 +22,31 @@ type Row = {
 
 const fromRow = (r: Row): PlaybookModel => {
   const rawConfluences = r.setup_confluences;
-  let setupConfluences: SetupConfluences = { narrative: [], liquidity: [], confirmation: [] };
+  let setupConfluences: SetupConfluences = {};
 
   if (Array.isArray(rawConfluences)) {
-    // Legacy support: if it's just a flat array, put everything into narrative
-    setupConfluences.narrative = rawConfluences;
+    // Legacy: flat array → put everything into "narrative"
+    setupConfluences = { narrative: rawConfluences, liquidity: [], confirmation: [] };
   } else if (rawConfluences && typeof rawConfluences === "object") {
-    setupConfluences = {
-      narrative: rawConfluences.narrative ?? [],
-      liquidity: rawConfluences.liquidity ?? [],
-      confirmation: rawConfluences.confirmation ?? [],
-    };
+    // Copy all keys as-is (dynamic)
+    for (const key of Object.keys(rawConfluences)) {
+      setupConfluences[key] = Array.isArray(rawConfluences[key]) ? rawConfluences[key] : [];
+    }
+  }
+
+  // Derive confluence order: prefer persisted order, fall back to key order
+  let confluenceOrder: string[] = [];
+  if (Array.isArray(r.confluence_order) && r.confluence_order.length > 0) {
+    confluenceOrder = r.confluence_order;
+  } else {
+    // Fallback: use the keys from the object, or defaults for empty playbooks
+    confluenceOrder = Object.keys(setupConfluences).length > 0
+      ? Object.keys(setupConfluences)
+      : [...DEFAULT_CONFLUENCE_KEYS];
+    // Ensure setupConfluences has all keys from the order
+    for (const key of confluenceOrder) {
+      if (!setupConfluences[key]) setupConfluences[key] = [];
+    }
   }
 
   return {
@@ -42,6 +57,7 @@ const fromRow = (r: Row): PlaybookModel => {
     marketCondition: r.market_condition ?? "",
     killzones: r.killzones ?? "",
     setupConfluences,
+    confluenceOrder,
     executionRules: r.execution_rules ?? {},
     images: r.images ?? [],
     status: r.status,
@@ -61,6 +77,7 @@ const toRow = (m: PlaybookModel, userId: string) => ({
   market_condition: m.marketCondition,
   killzones: m.killzones,
   setup_confluences: m.setupConfluences,
+  confluence_order: m.confluenceOrder,
   execution_rules: m.executionRules,
   images: m.images,
   status: m.status,
@@ -68,6 +85,7 @@ const toRow = (m: PlaybookModel, userId: string) => ({
   lab_notes: m.labNotes || [],
   moodle_resources: m.moodleResources || [],
 });
+
 
 export async function fetchPlaybook(): Promise<PlaybookModel[]> {
   const { data, error } = await supabase

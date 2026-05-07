@@ -5,11 +5,14 @@ export interface PlaybookImage {
   description?: string;
 }
 
-export interface SetupConfluences {
-  narrative: string[];
-  liquidity: string[];
-  confirmation: string[];
-}
+/**
+ * Dynamic confluence groups. Keys are user-defined group names (e.g. "narrative", "liquidity").
+ * `confluenceOrder` in PlaybookModel controls the display order.
+ */
+export type SetupConfluences = Record<string, string[]>;
+
+/** Default group keys — used as fallback for legacy data and new playbooks */
+export const DEFAULT_CONFLUENCE_KEYS = ["narrative", "liquidity", "confirmation"] as const;
 
 export interface ExecutionRules {
   entry: string;
@@ -44,6 +47,8 @@ export interface PlaybookModel {
   marketCondition: string; // e.g., 'Trending', 'Reversal'
   killzones: string;
   setupConfluences: SetupConfluences;
+  /** Ordered list of group keys — determines display order in UI */
+  confluenceOrder: string[];
   executionRules: ExecutionRules;
   images: PlaybookImage[];
   status: "Approved" | "Testing" | "Under Review";
@@ -53,3 +58,4 @@ export interface PlaybookModel {
   createdAt?: string;
   updatedAt?: string;
 }
+

@@ -311,4 +311,79 @@
       box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
     }
   }
+
+  /* ── Backup Button ─────────────────────────────────── */
+  .backup-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    white-space: nowrap;
+  }
+  .backup-btn:active:not(:disabled) { transform: scale(0.97); }
+  .backup-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+  .backup-btn--idle {
+    background: oklch(0.18 0.04 195 / 0.12);
+    border-color: oklch(0.55 0.12 195 / 0.3);
+    color: oklch(0.45 0.12 195);
+  }
+  .dark .backup-btn--idle {
+    background: oklch(0.55 0.12 195 / 0.15);
+    border-color: oklch(0.55 0.12 195 / 0.4);
+    color: oklch(0.75 0.1 195);
+  }
+  .backup-btn--idle:hover:not(:disabled) {
+    background: oklch(0.55 0.12 195 / 0.15);
+    border-color: oklch(0.55 0.12 195 / 0.6);
+    box-shadow: 0 0 12px oklch(0.55 0.12 195 / 0.2);
+  }
+
+  .backup-btn--loading {
+    background: oklch(0.65 0.12 250 / 0.12);
+    border-color: oklch(0.55 0.1 250 / 0.4);
+    color: oklch(0.45 0.1 250);
+  }
+  .dark .backup-btn--loading {
+    background: oklch(0.55 0.1 250 / 0.2);
+    color: oklch(0.75 0.08 250);
+  }
+  .backup-btn__spinner {
+    animation: backup-spin 0.8s linear infinite;
+  }
+  @keyframes backup-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .backup-btn--success {
+    background: oklch(0.45 0.12 145 / 0.12);
+    border-color: oklch(0.55 0.14 145 / 0.5);
+    color: oklch(0.45 0.12 145);
+  }
+  .dark .backup-btn--success {
+    background: oklch(0.65 0.12 145 / 0.2);
+    color: oklch(0.75 0.1 145);
+  }
+
+  .backup-btn--error {
+    background: oklch(0.58 0.18 20 / 0.1);
+    border-color: oklch(0.58 0.18 20 / 0.4);
+    color: oklch(0.5 0.18 20);
+  }
+  .dark .backup-btn--error {
+    background: oklch(0.7 0.19 22 / 0.15);
+    color: oklch(0.75 0.15 22);
+  }
+  /* ─────────────────────────────────────────────────── */
 }
