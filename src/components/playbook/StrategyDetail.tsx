@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { PlaybookModel, PlaybookImage } from "@/types/playbook";
 import { Trade, computeOutcome, outcomeStyle } from "@/lib/trades";
 import {
@@ -33,7 +33,10 @@ import {
   Trash2 as TrashIcon,
   ChevronRight,
   Layout,
-  Library
+  Library,
+  FileJson,
+  Globe,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateId } from "@/lib/utils";
@@ -48,6 +51,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -283,6 +293,168 @@ export function StrategyDetail({
     return () => clearTimeout(timer);
   }, [labNotes, lastPropsNotes, onUpdate]);
 
+  // ─── Export / Import helpers ──────────────────────────────────────────
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  /** Trigger a browser file download. */
+  function triggerDownload(filename: string, content: string, mime: string) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /** Slugify setup name for filenames. */
+  function slugify(text: string) {
+    return text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  function handleExportJson() {
+    const date = new Date().toISOString().slice(0, 10);
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: '1.0',
+      setup: {
+        name: model.name,
+        timeframe: model.timeframe,
+        marketCondition: model.marketCondition,
+        killzones: model.killzones,
+        definition: model.definition ?? '',
+        labNotes: (model.labNotes ?? []).map((n) => ({
+          id: n.id,
+          title: n.title,
+          content: n.content ?? '',
+        })),
+      },
+    };
+    triggerDownload(
+      `${slugify(model.name)}_backup_${date}.json`,
+      JSON.stringify(payload, null, 2),
+      'application/json',
+    );
+    toast.success('JSON backup downloaded!');
+  }
+
+  /**
+   * Rewrite relative /storage/ paths to absolute production URLs so images
+   * display correctly when the HTML file is opened offline.
+   */
+  function absolutizeHtml(html: string): string {
+    const PROD = 'https://trading-journal-3di.pages.dev';
+    // Use regex to replace src="/storage/..." → src="https://...pages.dev/storage/..."
+    // Handles both single and double quotes.
+    return html.replace(
+      /(src=["'])\/storage\//g,
+      `$1${PROD}/storage/`,
+    );
+  }
+
+  function handleExportHtml() {
+    const date = new Date().toLocaleDateString('vi-VN');
+    const labNotesHtml = (model.labNotes ?? []).length === 0
+      ? '<p style="color:#94a3b8;font-style:italic">No lab notes yet.</p>'
+      : (model.labNotes ?? []).map((n, i) => `
+        <article style="margin-bottom:3rem;padding:2rem;background:#f8fafc;border-radius:24px;border:1px solid #e2e8f0">
+          <h3 style="font-size:1rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#6366f1;margin:0 0 1.5rem">
+            Note ${i + 1} · ${n.title || 'Untitled'}
+          </h3>
+          <div class="rich-content">${absolutizeHtml(n.content ?? '')}</div>
+        </article>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${model.name} — Playbook Backup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; padding: 3rem 1rem; }
+    .wrapper { max-width: 900px; margin: 0 auto; }
+    .header { background: #fff; border-radius: 32px; padding: 2.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
+    .header h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: -.04em; text-transform: uppercase; color: #6366f1; }
+    .header .meta { font-size: .75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .1em; margin-top: .75rem; }
+    .section { background: #fff; border-radius: 32px; padding: 2.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
+    .section-title { font-size: .65rem; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; color: #6366f1; margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem; }
+    .section-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #6366f1; border-radius: 50%; }
+    .rich-content h1 { font-size: 2rem; font-weight: 700; margin: 2rem 0 1rem; }
+    .rich-content h2 { font-size: 1.5rem; font-weight: 700; margin: 1.5rem 0 .75rem; }
+    .rich-content h3 { font-size: 1.2rem; font-weight: 700; margin: 1.25rem 0 .5rem; }
+    .rich-content p { line-height: 1.7; margin-bottom: 1rem; }
+    .rich-content img { max-width: 100%; border-radius: 16px; margin: 1.5rem 0; box-shadow: 0 8px 32px rgba(0,0,0,.08); }
+    .rich-content ul, .rich-content ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .rich-content li { line-height: 1.7; margin-bottom: .25rem; }
+    .rich-content blockquote { border-left: 4px solid #6366f1; padding-left: 1.5rem; color: #475569; font-style: italic; margin: 1.5rem 0; }
+    .rich-content strong { font-weight: 800; }
+    .rich-content a { color: #6366f1; text-decoration: underline; }
+    .empty { color: #94a3b8; font-style: italic; font-size: .875rem; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>${model.name}</h1>
+      <div class="meta">
+        ${model.timeframe} · ${model.marketCondition} · ${model.killzones}
+        &nbsp;·&nbsp; Exported ${date}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📖 Definition</div>
+      ${model.definition
+        ? `<div class="rich-content">${absolutizeHtml(model.definition)}</div>`
+        : '<p class="empty">No definition content yet.</p>'
+      }
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔬 Playbook Lab — ${(model.labNotes ?? []).length} Note(s)</div>
+      ${labNotesHtml}
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const date2 = new Date().toISOString().slice(0, 10);
+    triggerDownload(
+      `${slugify(model.name)}_backup_${date2}.html`,
+      html,
+      'text/html',
+    );
+    toast.success('HTML backup downloaded!');
+  }
+
+  function handleImportJson(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const json = JSON.parse(ev.target?.result as string);
+        const setup = json?.setup;
+        if (!setup) throw new Error('Invalid backup file — missing setup field.');
+        const updated: PlaybookModel = {
+          ...model,
+          definition: typeof setup.definition === 'string' ? setup.definition : model.definition,
+          labNotes: Array.isArray(setup.labNotes) ? setup.labNotes : model.labNotes,
+        };
+        onUpdate(updated);
+        toast.success('Playbook restored from JSON backup!');
+      } catch (err: any) {
+        toast.error(`Import failed: ${err.message}`);
+      } finally {
+        // Reset input so same file can be re-selected
+        if (importFileRef.current) importFileRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC]">
       {/* Premium Breadcrumb Header - Sticky for quick navigation */}
@@ -292,7 +464,62 @@ export function StrategyDetail({
           <ChevronRight className="w-3 h-3" />
           <span className="text-primary">{model.name}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Export / Import dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/5 border border-transparent hover:border-primary/10 transition-all active:scale-95"
+                title="Export / Import"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 rounded-2xl p-2 border-primary/10 shadow-2xl">
+              <DropdownMenuItem
+                onClick={handleExportJson}
+                className="rounded-xl font-black uppercase text-[10px] p-3 flex items-center gap-3 cursor-pointer"
+              >
+                <FileJson className="w-4 h-4 text-primary" />
+                <div>
+                  <div>Export JSON</div>
+                  <div className="text-[9px] font-medium normal-case text-muted-foreground tracking-normal">Để restore lại app</div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleExportHtml}
+                className="rounded-xl font-black uppercase text-[10px] p-3 flex items-center gap-3 cursor-pointer"
+              >
+                <Globe className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <div>Export HTML</div>
+                  <div className="text-[9px] font-medium normal-case text-muted-foreground tracking-normal">Đọc offline / lưu trữ</div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+              <DropdownMenuItem
+                onClick={() => importFileRef.current?.click()}
+                className="rounded-xl font-black uppercase text-[10px] p-3 flex items-center gap-3 cursor-pointer"
+              >
+                <Upload className="w-4 h-4 text-amber-500" />
+                <div>
+                  <div>Import JSON</div>
+                  <div className="text-[9px] font-medium normal-case text-muted-foreground tracking-normal">Khôi phục từ backup</div>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Hidden file input for JSON import */}
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleImportJson}
+          />
+
           <button
             onClick={onEdit}
             className="p-2.5 hover:bg-primary/5 rounded-xl text-muted-foreground hover:text-primary transition-all active:scale-95 border border-transparent hover:border-primary/10"

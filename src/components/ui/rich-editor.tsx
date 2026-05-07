@@ -229,15 +229,17 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          editor.chain().focus().setImage({ src: result }).run();
-        };
-        reader.readAsDataURL(file);
+      if (!file) return;
+      setIsUploading(true);
+      try {
+        const url = await uploadRef.current(file);
+        editor.chain().focus().setImage({ src: url }).run();
+      } catch (err) {
+        console.error('[RichEditor] Image insert upload failed:', err);
+      } finally {
+        setIsUploading(false);
       }
     };
     input.click();
