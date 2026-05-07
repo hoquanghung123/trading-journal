@@ -63,6 +63,7 @@ interface RichEditorProps {
   placeholder?: string;
   className?: string;
   uploadImage?: (file: File) => Promise<string>;
+  minHeight?: string;
 }
 
 // Default upload: convert to base64 (fallback if no uploadImage provided)
@@ -73,7 +74,7 @@ const defaultUploadImage = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-export function RichEditor({ value, onChange, placeholder, className, uploadImage }: RichEditorProps) {
+export function RichEditor({ value, onChange, placeholder, className, uploadImage, minHeight = '500px' }: RichEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -122,7 +123,8 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
     },
     editorProps: {
       attributes: {
-        class: 'tiptap rich-content focus:outline-none min-h-[500px] p-10 max-w-none font-medium text-foreground selection:bg-primary/10',
+        class: `tiptap rich-content focus:outline-none p-6 max-w-none font-medium text-foreground selection:bg-primary/10`,
+        style: `min-height: ${minHeight}`,
       },
       handlePaste(_view, event) {
         const items = Array.from(event.clipboardData?.items ?? []);
@@ -209,7 +211,7 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
   // Sync value from outside if it changes
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value, false, { preserveWhitespace: 'full' })
+      editor.commands.setContent(value)
     }
   }, [value, editor])
 

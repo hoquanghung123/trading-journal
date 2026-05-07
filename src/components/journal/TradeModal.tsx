@@ -24,6 +24,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchSettings } from "@/lib/settings";
 import { useQuery } from "@tanstack/react-query";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
+import { RichEditor } from "@/components/ui/rich-editor";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -705,12 +707,23 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
           {activeTab === "journal" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <SectionHeader title="Review & Feedback" />
-              <textarea
+              <RichEditor
                 value={t.notes ?? ""}
-                onChange={(e) => update({ notes: e.target.value })}
-                rows={10}
+                onChange={(html) => update({ notes: html })}
                 placeholder="What did you learn from this execution? Any psychological hurdles?"
-                className="w-full rounded-2xl sm:rounded-[32px] bg-muted/20 border border-border p-4 sm:p-8 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all resize-none"
+                minHeight="300px"
+                uploadImage={async (file) => {
+                  const ext = file.name.split(".").pop();
+                  const path = `notes/${crypto.randomUUID()}.${ext}`;
+                  const { error } = await supabase.storage
+                    .from("journal-charts")
+                    .upload(path, file, { upsert: true });
+                  if (error) throw error;
+                  const { data } = supabase.storage
+                    .from("journal-charts")
+                    .getPublicUrl(path);
+                  return data.publicUrl;
+                }}
               />
             </div>
           )}

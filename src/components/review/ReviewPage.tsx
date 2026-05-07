@@ -4,10 +4,11 @@ import { ReviewForm } from "@/components/review/ReviewForm";
 import { ActionPlanWidget } from "@/components/review/ActionPlanWidget";
 import { HistoryArchives } from "@/components/review/HistoryArchives";
 import { MistakesWidget } from "@/components/review/MistakesWidget";
+import { TradeNotesTab } from "@/components/review/TradeNotesTab";
 import { useReviewsStorage } from "@/hooks/useReviewsStorage";
 import { Review } from "@/types/review";
 import { Button } from "@/components/ui/button";
-import { Save, AlertCircle, Edit2 } from "lucide-react";
+import { Save, AlertCircle, Edit2, ClipboardList, StickyNote } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -54,6 +55,7 @@ export function ReviewPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [tempPeriod, setTempPeriod] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"reflection" | "trade-notes">("reflection");
 
   const handleConfirmPeriod = () => {
     if (tempPeriod && tempPeriod.trim() !== "") {
@@ -243,31 +245,64 @@ export function ReviewPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-          {/* Left Column - Input Form */}
-          <div className="xl:col-span-5 flex flex-col gap-8">
-            <ReviewForm review={displayReview} onChange={handleDraftChange} readOnly={isReadOnly} />
-          </div>
+        {/* Tab Bar */}
+        <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-2xl border border-border/50 w-fit">
+          <button
+            onClick={() => setActiveTab("reflection")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+              activeTab === "reflection"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            Self-Reflection
+          </button>
+          <button
+            onClick={() => setActiveTab("trade-notes")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+              activeTab === "trade-notes"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <StickyNote className="w-4 h-4" />
+            Trade Notes
+          </button>
+        </div>
 
-          {/* Right Column - Dashboards */}
-          <div className="xl:col-span-7 flex flex-col gap-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-[600px]">
-              <MistakesWidget
-                review={displayReview}
-                previousReview={
-                  isReadOnly ? getPreviousReview(selectedPeriod) : previousReviewForDraft
-                }
-                onChange={handleDraftChange}
-                onUpdatePrevious={saveReview}
-                readOnly={isReadOnly}
-              />
-              <ActionPlanWidget
-                review={displayReview}
-                onChange={handleDraftChange}
-                readOnly={isReadOnly}
-              />
+        {/* Tab Content */}
+        <div className="w-full">
+          {activeTab === "reflection" ? (
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+              {/* Left Column - Input Form */}
+              <div className="xl:col-span-5 flex flex-col gap-8">
+                <ReviewForm review={displayReview} onChange={handleDraftChange} readOnly={isReadOnly} />
+              </div>
+
+              {/* Right Column - Dashboards */}
+              <div className="xl:col-span-7 flex flex-col gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-[600px]">
+                  <MistakesWidget
+                    review={displayReview}
+                    previousReview={
+                      isReadOnly ? getPreviousReview(selectedPeriod) : previousReviewForDraft
+                    }
+                    onChange={handleDraftChange}
+                    onUpdatePrevious={saveReview}
+                    readOnly={isReadOnly}
+                  />
+                  <ActionPlanWidget
+                    review={displayReview}
+                    onChange={handleDraftChange}
+                    readOnly={isReadOnly}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <TradeNotesTab period={isReadOnly && selectedPeriod ? selectedPeriod : currentPeriod} />
+          )}
         </div>
 
         {/* Bottom Area - History Archives */}
