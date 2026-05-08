@@ -258,13 +258,31 @@ export function TradeGalleryCard({
               const val = trade.experimentalArgs?.metrics?.[metric.id];
               if (!val || (Array.isArray(val) && val.length === 0)) return null;
 
-              let displayVal = "";
               if (metric.type === "bias_matrix") {
-                displayVal = Object.entries(val)
-                  .map(([tf, b]) => `${tf}${b === "bull" ? "↑" : "↓"}`)
-                  .join(", ");
-              } else if (metric.type === "presence_list") {
-                displayVal = val.join(", ");
+                return (
+                  <div key={metric.id} className="flex items-center justify-between gap-4">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0">
+                      {metric.label}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      {Object.entries(val as Record<string, string>).map(([tf, b]) => (
+                        <div key={tf} className="flex items-center gap-1">
+                          <span className="text-[9px] font-black uppercase text-foreground">{tf}</span>
+                          {b === "bull" ? (
+                            <TrendingUp className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3 text-rose-500" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              let displayVal = "";
+              if (metric.type === "presence_list") {
+                displayVal = (val as string[]).join(", ");
               } else if (metric.type === "probability" || metric.type === "text") {
                 displayVal = String(val);
               }

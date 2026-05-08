@@ -8,6 +8,8 @@ import {
   LayoutGrid,
   List,
   Clock,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import {
   computeOutcome,
@@ -446,13 +448,34 @@ export function TradeLog() {
                                   const val = t.experimentalArgs?.metrics?.[metric.id];
                                   if (!val || (Array.isArray(val) && val.length === 0)) return null;
 
-                                  let displayVal = "";
                                   if (metric.type === "bias_matrix") {
-                                    displayVal = Object.entries(val)
-                                      .map(([tf, b]) => `${tf}${b === "bull" ? "↑" : "↓"}`)
-                                      .join(" ");
-                                  } else if (metric.type === "presence_list") {
-                                    displayVal = val.join(", ");
+                                    return (
+                                      <div
+                                        key={metric.id}
+                                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/50 whitespace-nowrap"
+                                      >
+                                        <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/60">
+                                          {metric.label}:
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          {Object.entries(val as Record<string, string>).map(([tf, b]) => (
+                                            <div key={tf} className="flex items-center gap-0.5">
+                                              <span className="text-[9px] font-black uppercase">{tf}</span>
+                                              {b === "bull" ? (
+                                                <TrendingUp className="w-2.5 h-2.5 text-emerald-500" />
+                                              ) : (
+                                                <TrendingDown className="w-2.5 h-2.5 text-rose-500" />
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  let displayVal = "";
+                                  if (metric.type === "presence_list") {
+                                    displayVal = (val as string[]).join(", ");
                                   } else if (metric.type === "probability" || metric.type === "text") {
                                     displayVal = String(val);
                                   }
