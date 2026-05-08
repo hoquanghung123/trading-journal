@@ -21,6 +21,7 @@ interface TradeGalleryCardProps {
   showGrade?: boolean;
   cols?: Record<string, boolean>;
   playbookName?: string;
+  executionSchema?: any[];
 }
 
 const gradeStyle: Record<string, string> = {
@@ -35,6 +36,7 @@ export function TradeGalleryCard({
   showGrade,
   cols = {},
   playbookName,
+  executionSchema = [],
 }: TradeGalleryCardProps) {
   const [hovered, setHovered] = useState(false);
   const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl);
@@ -247,6 +249,39 @@ export function TradeGalleryCard({
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate max-w-[150px]">
               {playbookName}
             </span>
+          </div>
+        )}
+
+        {show("analysis") && (executionSchema || []).length > 0 && (
+          <div className="mt-2 space-y-2.5 p-4 rounded-2xl bg-muted/20 border border-border/30">
+            {(executionSchema || []).map((metric) => {
+              const val = trade.experimentalArgs?.metrics?.[metric.id];
+              if (!val || (Array.isArray(val) && val.length === 0)) return null;
+
+              let displayVal = "";
+              if (metric.type === "bias_matrix") {
+                displayVal = Object.entries(val)
+                  .map(([tf, b]) => `${tf}${b === "bull" ? "↑" : "↓"}`)
+                  .join(", ");
+              } else if (metric.type === "presence_list") {
+                displayVal = val.join(", ");
+              } else if (metric.type === "probability" || metric.type === "text") {
+                displayVal = String(val);
+              }
+
+              if (!displayVal) return null;
+
+              return (
+                <div key={metric.id} className="flex items-center justify-between gap-4">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest shrink-0">
+                    {metric.label}
+                  </span>
+                  <span className="text-[10px] font-black text-foreground uppercase tracking-tight text-right">
+                    {displayVal}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

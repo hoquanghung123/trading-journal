@@ -50,7 +50,8 @@ type ColKey =
   | "grade"
   | "outcome"
   | "side"
-  | "bias";
+  | "bias"
+  | "analysis";
 
 const COL_LABELS: Record<ColKey, string> = {
   entryTime: "Entry Time",
@@ -63,6 +64,7 @@ const COL_LABELS: Record<ColKey, string> = {
   outcome: "Outcome",
   side: "Side",
   bias: "Bias Context",
+  analysis: "Analysis",
 };
 
 const gradeStyle: Record<string, string> = {
@@ -93,7 +95,23 @@ export function TradeLog() {
   const [cols, setCols] = useState<Record<ColKey, boolean>>(() => {
     try {
       const s = localStorage.getItem("trade-log-cols");
-      if (s) return JSON.parse(s);
+      if (s) {
+        const saved = JSON.parse(s);
+        return {
+          entryTime: true,
+          stats: true,
+          images: true,
+          compliance: true,
+          playbook: true,
+          status: true,
+          grade: true,
+          outcome: true,
+          side: true,
+          bias: true,
+          analysis: true,
+          ...saved
+        };
+      }
     } catch {}
     return {
       entryTime: true,
@@ -106,6 +124,7 @@ export function TradeLog() {
       outcome: true,
       side: true,
       bias: true,
+      analysis: true,
     };
   });
 
@@ -276,6 +295,7 @@ export function TradeLog() {
                   showGrade={settings?.showTradeGrade}
                   cols={cols}
                   playbookName={playbookSetups.find((s) => s.id === t.setupId)?.name}
+                  executionSchema={settings?.executionSchema as any[]}
                 />
               ))}
             </div>
@@ -301,6 +321,7 @@ export function TradeLog() {
                         <th className="text-left p-2 lg:p-4 w-[200px]">Follow Playbook</th>
                       )}
                       {cols.status && <th className="text-left p-2 lg:p-4 w-[140px]">Status</th>}
+                      {cols.analysis && <th className="text-left p-2 lg:p-4 min-w-[200px]">Analysis</th>}
                       <th className="text-left p-2 lg:p-4">Trade Notes</th>
                     </tr>
                   </thead>
@@ -415,6 +436,44 @@ export function TradeLog() {
                                   </span>
                                 </button>
                               )}
+                            </td>
+                          )}
+
+                          {cols.analysis && (
+                            <td className="p-2 lg:p-4">
+                              <div className="flex flex-wrap gap-1.5 max-w-[300px]">
+                                {((settings?.executionSchema as any[]) || []).map((metric) => {
+                                  const val = t.experimentalArgs?.metrics?.[metric.id];
+                                  if (!val || (Array.isArray(val) && val.length === 0)) return null;
+
+                                  let displayVal = "";
+                                  if (metric.type === "bias_matrix") {
+                                    displayVal = Object.entries(val)
+                                      .map(([tf, b]) => `${tf}${b === "bull" ? "↑" : "↓"}`)
+                                      .join(" ");
+                                  } else if (metric.type === "presence_list") {
+                                    displayVal = val.join(", ");
+                                  } else if (metric.type === "probability" || metric.type === "text") {
+                                    displayVal = String(val);
+                                  }
+
+                                  if (!displayVal) return null;
+
+                                  return (
+                                    <div
+                                      key={metric.id}
+                                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/50 whitespace-nowrap"
+                                    >
+                                      <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/60">
+                                        {metric.label}:
+                                      </span>
+                                      <span className="text-[9px] font-bold text-foreground uppercase tracking-tight">
+                                        {displayVal}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </td>
                           )}
 
