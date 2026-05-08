@@ -24,8 +24,25 @@ const TIMEFRAMES = ["MN", "W", "D", "H4", "H1", "M15", "M5", "M1"];
 
 export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Props) {
   const [designMode, setDesignMode] = useState(false);
-  const schema = (settings.executionSchema as MetricSchema[]) || [];
+  const [localSchema, setLocalSchema] = useState<MetricSchema[]>([]);
+  const schema = designMode ? localSchema : ((settings.executionSchema as MetricSchema[]) || []);
   const values = trade.experimentalArgs?.metrics || {};
+
+  const toggleDesignMode = async () => {
+    if (designMode) {
+      // Syncing on exit
+      try {
+        await updateSettings({ executionSchema: localSchema });
+        onRefreshSettings();
+        toast.success("Design saved");
+      } catch (e) {
+        toast.error("Failed to save design");
+      }
+    } else {
+      setLocalSchema((settings.executionSchema as MetricSchema[]) || []);
+    }
+    setDesignMode(!designMode);
+  };
 
   const updateValue = (metricId: string, val: any) => {
     const newMetrics = { ...values, [metricId]: val };
@@ -37,42 +54,22 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
     });
   };
 
-  const handleAddMetric = async () => {
+  const handleAddMetric = () => {
     const newMetric: MetricSchema = {
       id: crypto.randomUUID(),
       label: "New Metric",
       type: "bias_matrix",
       timeframes: ["D", "H4", "H1"],
     };
-    const newSchema = [...schema, newMetric];
-    try {
-      await updateSettings({ executionSchema: newSchema });
-      onRefreshSettings();
-      toast.success("Metric added");
-    } catch (e) {
-      toast.error("Failed to add metric");
-    }
+    setLocalSchema([...localSchema, newMetric]);
   };
 
-  const handleDeleteMetric = async (id: string) => {
-    const newSchema = schema.filter((m) => m.id !== id);
-    try {
-      await updateSettings({ executionSchema: newSchema });
-      onRefreshSettings();
-      toast.success("Metric removed");
-    } catch (e) {
-      toast.error("Failed to remove metric");
-    }
+  const handleDeleteMetric = (id: string) => {
+    setLocalSchema(localSchema.filter((m) => m.id !== id));
   };
 
-  const handleUpdateMetric = async (id: string, patch: Partial<MetricSchema>) => {
-    const newSchema = schema.map((m) => (m.id === id ? { ...m, ...patch } : m));
-    try {
-      await updateSettings({ executionSchema: newSchema });
-      onRefreshSettings();
-    } catch (e) {
-      toast.error("Failed to update metric");
-    }
+  const handleUpdateMetric = (id: string, patch: Partial<MetricSchema>) => {
+    setLocalSchema(localSchema.map((m) => (m.id === id ? { ...m, ...patch } : m)));
   };
 
   if (schema.length === 0 && !designMode) {
@@ -107,7 +104,7 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
           </h3>
         </div>
         <button
-          onClick={() => setDesignMode(!designMode)}
+          onClick={toggleDesignMode}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
             designMode
               ? "bg-primary text-white shadow-lg shadow-primary/20"
@@ -115,7 +112,7 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
           }`}
         >
           <Settings2 className="w-3.5 h-3.5" />
-          {designMode ? "Exit Design Mode" : "Design Mode"}
+          {designMode ? "Save & Exit" : "Design Mode"}
         </button>
       </div>
 
