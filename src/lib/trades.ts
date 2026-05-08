@@ -33,6 +33,7 @@ export interface Trade {
   status: TradeStatus;
   grade?: string;
   riskPercent?: number;
+  experimentalArgs?: any;
 }
 
 type Row = {
@@ -63,6 +64,7 @@ type Row = {
   status: string;
   grade: string | null;
   risk_percent: number | null;
+  experimental_args: any;
 };
 
 const fromRow = (r: Row): Trade => ({
@@ -93,6 +95,7 @@ const fromRow = (r: Row): Trade => ({
   status: (r.status as TradeStatus) ?? "Not Started",
   grade: r.grade ?? undefined,
   riskPercent: Number(r.risk_percent) || 0,
+  experimentalArgs: r.experimental_args || {},
 });
 
 const toRow = (t: Trade, userId: string) => ({
@@ -124,6 +127,7 @@ const toRow = (t: Trade, userId: string) => ({
   notes: t.notes ?? null,
   grade: t.grade ?? null,
   risk_percent: t.riskPercent ?? 0,
+  experimental_args: t.experimentalArgs ?? {},
 });
 
 export async function fetchTrades(): Promise<Trade[]> {

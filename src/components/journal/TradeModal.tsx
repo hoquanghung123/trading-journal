@@ -13,16 +13,18 @@ import {
   FileText,
   AlertCircle,
   X,
-  Activity,
   TrendingUp,
+  Activity,
   Image as ImageIcon,
+  Sliders,
 } from "lucide-react";
+import { AnalysisTab } from "./AnalysisTab";
 import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
-import { fetchSettings } from "@/lib/settings";
-import { useQuery } from "@tanstack/react-query";
+import { fetchSettings, updateSettings } from "@/lib/settings";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +48,7 @@ interface Props {
   onDelete?: (id: string) => Promise<void>;
 }
 
-type TabID = "execution" | "performance" | "screenshots" | "journal";
+type TabID = "execution" | "analysis" | "performance" | "screenshots" | "journal";
 
 export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [t, setT] = useState<Trade | null>(trade);
@@ -57,6 +59,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const { data: symbols = [] } = useSymbols();
   const { models: playbookSetups } = usePlaybook();
   const { track } = useAchievementTracker();
+  const queryClient = useQueryClient();
   const SYMBOLS = useMemo(() => symbols.map((s) => s.name), [symbols]);
 
   const { data: settings } = useQuery({
@@ -222,6 +225,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
           <div className="flex items-center gap-2 min-w-max">
             {[
               { id: "execution", label: "Execution", icon: Activity },
+              { id: "analysis", label: "Analysis", icon: Sliders },
               { id: "performance", label: "Performance", icon: TrendingUp },
               { id: "screenshots", label: "Screenshots", icon: ImageIcon },
               { id: "journal", label: "Journal", icon: FileText },
@@ -517,6 +521,16 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Tab: Analysis */}
+          {activeTab === "analysis" && settings && (
+            <AnalysisTab
+              trade={t}
+              settings={settings}
+              onUpdate={update}
+              onRefreshSettings={() => queryClient.invalidateQueries({ queryKey: ["user_settings"] })}
+            />
           )}
 
           {/* Tab: Performance */}

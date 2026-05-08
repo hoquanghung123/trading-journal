@@ -255,6 +255,7 @@ export type Database = {
           updated_at: string;
           user_id: string;
           weekly_img: string | null;
+          experimental_args: Json | null;
         };
         Insert: {
           actual_rr?: number;
@@ -286,6 +287,7 @@ export type Database = {
           updated_at?: string;
           user_id: string;
           weekly_img?: string | null;
+          experimental_args?: Json | null;
         };
         Update: {
           actual_rr?: number;
@@ -317,6 +319,7 @@ export type Database = {
           updated_at?: string;
           user_id?: string;
           weekly_img?: string | null;
+          experimental_args?: Json | null;
         };
         Relationships: [
           {
@@ -378,6 +381,7 @@ export type Database = {
           trade_log_view: string | null;
           updated_at: string | null;
           user_id: string;
+          execution_schema: Json | null;
         };
         Insert: {
           created_at?: string | null;
@@ -386,6 +390,7 @@ export type Database = {
           trade_log_view?: string | null;
           updated_at?: string | null;
           user_id: string;
+          execution_schema?: Json | null;
         };
         Update: {
           created_at?: string | null;
@@ -394,6 +399,7 @@ export type Database = {
           trade_log_view?: string | null;
           updated_at?: string | null;
           user_id?: string;
+          execution_schema?: Json | null;
         };
         Relationships: [];
       };

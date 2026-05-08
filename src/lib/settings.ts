@@ -16,6 +16,7 @@ export interface UserSettings {
   asianTime: string;
   londonTime: string;
   nyTime: string;
+  executionSchema?: any[];
 }
 
 type Row = {
@@ -34,6 +35,7 @@ type Row = {
   asian_time: string;
   london_time: string;
   ny_time: string;
+  execution_schema: any[] | null;
 };
 
 const fromRow = (r: Row): UserSettings => ({
@@ -52,6 +54,7 @@ const fromRow = (r: Row): UserSettings => ({
   asianTime: r.asian_time || "07:30",
   londonTime: r.london_time || "13:00",
   nyTime: r.ny_time || "19:00",
+  executionSchema: r.execution_schema || [],
 });
 
 export async function fetchSettings(): Promise<UserSettings> {
@@ -84,6 +87,7 @@ export async function fetchSettings(): Promise<UserSettings> {
       asian_time: "07:30",
       london_time: "13:00",
       ny_time: "19:00",
+      execution_schema: [],
     };
     const { error: insError } = await supabase.from("user_settings").insert(defaultSettings);
     if (insError) throw insError;
@@ -119,6 +123,7 @@ export async function updateSettings(patch: Partial<UserSettings>): Promise<void
   if (patch.asianTime !== undefined) update.asian_time = patch.asianTime;
   if (patch.londonTime !== undefined) update.london_time = patch.londonTime;
   if (patch.nyTime !== undefined) update.ny_time = patch.nyTime;
+  if (patch.executionSchema !== undefined) update.execution_schema = patch.executionSchema;
   update.updated_at = new Date().toISOString();
 
 
