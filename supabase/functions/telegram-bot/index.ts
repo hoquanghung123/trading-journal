@@ -63,6 +63,20 @@ Deno.serve(async (req) => {
         );
         await answerCallbackQuery(callback_query.id);
       } 
+      else if (data === "change_asset") {
+        const symbols = await getUserSymbols(userId);
+        const keyboard = symbols.map((symbol) => [
+          { text: symbol, callback_data: `select_asset:${symbol}` },
+        ]);
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          "🪙 <b>Chọn tài sản bạn muốn lên Bias hôm nay:</b>",
+          { inline_keyboard: keyboard }
+        );
+        await answerCallbackQuery(callback_query.id);
+      } 
       else if (data.startsWith("menu_bias:")) {
         // Show bias choices sub-menu
         const parts = data.split(":");
@@ -72,7 +86,7 @@ Deno.serve(async (req) => {
           await editTelegramMessage(
             chatId,
             messageId,
-            `🕒 *Phiên H4 - ${sessionName}:* Chọn Bias bên dưới hoặc gửi ảnh chart:`,
+            `🕒 <b>Phiên H4 - ${sessionName}:</b> Chọn Bias bên dưới hoặc gửi ảnh chart:`,
             getH4BiasSubMenuReplyMarkup(sessionName, entryId)
           );
         } else {
@@ -81,7 +95,7 @@ Deno.serve(async (req) => {
           await editTelegramMessage(
             chatId,
             messageId,
-            `📊 *Khung ${field.toUpperCase()}:* Chọn Bias bên dưới hoặc gửi ảnh chart:`,
+            `📊 <b>Khung ${field.toUpperCase()}:</b> Chọn Bias bên dưới hoặc gửi ảnh chart:`,
             getBiasSubMenuReplyMarkup(field, entryId)
           );
         }
@@ -98,7 +112,7 @@ Deno.serve(async (req) => {
         await editTelegramMessage(
           chatId,
           messageId,
-          `🕒 *H4 Sessions:* Chọn phiên làm việc bên dưới để cập nhật Bias:`,
+          `🕒 <b>H4 Sessions:</b> Chọn phiên làm việc bên dưới để cập nhật Bias:`,
           getH4SessionsMenuReplyMarkup(entryId, entry.asset)
         );
         await answerCallbackQuery(callback_query.id);
@@ -243,7 +257,7 @@ Nhận định của bạn đã được cập nhật thành công lên Web App.
         } else {
           await sendTelegramMessage(
             chatId,
-            "✅ *Chúc mừng!*\n\nTài khoản của bạn đã được liên kết thành công với Chartmate Trading Journal. Bạn sẽ nhận được các thông báo nhắc nhở tại đây.\n\nHãy gõ lệnh `/bias` để bắt đầu ghi chép nhận định thị trường!"
+            "✅ <b>Chúc mừng!</b>\n\nTài khoản của bạn đã được liên kết thành công với Chartmate Trading Journal. Bạn sẽ nhận được các thông báo nhắc nhở tại đây.\n\nHãy gõ lệnh <code>/bias</code> để bắt đầu ghi chép nhận định thị trường!"
           );
         }
       } else {
@@ -273,7 +287,7 @@ Nhận định của bạn đã được cập nhật thành công lên Web App.
 
       await sendTelegramMessage(
         chatId,
-        "🪙 *Chọn tài sản bạn muốn lên Bias hôm nay:*",
+        "🪙 <b>Chọn tài sản bạn muốn lên Bias hôm nay:</b>",
         { inline_keyboard: keyboard }
       );
       return new Response("OK");
@@ -451,31 +465,36 @@ function formatDashboardText(entry: any) {
   };
 
   const h4Text = sessions.map((s) => `• ${formatSession(s)}`).join("\n");
-  const notesText = entry.notes ? `_${entry.notes}_` : "❌ Trống";
+  
+  // Escape HTML characters for Notes
+  const safeNotes = entry.notes
+    ? entry.notes.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    : "❌ Trống";
+  const notesText = entry.notes ? `<i>${safeNotes}</i>` : "❌ Trống";
 
-  return `📝 **NHẬN ĐỊNH GIAO DỊCH (BIAS EXPECT)**
-📅 **Ngày:** \`${dateStr}\` | 🪙 **Tài sản:** \`${asset}\`
+  return `📝 <b>NHẬN ĐỊNH GIAO DỊCH (BIAS EXPECT)</b>
+📅 <b>Ngày:</b> <code>${dateStr}</code> | 🪙 <b>Tài sản:</b> <code>${asset}</code>
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-📈 **MONTHLY OUTLOOK**
+📈 <b>MONTHLY OUTLOOK</b>
 • Bias: ${mBias}
 • Chart: ${mImg}
 
-📉 **WEEKLY OUTLOOK**
+📉 <b>WEEKLY OUTLOOK</b>
 • Bias: ${wBias}
 • Chart: ${wImg}
 
-📊 **DAILY DIRECTION**
+📊 <b>DAILY DIRECTION</b>
 • Bias: ${dBias}
 • Chart: ${dImg}
 
-🕒 **H4 SESSIONS**
+🕒 <b>H4 SESSIONS</b>
 ${h4Text}
 
-✍️ **NOTES & OBSERVATIONS:**
+✍️ <b>NOTES & OBSERVATIONS:</b>
 ${notesText}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ *Nhấn các nút bên dưới để chọn Bias hoặc cập nhật hình ảnh!*`;
+⚠️ <i>Nhấn các nút bên dưới để chọn Bias hoặc cập nhật hình ảnh!</i>`;
 }
 
 function formatBiasIcon(bias: string) {
@@ -498,7 +517,7 @@ function getMainMenuReplyMarkup(entryId: string, asset: string, dateStr: string)
   const keyboard = [
     [
       { text: `📅 Ngày: ${formattedDate}`, callback_data: "none" },
-      { text: `🪙 Tài sản: ${asset}`, callback_data: "none" },
+      { text: `🪙 Tài sản: ${asset}`, callback_data: "change_asset" },
     ],
     [
       { text: "📈 Monthly Bias", callback_data: `menu_bias:monthly:${entryId}` },
@@ -581,7 +600,7 @@ async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: a
   const body: any = {
     chat_id: chatId,
     text: text,
-    parse_mode: "Markdown",
+    parse_mode: "HTML",
   };
   if (replyMarkup) {
     body.reply_markup = replyMarkup;
@@ -602,7 +621,7 @@ async function editTelegramMessage(chatId: string, messageId: number, text: stri
     chat_id: chatId,
     message_id: messageId,
     text: text,
-    parse_mode: "Markdown",
+    parse_mode: "HTML",
   };
   if (replyMarkup) {
     body.reply_markup = replyMarkup;
