@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
         );
         await answerCallbackQuery(callback_query.id);
       } 
-      else if (data.startsWith("menu_bias:")) {
+      else if (data.startsWith("menub:")) {
         // Show bias choices sub-menu
         const parts = data.split(":");
         if (parts[1] === "h4") {
@@ -90,18 +90,19 @@ Deno.serve(async (req) => {
             getH4BiasSubMenuReplyMarkup(sessionName, entryId)
           );
         } else {
-          const field = parts[1];
+          const fieldCode = parts[1]; // "m", "w", "d"
+          const field = fieldCode === "m" ? "monthly" : fieldCode === "w" ? "weekly" : fieldCode === "d" ? "daily" : fieldCode;
           const entryId = parts[2];
           await editTelegramMessage(
             chatId,
             messageId,
             `📊 <b>Khung ${field.toUpperCase()}:</b> Chọn Bias bên dưới hoặc gửi ảnh chart:`,
-            getBiasSubMenuReplyMarkup(field, entryId)
+            getBiasSubMenuReplyMarkup(fieldCode, entryId)
           );
         }
         await answerCallbackQuery(callback_query.id);
       }
-      else if (data.startsWith("menu_h4_sessions:")) {
+      else if (data.startsWith("menuh4:")) {
         const entryId = data.split(":")[1];
         const { data: entry } = await supabase
           .from("journal_entries")
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
         );
         await answerCallbackQuery(callback_query.id);
       } 
-      else if (data.startsWith("set_bias:")) {
+      else if (data.startsWith("setb:")) {
         // Update bias in database and return to main dashboard
         const parts = data.split(":");
         let entryId = "";
@@ -125,7 +126,8 @@ Deno.serve(async (req) => {
 
         if (parts[1] === "h4") {
           const sessionName = parts[2];
-          const biasValue = parts[3];
+          const shortBias = parts[3];
+          const biasValue = shortBias === "bull" ? "bullish" : shortBias === "bear" ? "bearish" : shortBias === "cons" ? "consolidation" : shortBias;
           entryId = parts[4];
 
           const { data: entry } = await supabase
@@ -138,8 +140,10 @@ Deno.serve(async (req) => {
           h4[sessionName] = { ...h4[sessionName], bias: biasValue };
           updateData.h4 = h4;
         } else {
-          const field = parts[1];
-          const biasValue = parts[2];
+          const fieldCode = parts[1]; // "m", "w", "d"
+          const field = fieldCode === "m" ? "monthly" : fieldCode === "w" ? "weekly" : fieldCode === "d" ? "daily" : fieldCode;
+          const shortBias = parts[2];
+          const biasValue = shortBias === "bull" ? "bullish" : shortBias === "bear" ? "bearish" : shortBias === "cons" ? "consolidation" : shortBias;
           entryId = parts[3];
           updateData[`${field}_bias`] = biasValue;
         }
@@ -160,7 +164,7 @@ Deno.serve(async (req) => {
         );
         await answerCallbackQuery(callback_query.id, "✅ Đã cập nhật bias!");
       } 
-      else if (data.startsWith("input_chart:")) {
+      else if (data.startsWith("inch:")) {
         // Prompt for chart link or photo using force_reply
         const parts = data.split(":");
         let fieldLabel = "";
@@ -171,27 +175,30 @@ Deno.serve(async (req) => {
           entryId = parts[3];
           fieldLabel = `H4 ${sessionName} Chart`;
         } else {
-          const field = parts[1];
+          const fieldCode = parts[1];
+          const field = fieldCode === "m" ? "monthly" : fieldCode === "w" ? "weekly" : fieldCode === "d" ? "daily" : fieldCode;
           entryId = parts[2];
           fieldLabel = `${field.charAt(0).toUpperCase() + field.slice(1)} Chart`;
         }
 
-        const asset = callback_query.message.text.match(/🪙 Tài sản: `(.*?)`/)?.[1] || "GC1!";
-        const prompt = `[${asset} - ${fieldLabel}] Nhập link hoặc gửi ảnh cho ID [${entryId}]:`;
+        const assetMatch = callback_query.message.text.match(/🪙 <b>Tài sản:<\/b>\s*<code>(.*?)<\/code>/i);
+        const cleanAsset = assetMatch ? assetMatch[1] : "GC1!";
+        const prompt = `[${cleanAsset} - ${fieldLabel}] Nhập link hoặc gửi ảnh cho ID [${entryId}]:`;
         
         await sendTelegramMessageWithForceReply(chatId, prompt);
         await answerCallbackQuery(callback_query.id);
       } 
-      else if (data.startsWith("input_notes:")) {
+      else if (data.startsWith("innotes:")) {
         // Prompt for notes using force_reply
         const entryId = data.split(":")[1];
-        const asset = callback_query.message.text.match(/🪙 Tài sản: `(.*?)`/)?.[1] || "GC1!";
-        const prompt = `[${asset} - Notes] Nhập notes cho ID [${entryId}]:`;
+        const assetMatch = callback_query.message.text.match(/🪙 <b>Tài sản:<\/b>\s*<code>(.*?)<\/code>/i);
+        const cleanAsset = assetMatch ? assetMatch[1] : "GC1!";
+        const prompt = `[${cleanAsset} - Notes] Nhập notes cho ID [${entryId}]:`;
 
         await sendTelegramMessageWithForceReply(chatId, prompt);
         await answerCallbackQuery(callback_query.id);
       } 
-      else if (data.startsWith("back_menu:")) {
+      else if (data.startsWith("backm:")) {
         // Go back to main dashboard
         const entryId = data.split(":")[1];
         const { data: entry } = await supabase
@@ -208,7 +215,7 @@ Deno.serve(async (req) => {
         );
         await answerCallbackQuery(callback_query.id);
       } 
-      else if (data.startsWith("finish_bias:")) {
+      else if (data.startsWith("finb:")) {
         // Lock and finish draft
         const entryId = data.split(":")[1];
         const { data: entry } = await supabase
@@ -220,11 +227,7 @@ Deno.serve(async (req) => {
         await editTelegramMessage(
           chatId,
           messageId,
-          `🎉 **ĐÃ HOÀN TẤT GHI CHÉP BIAS EXPECT!**
-
-📅 Ngày: *${entry.date}* | 🪙 Tài sản: \`${entry.asset}\`
-
-Nhận định của bạn đã được cập nhật thành công lên Web App. Chúc bạn có một ngày giao dịch thuận lợi và gặt hái nhiều lợi nhuận! 🚀💰`
+          `🎉 <b>ĐÃ HOÀN TẤT GHI CHÉP BIAS EXPECT!</b>\n\n📅 Ngày: <b>${entry.date}</b> | 🪙 Tài sản: <code>${entry.asset}</code>\n\nNhận định của bạn đã được cập nhật thành công lên Web App. Chúc bạn có một ngày giao dịch thuận lợi và gặt hái nhiều lợi nhuận! 🚀💰`
         );
         await answerCallbackQuery(callback_query.id, "✅ Nhật ký đã lưu!");
       }
@@ -520,16 +523,16 @@ function getMainMenuReplyMarkup(entryId: string, asset: string, dateStr: string)
       { text: `🪙 Tài sản: ${asset}`, callback_data: "change_asset" },
     ],
     [
-      { text: "📈 Monthly Bias", callback_data: `menu_bias:monthly:${entryId}` },
-      { text: "📉 Weekly Bias", callback_data: `menu_bias:weekly:${entryId}` },
-      { text: "📊 Daily Bias", callback_data: `menu_bias:daily:${entryId}` },
+      { text: "📈 Monthly Bias", callback_data: `menub:m:${entryId}` },
+      { text: "📉 Weekly Bias", callback_data: `menub:w:${entryId}` },
+      { text: "📊 Daily Bias", callback_data: `menub:d:${entryId}` },
     ],
     [
-      { text: "🕒 H4 Session Bias", callback_data: `menu_h4_sessions:${entryId}` },
-      { text: "✍️ Nhập Notes", callback_data: `input_notes:${entryId}` },
+      { text: "🕒 H4 Session Bias", callback_data: `menuh4:${entryId}` },
+      { text: "✍️ Nhập Notes", callback_data: `innotes:${entryId}` },
     ],
     [
-      { text: "💾 LƯU NHẬT KÝ", callback_data: `finish_bias:${entryId}` },
+      { text: "💾 LƯU NHẬT KÝ", callback_data: `finb:${entryId}` },
     ],
   ];
 
@@ -542,34 +545,34 @@ function getH4SessionsMenuReplyMarkup(entryId: string, asset: string) {
   
   for (let i = 0; i < sessions.length; i += 2) {
     const row = [
-      { text: `🕒 H4 ${sessions[i]}`, callback_data: `menu_bias:h4:${sessions[i]}:${entryId}` }
+      { text: `🕒 H4 ${sessions[i]}`, callback_data: `menub:h4:${sessions[i]}:${entryId}` }
     ];
     if (i + 1 < sessions.length) {
-      row.push({ text: `🕒 H4 ${sessions[i+1]}`, callback_data: `menu_bias:h4:${sessions[i+1]}:${entryId}` });
+      row.push({ text: `🕒 H4 ${sessions[i+1]}`, callback_data: `menub:h4:${sessions[i+1]}:${entryId}` });
     }
     buttons.push(row);
   }
   
   buttons.push([
-    { text: "🔙 Quay lại", callback_data: `back_menu:${entryId}` }
+    { text: "🔙 Quay lại", callback_data: `backm:${entryId}` }
   ]);
   
   return { inline_keyboard: buttons };
 }
 
-function getBiasSubMenuReplyMarkup(field: string, entryId: string) {
+function getBiasSubMenuReplyMarkup(fieldCode: string, entryId: string) {
   return {
     inline_keyboard: [
       [
-        { text: "🟢 BULLISH (BULL)", callback_data: `set_bias:${field}:bullish:${entryId}` },
-        { text: "🔴 BEARISH (BEAR)", callback_data: `set_bias:${field}:bearish:${entryId}` },
-        { text: "⚪ CONSOLIDATION", callback_data: `set_bias:${field}:consolidation:${entryId}` },
+        { text: "🟢 BULLISH (BULL)", callback_data: `setb:${fieldCode}:bull:${entryId}` },
+        { text: "🔴 BEARISH (BEAR)", callback_data: `setb:${fieldCode}:bear:${entryId}` },
+        { text: "⚪ CONSOLIDATION", callback_data: `setb:${fieldCode}:cons:${entryId}` },
       ],
       [
-        { text: "🖼️ Gửi Link / Upload Chart", callback_data: `input_chart:${field}:${entryId}` },
+        { text: "🖼️ Gửi Link / Upload Chart", callback_data: `inch:${fieldCode}:${entryId}` },
       ],
       [
-        { text: "🔙 Quay lại", callback_data: `back_menu:${entryId}` },
+        { text: "🔙 Quay lại", callback_data: `backm:${entryId}` },
       ],
     ],
   };
@@ -579,15 +582,15 @@ function getH4BiasSubMenuReplyMarkup(sessionName: string, entryId: string) {
   return {
     inline_keyboard: [
       [
-        { text: "🟢 ASIA/NY BULL", callback_data: `set_bias:h4:${sessionName}:bullish:${entryId}` },
-        { text: "🔴 ASIA/NY BEAR", callback_data: `set_bias:h4:${sessionName}:bearish:${entryId}` },
-        { text: "⚪ CONSOLIDATION", callback_data: `set_bias:h4:${sessionName}:consolidation:${entryId}` },
+        { text: "🟢 ASIA/NY BULL", callback_data: `setb:h4:${sessionName}:bull:${entryId}` },
+        { text: "🔴 ASIA/NY BEAR", callback_data: `setb:h4:${sessionName}:bear:${entryId}` },
+        { text: "⚪ CONSOLIDATION", callback_data: `setb:h4:${sessionName}:cons:${entryId}` },
       ],
       [
-        { text: "🖼️ Gửi Link / Upload Chart", callback_data: `input_chart:h4:${sessionName}:${entryId}` },
+        { text: "🖼️ Gửi Link / Upload Chart", callback_data: `inch:h4:${sessionName}:${entryId}` },
       ],
       [
-        { text: "🔙 Quay lại", callback_data: `back_menu:${entryId}` },
+        { text: "🔙 Quay lại", callback_data: `menuh4:${entryId}` },
       ],
     ],
   };
