@@ -357,11 +357,11 @@ async function getUserByChatId(chatId: string): Promise<string | null> {
 async function getUserSymbols(userId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from("symbols")
-    .select("name")
+    .select("name, is_forex")
     .eq("user_id", userId);
 
   if (error || !data) return [];
-  return data.map((s: any) => s.name);
+  return data.filter((s: any) => !s.is_forex).map((s: any) => s.name);
 }
 
 async function getOrCreateJournalEntry(userId: string, asset: string, dateStr: string) {
