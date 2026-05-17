@@ -10,6 +10,25 @@ const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!", "ES", "YM", "NQ"];
 
 Deno.serve(async (req) => {
   try {
+    // --- 0. SELF-REGISTER TELEGRAM WEBHOOK ON GET REQUEST ---
+    if (req.method === "GET" || req.url.includes("/setup")) {
+      const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+      const functionUrl = `https://mlyowmvrpjtqruramrhp.supabase.co/functions/v1/telegram-bot`;
+      
+      const registerUrl = `https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${functionUrl}`;
+      const response = await fetch(registerUrl);
+      const result = await response.json();
+      
+      return new Response(JSON.stringify({
+        message: "Telegram Webhook self-registration result",
+        success: result.ok,
+        telegram_response: result,
+        target_url: functionUrl
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     const body = await req.json();
     const { message, callback_query } = body;
 
