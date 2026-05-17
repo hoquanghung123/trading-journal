@@ -44,6 +44,11 @@ Deno.serve(async (req) => {
         return new Response("OK");
       }
 
+      if (data === "none") {
+        await answerCallbackQuery(callback_query.id);
+        return new Response("OK");
+      }
+
       if (data.startsWith("select_asset:")) {
         // Select asset and show main dashboard
         const asset = data.split(":")[1];
@@ -54,7 +59,7 @@ Deno.serve(async (req) => {
           chatId,
           messageId,
           formatDashboardText(entry),
-          getMainMenuReplyMarkup(entry.id, asset)
+          getMainMenuReplyMarkup(entry.id, asset, entry.date)
         );
         await answerCallbackQuery(callback_query.id);
       } 
@@ -80,6 +85,22 @@ Deno.serve(async (req) => {
             getBiasSubMenuReplyMarkup(field, entryId)
           );
         }
+        await answerCallbackQuery(callback_query.id);
+      }
+      else if (data.startsWith("menu_h4_sessions:")) {
+        const entryId = data.split(":")[1];
+        const { data: entry } = await supabase
+          .from("journal_entries")
+          .select("asset")
+          .eq("id", entryId)
+          .single();
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          `🕒 *H4 Sessions:* Chọn phiên làm việc bên dưới để cập nhật Bias:`,
+          getH4SessionsMenuReplyMarkup(entryId, entry.asset)
+        );
         await answerCallbackQuery(callback_query.id);
       } 
       else if (data.startsWith("set_bias:")) {
@@ -121,7 +142,7 @@ Deno.serve(async (req) => {
           chatId,
           messageId,
           formatDashboardText(updated),
-          getMainMenuReplyMarkup(entryId, updated.asset)
+          getMainMenuReplyMarkup(entryId, updated.asset, updated.date)
         );
         await answerCallbackQuery(callback_query.id, "✅ Đã cập nhật bias!");
       } 
@@ -169,7 +190,7 @@ Deno.serve(async (req) => {
           chatId,
           messageId,
           formatDashboardText(entry),
-          getMainMenuReplyMarkup(entryId, entry.asset)
+          getMainMenuReplyMarkup(entryId, entry.asset, entry.date)
         );
         await answerCallbackQuery(callback_query.id);
       } 
@@ -313,7 +334,7 @@ Nhận định của bạn đã được cập nhật thành công lên Web App.
         await sendTelegramMessage(
           chatId,
           formatDashboardText(updated),
-          getMainMenuReplyMarkup(entryId, updated.asset)
+          getMainMenuReplyMarkup(entryId, updated.asset, updated.date)
         );
       } 
       else if (matchNotes) {
@@ -330,7 +351,7 @@ Nhận định của bạn đã được cập nhật thành công lên Web App.
         await sendTelegramMessage(
           chatId,
           formatDashboardText(updated),
-          getMainMenuReplyMarkup(entryId, updated.asset)
+          getMainMenuReplyMarkup(entryId, updated.asset, updated.date)
         );
       }
     }
@@ -470,30 +491,51 @@ function formatBiasLabel(bias: string) {
   return "Chưa chọn";
 }
 
-function getMainMenuReplyMarkup(entryId: string, asset: string) {
-  const sessions = getSessionsForAsset(asset);
-
-  const h4Buttons = sessions.map((s) => ({
-    text: `🕒 H4 ${s}`,
-    callback_data: `menu_bias:h4:${s}:${entryId}`,
-  }));
+function getMainMenuReplyMarkup(entryId: string, asset: string, dateStr: string) {
+  const dateParts = dateStr.split("-");
+  const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : dateStr;
 
   const keyboard = [
+    [
+      { text: `📅 Ngày: ${formattedDate}`, callback_data: "none" },
+      { text: `🪙 Tài sản: ${asset}`, callback_data: "none" },
+    ],
     [
       { text: "📈 Monthly Bias", callback_data: `menu_bias:monthly:${entryId}` },
       { text: "📉 Weekly Bias", callback_data: `menu_bias:weekly:${entryId}` },
       { text: "📊 Daily Bias", callback_data: `menu_bias:daily:${entryId}` },
     ],
     [
-      { text: "✍️ Nhập Notes & Nhận định", callback_data: `input_notes:${entryId}` },
+      { text: "🕒 H4 Session Bias", callback_data: `menu_h4_sessions:${entryId}` },
+      { text: "✍️ Nhập Notes", callback_data: `input_notes:${entryId}` },
     ],
-    h4Buttons,
     [
-      { text: "✅ HOÀN TẤT GHI CHÉP 💾", callback_data: `finish_bias:${entryId}` },
+      { text: "💾 LƯU NHẬT KÝ", callback_data: `finish_bias:${entryId}` },
     ],
   ];
 
   return { inline_keyboard: keyboard };
+}
+
+function getH4SessionsMenuReplyMarkup(entryId: string, asset: string) {
+  const sessions = getSessionsForAsset(asset);
+  const buttons = [];
+  
+  for (let i = 0; i < sessions.length; i += 2) {
+    const row = [
+      { text: `🕒 H4 ${sessions[i]}`, callback_data: `menu_bias:h4:${sessions[i]}:${entryId}` }
+    ];
+    if (i + 1 < sessions.length) {
+      row.push({ text: `🕒 H4 ${sessions[i+1]}`, callback_data: `menu_bias:h4:${sessions[i+1]}:${entryId}` });
+    }
+    buttons.push(row);
+  }
+  
+  buttons.push([
+    { text: "🔙 Quay lại", callback_data: `back_menu:${entryId}` }
+  ]);
+  
+  return { inline_keyboard: buttons };
 }
 
 function getBiasSubMenuReplyMarkup(field: string, entryId: string) {
