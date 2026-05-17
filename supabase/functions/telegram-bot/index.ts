@@ -6,25 +6,192 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
+const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!", "ES", "YM", "NQ"];
+
 Deno.serve(async (req) => {
   try {
-    const { message } = await req.json();
+    const body = await req.json();
+    const { message, callback_query } = body;
 
-    if (!message || !message.text) {
+    // --- 1. HANDLE CALLBACK QUERIES (BUTTON CLICKS) ---
+    if (callback_query) {
+      const chatId = callback_query.message.chat.id.toString();
+      const messageId = callback_query.message.message_id;
+      const data = callback_query.data;
+
+      const userId = await getUserByChatId(chatId);
+      if (!userId) {
+        await answerCallbackQuery(callback_query.id, "❌ Vui lòng liên kết tài khoản trước!");
+        return new Response("OK");
+      }
+
+      if (data.startsWith("select_asset:")) {
+        // Select asset and show main dashboard
+        const asset = data.split(":")[1];
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const entry = await getOrCreateJournalEntry(userId, asset, todayStr);
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          formatDashboardText(entry),
+          getMainMenuReplyMarkup(entry.id, asset)
+        );
+        await answerCallbackQuery(callback_query.id);
+      } 
+      else if (data.startsWith("menu_bias:")) {
+        // Show bias choices sub-menu
+        const parts = data.split(":");
+        if (parts[1] === "h4") {
+          const sessionName = parts[2];
+          const entryId = parts[3];
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            `🕒 *Phiên H4 - ${sessionName}:* Chọn Bias bên dưới hoặc gửi ảnh chart:`,
+            getH4BiasSubMenuReplyMarkup(sessionName, entryId)
+          );
+        } else {
+          const field = parts[1];
+          const entryId = parts[2];
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            `📊 *Khung ${field.toUpperCase()}:* Chọn Bias bên dưới hoặc gửi ảnh chart:`,
+            getBiasSubMenuReplyMarkup(field, entryId)
+          );
+        }
+        await answerCallbackQuery(callback_query.id);
+      } 
+      else if (data.startsWith("set_bias:")) {
+        // Update bias in database and return to main dashboard
+        const parts = data.split(":");
+        let entryId = "";
+        const updateData: any = {};
+
+        if (parts[1] === "h4") {
+          const sessionName = parts[2];
+          const biasValue = parts[3];
+          entryId = parts[4];
+
+          const { data: entry } = await supabase
+            .from("journal_entries")
+            .select("h4")
+            .eq("id", entryId)
+            .single();
+
+          const h4 = entry?.h4 || {};
+          h4[sessionName] = { ...h4[sessionName], bias: biasValue };
+          updateData.h4 = h4;
+        } else {
+          const field = parts[1];
+          const biasValue = parts[2];
+          entryId = parts[3];
+          updateData[`${field}_bias`] = biasValue;
+        }
+
+        await supabase.from("journal_entries").update(updateData).eq("id", entryId);
+
+        const { data: updated } = await supabase
+          .from("journal_entries")
+          .select("*")
+          .eq("id", entryId)
+          .single();
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          formatDashboardText(updated),
+          getMainMenuReplyMarkup(entryId, updated.asset)
+        );
+        await answerCallbackQuery(callback_query.id, "✅ Đã cập nhật bias!");
+      } 
+      else if (data.startsWith("input_chart:")) {
+        // Prompt for chart link or photo using force_reply
+        const parts = data.split(":");
+        let fieldLabel = "";
+        let entryId = "";
+
+        if (parts[1] === "h4") {
+          const sessionName = parts[2];
+          entryId = parts[3];
+          fieldLabel = `H4 ${sessionName} Chart`;
+        } else {
+          const field = parts[1];
+          entryId = parts[2];
+          fieldLabel = `${field.charAt(0).toUpperCase() + field.slice(1)} Chart`;
+        }
+
+        const asset = callback_query.message.text.match(/🪙 Tài sản: `(.*?)`/)?.[1] || "GC1!";
+        const prompt = `[${asset} - ${fieldLabel}] Nhập link hoặc gửi ảnh cho ID [${entryId}]:`;
+        
+        await sendTelegramMessageWithForceReply(chatId, prompt);
+        await answerCallbackQuery(callback_query.id);
+      } 
+      else if (data.startsWith("input_notes:")) {
+        // Prompt for notes using force_reply
+        const entryId = data.split(":")[1];
+        const asset = callback_query.message.text.match(/🪙 Tài sản: `(.*?)`/)?.[1] || "GC1!";
+        const prompt = `[${asset} - Notes] Nhập notes cho ID [${entryId}]:`;
+
+        await sendTelegramMessageWithForceReply(chatId, prompt);
+        await answerCallbackQuery(callback_query.id);
+      } 
+      else if (data.startsWith("back_menu:")) {
+        // Go back to main dashboard
+        const entryId = data.split(":")[1];
+        const { data: entry } = await supabase
+          .from("journal_entries")
+          .select("*")
+          .eq("id", entryId)
+          .single();
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          formatDashboardText(entry),
+          getMainMenuReplyMarkup(entryId, entry.asset)
+        );
+        await answerCallbackQuery(callback_query.id);
+      } 
+      else if (data.startsWith("finish_bias:")) {
+        // Lock and finish draft
+        const entryId = data.split(":")[1];
+        const { data: entry } = await supabase
+          .from("journal_entries")
+          .select("*")
+          .eq("id", entryId)
+          .single();
+
+        await editTelegramMessage(
+          chatId,
+          messageId,
+          `🎉 **ĐÃ HOÀN TẤT GHI CHÉP BIAS EXPECT!**
+
+📅 Ngày: *${entry.date}* | 🪙 Tài sản: \`${entry.asset}\`
+
+Nhận định của bạn đã được cập nhật thành công lên Web App. Chúc bạn có một ngày giao dịch thuận lợi và gặt hái nhiều lợi nhuận! 🚀💰`
+        );
+        await answerCallbackQuery(callback_query.id, "✅ Nhật ký đã lưu!");
+      }
+
+      return new Response("OK");
+    }
+
+    // --- 2. HANDLE STANDARD MESSAGES ---
+    if (!message) {
       return new Response("OK");
     }
 
     const chatId = message.chat.id.toString();
-    const text = message.text;
+    const text = message.text || "";
+    const reply = message.reply_to_message;
 
-    // Handle /start command with user_id parameter
-    // Example: /start 12345678-1234-1234-1234-123456789012
+    // Handle Link Account
     if (text.startsWith("/start")) {
       const parts = text.split(" ");
       if (parts.length > 1) {
         const userId = parts[1];
-
-        // Update the user's settings with their Telegram Chat ID
         const { error } = await supabase
           .from("user_settings")
           .update({ telegram_chat_id: chatId })
@@ -34,10 +201,118 @@ Deno.serve(async (req) => {
           console.error("Error updating telegram_chat_id:", error);
           await sendTelegramMessage(chatId, "❌ Rất tiếc, đã có lỗi xảy ra khi liên kết tài khoản. Vui lòng thử lại sau!");
         } else {
-          await sendTelegramMessage(chatId, "✅ *Chúc mừng!*\n\nTài khoản của bạn đã được liên kết thành công với Chartmate Trading Journal. Bạn sẽ nhận được các thông báo nhắc nhở tại đây.");
+          await sendTelegramMessage(
+            chatId,
+            "✅ *Chúc mừng!*\n\nTài khoản của bạn đã được liên kết thành công với Chartmate Trading Journal. Bạn sẽ nhận được các thông báo nhắc nhở tại đây.\n\nHãy gõ lệnh `/bias` để bắt đầu ghi chép nhận định thị trường!"
+          );
         }
       } else {
         await sendTelegramMessage(chatId, "👋 Chào mừng bạn đến với Chartmate Bot! Vui lòng nhấn nút 'Connect Now' trên website để liên kết tài khoản.");
+      }
+      return new Response("OK");
+    }
+
+    // Lookup user_id
+    const userId = await getUserByChatId(chatId);
+    if (!userId) {
+      await sendTelegramMessage(chatId, "⚠️ Vui lòng liên kết tài khoản trước khi thực hiện ghi chép! Dùng nút kết nối trên website.");
+      return new Response("OK");
+    }
+
+    // Handle /bias command -> Show asset options
+    if (text.startsWith("/bias")) {
+      const symbols = await getUserSymbols(userId);
+      if (symbols.length === 0) {
+        await sendTelegramMessage(chatId, "⚠️ Bạn chưa cấu hình tài sản giao dịch (Symbols) nào trên website. Vui lòng thêm Symbol trước!");
+        return new Response("OK");
+      }
+
+      const keyboard = symbols.map((symbol) => [
+        { text: symbol, callback_data: `select_asset:${symbol}` },
+      ]);
+
+      await sendTelegramMessage(
+        chatId,
+        "🪙 *Chọn tài sản bạn muốn lên Bias hôm nay:*",
+        { inline_keyboard: keyboard }
+      );
+      return new Response("OK");
+    }
+
+    // Handle Force Replies (Chart links or Notes uploads)
+    if (reply && reply.text) {
+      const replyText = reply.text;
+      
+      const matchChart = replyText.match(/\[(.*?) - (.*?) Chart\] Nhập link hoặc gửi ảnh cho ID \[(.*?)\]:/);
+      const matchNotes = replyText.match(/\[(.*?) - Notes\] Nhập notes cho ID \[(.*?)\]:/);
+
+      if (matchChart) {
+        const fieldLabel = matchChart[2]; // e.g. "Monthly", "Weekly", "Daily", "H4 ASIA"
+        const entryId = matchChart[3];
+
+        let imageUrl = null;
+        if (message.photo && message.photo.length > 0) {
+          // Downlad & Upload direct photo from Telegram
+          const fileId = message.photo[message.photo.length - 1].file_id;
+          imageUrl = await uploadTelegramPhoto(userId, fileId);
+        } else if (text && text.startsWith("http")) {
+          // Resolve TV snapshot
+          imageUrl = resolveTradingViewUrl(text) || text;
+        }
+
+        if (imageUrl) {
+          const updateData: any = {};
+          if (fieldLabel === "Monthly") updateData.monthly_img = imageUrl;
+          else if (fieldLabel === "Weekly") updateData.weekly_img = imageUrl;
+          else if (fieldLabel === "Daily") updateData.daily_img = imageUrl;
+          else if (fieldLabel.startsWith("H4 ")) {
+            const sessionName = fieldLabel.split(" ")[1];
+            const { data: entry } = await supabase
+              .from("journal_entries")
+              .select("h4")
+              .eq("id", entryId)
+              .single();
+
+            const h4 = entry?.h4 || {};
+            h4[sessionName] = { ...h4[sessionName], img: imageUrl };
+            updateData.h4 = h4;
+          }
+
+          await supabase.from("journal_entries").update(updateData).eq("id", entryId);
+          await sendTelegramMessage(chatId, "✅ Đã lưu ảnh biểu đồ thành công!");
+        } else {
+          await sendTelegramMessage(chatId, "❌ Link ảnh hoặc file ảnh không hợp lệ. Vui lòng thử lại!");
+        }
+
+        // Return to main menu
+        const { data: updated } = await supabase
+          .from("journal_entries")
+          .select("*")
+          .eq("id", entryId)
+          .single();
+
+        await sendTelegramMessage(
+          chatId,
+          formatDashboardText(updated),
+          getMainMenuReplyMarkup(entryId, updated.asset)
+        );
+      } 
+      else if (matchNotes) {
+        const entryId = matchNotes[2];
+        await supabase.from("journal_entries").update({ notes: text }).eq("id", entryId);
+        await sendTelegramMessage(chatId, "✅ Đã ghi nhận Notes thành công!");
+
+        const { data: updated } = await supabase
+          .from("journal_entries")
+          .select("*")
+          .eq("id", entryId)
+          .single();
+
+        await sendTelegramMessage(
+          chatId,
+          formatDashboardText(updated),
+          getMainMenuReplyMarkup(entryId, updated.asset)
+        );
       }
     }
 
@@ -48,17 +323,311 @@ Deno.serve(async (req) => {
   }
 });
 
-async function sendTelegramMessage(chatId: string, text: string) {
+// --- 3. HELPER DATABASE FUNCTIONS ---
+async function getUserByChatId(chatId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("user_id")
+    .eq("telegram_chat_id", chatId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data.user_id;
+}
+
+async function getUserSymbols(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("symbols")
+    .select("name")
+    .eq("user_id", userId);
+
+  if (error || !data) return [];
+  return data.map((s: any) => s.name);
+}
+
+async function getOrCreateJournalEntry(userId: string, asset: string, dateStr: string) {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("date", dateStr)
+    .eq("asset", asset)
+    .maybeSingle();
+
+  if (data) return data;
+
+  const newEntry = {
+    user_id: userId,
+    date: dateStr,
+    asset: asset,
+    weekly_bias: "consolidation",
+    weekly_correct: false,
+    daily_bias: "consolidation",
+    daily_correct: false,
+    monthly_bias: "consolidation",
+    monthly_correct: false,
+    h4: {},
+    notes: "",
+  };
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("journal_entries")
+    .insert(newEntry)
+    .select()
+    .single();
+
+  if (insertError) throw insertError;
+  return inserted;
+}
+
+// --- 4. FORMATTERS & TELEGRAM API CALLS ---
+function getSessionsForAsset(asset: string): string[] {
+  if (SPLIT_NY_ASSETS.includes(asset)) {
+    return ["ASIA", "LDN", "NY AM", "NY PM"];
+  }
+  return ["ASIA", "LDN", "NY"];
+}
+
+function formatDashboardText(entry: any) {
+  const dateStr = entry.date;
+  const asset = entry.asset;
+
+  const mBias = formatBiasIcon(entry.monthly_bias) + " " + formatBiasLabel(entry.monthly_bias);
+  const mImg = entry.monthly_img ? "✅ Có Chart" : "❌ Chưa có";
+
+  const wBias = formatBiasIcon(entry.weekly_bias) + " " + formatBiasLabel(entry.weekly_bias);
+  const wImg = entry.weekly_img ? "✅ Có Chart" : "❌ Chưa có";
+
+  const dBias = formatBiasIcon(entry.daily_bias) + " " + formatBiasLabel(entry.daily_bias);
+  const dImg = entry.daily_img ? "✅ Có Chart" : "❌ Chưa có";
+
+  const h4 = entry.h4 || {};
+  const sessions = getSessionsForAsset(asset);
+  const formatSession = (sName: string) => {
+    const s = h4[sName] || {};
+    const bias = s.bias ? `${formatBiasIcon(s.bias)} ${formatBiasLabel(s.bias)}` : "❌ Chưa chọn";
+    const img = s.img ? "✅ Chart" : "❌ Chart";
+    return `${sName}: ${bias} | ${img}`;
+  };
+
+  const h4Text = sessions.map((s) => `• ${formatSession(s)}`).join("\n");
+  const notesText = entry.notes ? `_${entry.notes}_` : "❌ Trống";
+
+  return `📝 **NHẬN ĐỊNH GIAO DỊCH (BIAS EXPECT)**
+📅 **Ngày:** \`${dateStr}\` | 🪙 **Tài sản:** \`${asset}\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📈 **MONTHLY OUTLOOK**
+• Bias: ${mBias}
+• Chart: ${mImg}
+
+📉 **WEEKLY OUTLOOK**
+• Bias: ${wBias}
+• Chart: ${wImg}
+
+📊 **DAILY DIRECTION**
+• Bias: ${dBias}
+• Chart: ${dImg}
+
+🕒 **H4 SESSIONS**
+${h4Text}
+
+✍️ **NOTES & OBSERVATIONS:**
+${notesText}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ *Nhấn các nút bên dưới để chọn Bias hoặc cập nhật hình ảnh!*`;
+}
+
+function formatBiasIcon(bias: string) {
+  if (bias === "bullish") return "🟢";
+  if (bias === "bearish") return "🔴";
+  return "⚪";
+}
+
+function formatBiasLabel(bias: string) {
+  if (bias === "bullish") return "BULL";
+  if (bias === "bearish") return "BEAR";
+  if (bias === "consolidation") return "CONS";
+  return "Chưa chọn";
+}
+
+function getMainMenuReplyMarkup(entryId: string, asset: string) {
+  const sessions = getSessionsForAsset(asset);
+
+  const h4Buttons = sessions.map((s) => ({
+    text: `🕒 H4 ${s}`,
+    callback_data: `menu_bias:h4:${s}:${entryId}`,
+  }));
+
+  const keyboard = [
+    [
+      { text: "📈 Monthly Bias", callback_data: `menu_bias:monthly:${entryId}` },
+      { text: "📉 Weekly Bias", callback_data: `menu_bias:weekly:${entryId}` },
+      { text: "📊 Daily Bias", callback_data: `menu_bias:daily:${entryId}` },
+    ],
+    [
+      { text: "✍️ Nhập Notes & Nhận định", callback_data: `input_notes:${entryId}` },
+    ],
+    h4Buttons,
+    [
+      { text: "✅ HOÀN TẤT GHI CHÉP 💾", callback_data: `finish_bias:${entryId}` },
+    ],
+  ];
+
+  return { inline_keyboard: keyboard };
+}
+
+function getBiasSubMenuReplyMarkup(field: string, entryId: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "🟢 BULLISH (BULL)", callback_data: `set_bias:${field}:bullish:${entryId}` },
+        { text: "🔴 BEARISH (BEAR)", callback_data: `set_bias:${field}:bearish:${entryId}` },
+        { text: "⚪ CONSOLIDATION", callback_data: `set_bias:${field}:consolidation:${entryId}` },
+      ],
+      [
+        { text: "🖼️ Gửi Link / Upload Chart", callback_data: `input_chart:${field}:${entryId}` },
+      ],
+      [
+        { text: "🔙 Quay lại", callback_data: `back_menu:${entryId}` },
+      ],
+    ],
+  };
+}
+
+function getH4BiasSubMenuReplyMarkup(sessionName: string, entryId: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "🟢 ASIA/NY BULL", callback_data: `set_bias:h4:${sessionName}:bullish:${entryId}` },
+        { text: "🔴 ASIA/NY BEAR", callback_data: `set_bias:h4:${sessionName}:bearish:${entryId}` },
+        { text: "⚪ CONSOLIDATION", callback_data: `set_bias:h4:${sessionName}:consolidation:${entryId}` },
+      ],
+      [
+        { text: "🖼️ Gửi Link / Upload Chart", callback_data: `input_chart:h4:${sessionName}:${entryId}` },
+      ],
+      [
+        { text: "🔙 Quay lại", callback_data: `back_menu:${entryId}` },
+      ],
+    ],
+  };
+}
+
+async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: any) {
   const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-  
+
+  const body: any = {
+    chat_id: chatId,
+    text: text,
+    parse_mode: "Markdown",
+  };
+  if (replyMarkup) {
+    body.reply_markup = replyMarkup;
+  }
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+async function editTelegramMessage(chatId: string, messageId: number, text: string, replyMarkup?: any) {
+  const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`;
+
+  const body: any = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: text,
+    parse_mode: "Markdown",
+  };
+  if (replyMarkup) {
+    body.reply_markup = replyMarkup;
+  }
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+async function sendTelegramMessageWithForceReply(chatId: string, text: string) {
+  const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
   await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
       text: text,
-      parse_mode: "Markdown",
+      reply_markup: {
+        force_reply: true,
+        selective: true,
+      },
     }),
   });
+}
+
+async function answerCallbackQuery(callbackQueryId: string, text?: string) {
+  const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`;
+
+  const body: any = { callback_query_id: callbackQueryId };
+  if (text) body.text = text;
+
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function resolveTradingViewUrl(url: string): string | null {
+  const match = url.match(/tradingview\.com\/x\/([a-zA-Z0-9]+)\/?/);
+  if (!match) return null;
+  const id = match[1];
+  const prefix = id[0].toLowerCase();
+  return `https://s3.tradingview.com/snapshots/${prefix}/${id}.png`;
+}
+
+async function uploadTelegramPhoto(userId: string, fileId: string): Promise<string | null> {
+  const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+
+  // 1. Get file path from Telegram API
+  const fileInfoResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+  if (!fileInfoResponse.ok) return null;
+  const fileInfo = await fileInfoResponse.json();
+  const filePath = fileInfo.result?.file_path;
+  if (!filePath) return null;
+
+  // 2. Fetch the image binary
+  const fileResponse = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`);
+  if (!fileResponse.ok) return null;
+  const arrayBuffer = await fileResponse.arrayBuffer();
+
+  // 3. Upload directly to Supabase Storage Bucket
+  const path = `${userId}/${crypto.randomUUID()}.jpg`;
+  const { error } = await supabase.storage
+    .from("journal-charts")
+    .upload(path, arrayBuffer, {
+      contentType: "image/jpeg",
+      cacheControl: "3600",
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("Supabase Storage upload error:", error);
+    return null;
+  }
+
+  // 4. Return Public HTTP URL
+  const { data: { publicUrl } } = supabase.storage
+    .from("journal-charts")
+    .getPublicUrl(path);
+
+  return publicUrl;
 }
