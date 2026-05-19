@@ -223,7 +223,7 @@ export function TradeLog() {
                 onClick={() => handleUpdateView("table")}
                 className={`p-2 rounded-lg transition-all ${
                   settings?.tradeLogView === "table"
-                    ? "bg-white text-primary shadow-sm"
+                    ? "bg-card text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 title="Table View"
@@ -234,7 +234,7 @@ export function TradeLog() {
                 onClick={() => handleUpdateView("gallery")}
                 className={`p-2 rounded-lg transition-all ${
                   settings?.tradeLogView === "gallery"
-                    ? "bg-white text-primary shadow-sm"
+                    ? "bg-card text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 title="Gallery View"
@@ -244,10 +244,10 @@ export function TradeLog() {
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white text-xs lg:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-sm whitespace-nowrap">
+              <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-xs lg:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-sm whitespace-nowrap">
                 <Settings2 className="w-4 h-4" /> Columns
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white border-border text-foreground rounded-xl shadow-xl">
+              <DropdownMenuContent className="bg-card border-border text-foreground rounded-xl shadow-xl">
                 <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 py-2">
                   Toggle Columns
                 </DropdownMenuLabel>
@@ -280,11 +280,11 @@ export function TradeLog() {
         {/* Content Area */}
         <div className="w-full">
           {loading ? (
-            <div className="p-20 text-center bg-white rounded-3xl border border-border/50">
+            <div className="p-20 text-center bg-card rounded-3xl border border-border/50">
               <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
             </div>
           ) : sorted.length === 0 ? (
-            <div className="p-20 text-center text-muted-foreground text-sm font-medium bg-white rounded-3xl border border-border/50">
+            <div className="p-20 text-center text-muted-foreground text-sm font-medium bg-card rounded-3xl border border-border/50">
               Your trade log is empty.
             </div>
           ) : settings?.tradeLogView === "gallery" ? (
@@ -302,7 +302,7 @@ export function TradeLog() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-3xl border border-border/50 overflow-hidden shadow-sm">
+            <div className="bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse min-w-[800px]">
                   <thead>
@@ -376,7 +376,7 @@ export function TradeLog() {
                           <td className="p-4">
                             <div className="flex items-center gap-1.5">
                               {getAssetIconUrl(t.symbol) && (
-                                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
+                                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-background flex items-center justify-center shadow-sm">
                                   <img
                                     src={getAssetIconUrl(t.symbol)!}
                                     alt={t.symbol}
@@ -556,7 +556,7 @@ export function TradeLog() {
                                         {t.missedConfluences.slice(0, 2).map((c) => (
                                           <span
                                             key={c}
-                                            className="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 text-[8px] font-bold text-rose-600 uppercase tracking-tighter whitespace-nowrap"
+                                            className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[8px] font-bold text-rose-500 uppercase tracking-tighter whitespace-nowrap"
                                           >
                                             {c}
                                           </span>

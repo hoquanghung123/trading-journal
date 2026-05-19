@@ -36,6 +36,7 @@ import { onPageChange, type PageId } from "@/lib/nav-bus";
 import { ProgressView } from "./ProgressView";
 import { fetchTrades, type Trade } from "@/lib/trades";
 import { fetchEntries, calculateStreak, fetchMyProfile } from "@/lib/journal";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 type Page =
   | "dashboard"
@@ -58,7 +59,6 @@ const NAV: { id: Page; label: string; icon: React.ComponentType<{ className?: st
   { id: "progress", label: "Progress", icon: Flame },
   { id: "account", label: "Account", icon: UserCircle },
 ];
-
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/lib/settings";
@@ -234,8 +234,6 @@ function Shell() {
             })}
           </nav>
 
-
-
           <div
             className={`p-4 border-t border-border space-y-2 ${isLeftCollapsed && !isMobileOpen ? "flex flex-col items-center" : ""}`}
           >
@@ -317,7 +315,7 @@ function Shell() {
         </header>
 
         {/* Viewport content */}
-        <main className="flex-1 overflow-y-auto relative bg-[#F8FAF9]">
+        <main className="flex-1 overflow-y-auto relative bg-background text-foreground transition-colors duration-300">
           {/* Desktop Left Sidebar Toggle Overlay Button - When Collapsed */}
           {isLeftCollapsed && (
             <button
@@ -406,6 +404,7 @@ export function Terminal() {
       {() => (
         <>
           <ThemeApplier />
+          <ThemeToggle />
           <Shell />
         </>
       )}

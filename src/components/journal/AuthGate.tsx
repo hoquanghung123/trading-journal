@@ -56,13 +56,13 @@ export function AuthGate({ children }: Props) {
   if (session?.user) return <>{children(session.user)}</>;
 
   return (
-    <div className="min-h-screen bg-[#F8FAF9] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300 flex items-center justify-center p-6 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-primary/10 rounded-full blur-[80px]" />
 
       <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
-        <div className="bg-white rounded-[48px] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-white p-12 relative z-10">
+        <div className="bg-card rounded-[48px] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-border p-12 relative z-10">
           {/* Logo Section */}
           <div className="flex flex-col items-center mb-10">
             <div className="w-20 h-20 rounded-[28px] forest-gradient flex items-center justify-center shadow-xl shadow-primary/20 mb-6">
@@ -100,7 +100,7 @@ export function AuthGate({ children }: Props) {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-muted/30 border border-transparent rounded-2xl pl-14 pr-6 py-4 text-sm font-bold outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
+                  className="w-full bg-muted/30 border border-transparent rounded-2xl pl-14 pr-6 py-4 text-sm font-bold outline-none focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-foreground"
                 />
               </div>
             </div>
@@ -120,7 +120,7 @@ export function AuthGate({ children }: Props) {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-muted/30 border border-transparent rounded-2xl pl-14 pr-6 py-4 text-sm font-bold outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all"
+                  className="w-full bg-muted/30 border border-transparent rounded-2xl pl-14 pr-6 py-4 text-sm font-bold outline-none focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-foreground"
                 />
               </div>
             </div>

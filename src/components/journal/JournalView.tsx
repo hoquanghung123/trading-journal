@@ -82,7 +82,7 @@ export function JournalView() {
       try {
         const { fetchSettings } = await import("@/lib/settings");
         const settings = await fetchSettings();
-        
+
         if (!settings.dailyReminder) return;
 
         // Check if reminder time has passed
@@ -112,8 +112,6 @@ export function JournalView() {
 
     checkPsych();
   }, []);
-
-
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -227,7 +225,10 @@ export function JournalView() {
       await upsertEntry(e);
 
       // Check if the date is complete AFTER this edit
-      const isNowComplete = isPrepDay([...entries.filter((x) => x.date === e.date && x.id !== e.id), e]);
+      const isNowComplete = isPrepDay([
+        ...entries.filter((x) => x.date === e.date && x.id !== e.id),
+        e,
+      ]);
       if (!dateWasComplete && isNowComplete) {
         const stats = calculateStreak([...entries.filter((x) => x.id !== e.id), e]);
         setCelebrationStreak(stats.currentStreak);
@@ -235,8 +236,8 @@ export function JournalView() {
       }
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
       track();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
@@ -245,8 +246,8 @@ export function JournalView() {
       await deleteEntry(id);
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
       track();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
@@ -308,7 +309,7 @@ export function JournalView() {
               {viewMode !== "month" && (
                 <button
                   onClick={() => setAsset("TODAY")}
-                  className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
                   Today
                 </button>
@@ -317,7 +318,7 @@ export function JournalView() {
                 <button
                   key={a}
                   onClick={() => setAsset(a)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-white text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
                   {getAssetIconUrl(a) && (
                     <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center">
@@ -334,14 +335,14 @@ export function JournalView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 lg:ml-auto">
+          <div className="flex items-center gap-4 lg:ml-auto lg:pr-14">
             {viewMode !== "month" && (
               <label className="flex items-center gap-2 flex-1 lg:flex-none">
                 <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
                 <select
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="flex-1 lg:flex-none bg-white border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="flex-1 lg:flex-none bg-card border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
                 >
                   <option value="ALL">All months</option>
                   {months.map((m) => (
@@ -356,7 +357,7 @@ export function JournalView() {
             <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
               <button
                 onClick={() => setViewMode("timeline")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "timeline" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "timeline" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Timeline
               </button>
@@ -365,7 +366,7 @@ export function JournalView() {
                   setViewMode("month");
                   if (asset === "TODAY") setAsset(ASSETS[0] || "ALL");
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Month View
               </button>
@@ -373,7 +374,7 @@ export function JournalView() {
 
             <button
               onClick={jumpRight}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-white rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-card rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap text-foreground"
             >
               Jump <ChevronsRight className="w-4 h-4 text-primary" />
             </button>
@@ -431,7 +432,7 @@ export function JournalView() {
 
 function Empty({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="bg-white rounded-[32px] border border-border p-16 text-center max-w-xl mx-auto mt-20 shadow-xl">
+    <div className="bg-card rounded-[32px] border border-border p-16 text-center max-w-xl mx-auto mt-20 shadow-xl">
       <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
         <Activity className="w-10 h-10 text-primary" />
       </div>

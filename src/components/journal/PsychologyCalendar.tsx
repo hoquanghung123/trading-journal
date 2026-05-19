@@ -100,9 +100,9 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
   }, [days]);
 
   return (
-    <section className="bg-white rounded-[40px] border border-border shadow-sm overflow-hidden animate-in fade-in duration-500 flex flex-col h-full">
+    <section className="bg-card rounded-[40px] border border-border shadow-sm overflow-hidden animate-in fade-in duration-500 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-border bg-white flex-wrap gap-4">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-border bg-card flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
             <CalendarDays className="w-6 h-6 text-primary" />
@@ -121,7 +121,7 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
           <div className="flex items-center bg-muted/30 rounded-2xl p-1.5 gap-1 border border-border/50">
             <button
               onClick={goPrev}
-              className="p-2 rounded-xl hover:bg-white hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
+              className="p-2 rounded-xl hover:bg-background hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -130,14 +130,14 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
             </div>
             <button
               onClick={goNext}
-              className="p-2 rounded-xl hover:bg-white hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
+              className="p-2 rounded-xl hover:bg-background hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
           <button
             onClick={goToday}
-            className="px-6 py-3 rounded-2xl text-xs font-black tracking-widest bg-white border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all active:scale-95 uppercase shadow-sm"
+            className="px-6 py-3 rounded-2xl text-xs font-black tracking-widest bg-card border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all active:scale-95 uppercase shadow-sm"
           >
             Today
           </button>
@@ -174,7 +174,7 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
                     key={k}
                     onClick={() => onSelectDate(k)}
                     className={`relative p-4 flex flex-col justify-between cursor-pointer transition-all duration-300 group
-                      ${inMonth ? "bg-white hover:bg-muted/30" : "bg-muted/5"}
+                      ${inMonth ? "bg-card hover:bg-muted/30" : "bg-muted/5"}
                       ${isSelected ? "ring-4 ring-inset ring-primary/40 z-10" : ""}
                       ${isToday && !isSelected ? "ring-2 ring-inset ring-primary/20" : ""}
                       ${!inMonth ? "opacity-20" : ""}
@@ -231,7 +231,7 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
       </div>
 
       {/* Legend */}
-      <div className="px-8 py-6 border-t border-border bg-white flex items-center gap-8 flex-wrap">
+      <div className="px-8 py-6 border-t border-border bg-card flex items-center gap-8 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-primary" />
           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">

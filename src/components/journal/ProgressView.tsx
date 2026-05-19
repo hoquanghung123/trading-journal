@@ -72,7 +72,7 @@ export function ProgressView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -83,32 +83,32 @@ export function ProgressView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               to="/"
-              className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"
+              className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-black text-slate-800 tracking-tight">Progress Tracker</h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              <h1 className="text-xl font-black text-foreground tracking-tight">Progress Tracker</h1>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                 Mastery through consistency
               </p>
             </div>
           </div>
 
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+          <div className="flex items-center bg-muted p-1 rounded-xl">
             <button
               onClick={() => setActiveTab("progress")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tight transition-all ${
                 activeTab === "progress"
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Target className="w-4 h-4" />
@@ -118,8 +118,8 @@ export function ProgressView() {
               onClick={() => setActiveTab("achievements")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tight transition-all ${
                 activeTab === "achievements"
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Award className="w-4 h-4" />
@@ -129,8 +129,8 @@ export function ProgressView() {
               onClick={() => setActiveTab("leaderboard")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-tight transition-all ${
                 activeTab === "leaderboard"
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -145,7 +145,7 @@ export function ProgressView() {
           <>
             {/* Streak Circle Hero */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-2 bg-white rounded-[40px] p-10 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">
+              <div className="md:col-span-2 bg-card rounded-[40px] p-10 shadow-sm border border-border flex flex-col md:flex-row items-center gap-10">
                 <div className="relative">
                   <svg className="w-48 h-48 -rotate-90">
                     <circle
@@ -155,7 +155,7 @@ export function ProgressView() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="12"
-                      className="text-slate-100"
+                      className="text-muted/40 dark:text-slate-800"
                     />
                     <motion.circle
                       cx="96"
@@ -175,10 +175,10 @@ export function ProgressView() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-6xl font-black text-slate-800 leading-none">
+                    <span className="text-6xl font-black text-foreground leading-none">
                       {stats.currentStreak}
                     </span>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
                       Days
                     </span>
                   </div>
@@ -193,10 +193,10 @@ export function ProgressView() {
 
                 <div className="flex-1 space-y-6 text-center md:text-left">
                   <div>
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+                    <h2 className="text-3xl font-black text-foreground tracking-tight">
                       Your Streak is on Fire!
                     </h2>
-                    <p className="text-slate-500 font-medium mt-2">
+                    <p className="text-muted-foreground font-medium mt-2">
                       {stats.isTodayComplete
                         ? "You've completed your prep for today. Keep it up tomorrow!"
                         : "Finish your Weekly, Daily, and H4 Asian markup to maintain your streak."}
@@ -220,27 +220,27 @@ export function ProgressView() {
               </div>
 
               {/* Consistency Calendar */}
-              <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-6">
+              <section className="bg-card rounded-3xl p-6 shadow-sm border border-border space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
                       Consistency
                     </h3>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+                      className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-[10px] font-black uppercase tracking-widest min-w-[80px] text-center text-slate-600">
+                    <span className="text-[10px] font-black uppercase tracking-widest min-w-[80px] text-center text-foreground">
                       {format(currentMonth, "MMM yyyy")}
                     </span>
                     <button
                       onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+                      className="p-1.5 hover:bg-muted rounded-lg transition-colors text-muted-foreground"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -251,7 +251,7 @@ export function ProgressView() {
                   {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
                     <div
                       key={d}
-                      className="text-center py-1 text-[9px] font-black uppercase tracking-widest text-slate-300"
+                      className="text-center py-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40"
                     >
                       {d}
                     </div>
@@ -281,8 +281,8 @@ export function ProgressView() {
                               : today
                                 ? "text-orange-500 underline decoration-2 underline-offset-4"
                                 : isCurrMonth
-                                  ? "text-slate-500"
-                                  : "text-slate-200"
+                                  ? "text-muted-foreground"
+                                  : "text-muted-foreground/20"
                           }`}
                         >
                           {format(day, "d")}
@@ -293,7 +293,7 @@ export function ProgressView() {
                 </div>
 
                 {/* Compact Daily Status */}
-                <div className="pt-4 border-t border-slate-100 grid grid-cols-3 gap-2">
+                <div className="pt-4 border-t border-border grid grid-cols-3 gap-2">
                   <CompactCheck
                     label="W"
                     active={entries.some(
@@ -338,15 +338,15 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="bg-slate-50 px-5 py-4 rounded-2xl border border-slate-100 flex items-center gap-4 min-w-[140px]">
+    <div className="bg-muted/50 px-5 py-4 rounded-2xl border border-border flex items-center gap-4 min-w-[140px]">
       <div
-        className={`w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center ${color}`}
+        className={`w-10 h-10 rounded-xl bg-background shadow-sm flex items-center justify-center ${color}`}
       >
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-        <p className="text-lg font-black text-slate-800">{value}</p>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
+        <p className="text-lg font-black text-foreground">{value}</p>
       </div>
     </div>
   );
@@ -378,8 +378,8 @@ function CompactCheck({ label, active }: { label: string; active: boolean }) {
     <div
       className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
         active
-          ? "bg-orange-50 border-orange-200 text-orange-600"
-          : "bg-slate-50 border-slate-100 text-slate-300"
+          ? "bg-orange-500/10 border-orange-500/30 text-orange-600"
+          : "bg-muted/50 border-border text-muted-foreground"
       }`}
     >
       <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>

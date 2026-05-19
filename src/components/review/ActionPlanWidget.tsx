@@ -119,7 +119,7 @@ export function ActionPlanWidget({ review, onChange, readOnly = false }: ActionP
   };
 
   return (
-    <Card className="bg-white border-border shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
+    <Card className="bg-card border-border shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
       <CardHeader className="bg-muted/30 border-b border-border pb-6">
         <CardTitle className="text-foreground text-xl font-bold flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm">

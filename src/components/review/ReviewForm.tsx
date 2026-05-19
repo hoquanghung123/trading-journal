@@ -11,7 +11,7 @@ interface ReviewFormProps {
 
 export function ReviewForm({ review, onChange, readOnly = false }: ReviewFormProps) {
   return (
-    <Card className="bg-white border-border shadow-sm rounded-2xl h-full">
+    <Card className="bg-card border-border shadow-sm rounded-2xl h-full">
       <CardHeader className="pb-8">
         <CardTitle className="text-foreground text-2xl font-bold flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm">

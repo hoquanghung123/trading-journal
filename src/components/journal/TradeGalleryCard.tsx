@@ -50,7 +50,7 @@ export function TradeGalleryCard({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group relative bg-white rounded-3xl border border-border/50 overflow-hidden hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer flex flex-col h-full"
+      className="group relative bg-card rounded-3xl border border-border/50 overflow-hidden hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 cursor-pointer flex flex-col h-full"
     >
       {/* Chart Preview Area */}
       {show("images") && (
@@ -115,7 +115,7 @@ export function TradeGalleryCard({
 
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex items-center gap-2">
             {getAssetIconUrl(trade.symbol) && (
-              <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center shadow-sm">
+              <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 bg-background flex items-center justify-center shadow-sm">
                 <img
                   src={getAssetIconUrl(trade.symbol)!}
                   alt={trade.symbol}
@@ -208,7 +208,7 @@ export function TradeGalleryCard({
                       {trade.missedConfluences.slice(0, 2).map((c) => (
                         <span
                           key={c}
-                          className="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-100 text-[8px] font-bold text-rose-600 uppercase tracking-tighter whitespace-nowrap"
+                          className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[8px] font-bold text-rose-500 uppercase tracking-tighter whitespace-nowrap"
                         >
                           {c}
                         </span>

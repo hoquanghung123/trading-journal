@@ -164,10 +164,10 @@ export function AchievementsView() {
             <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
               {CATEGORY_ICONS[category]}
             </div>
-            <h3 className="text-xl font-black text-slate-800 uppercase tracking-widest">
+            <h3 className="text-xl font-black text-foreground uppercase tracking-widest">
               {category}
             </h3>
-            <div className="h-px flex-1 bg-slate-200" />
+            <div className="h-px flex-1 bg-border" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -196,33 +196,33 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
     switch (level) {
       case "Bronze":
         return {
-          card: "bg-gradient-to-br from-orange-100/40 to-white border-orange-200/50",
+          card: "bg-gradient-to-br from-orange-500/10 to-card border-orange-200/50",
           container: "bg-gradient-to-br from-orange-600 to-amber-800 shadow-[0_0_20px_rgba(194,65,12,0.25)]",
           icon: "text-orange-50",
           badge: "bg-orange-100 border-orange-200 text-orange-800",
           bar: "bg-orange-600",
-          title: "text-orange-950",
-          desc: "text-orange-900/60",
+          title: "text-foreground dark:text-orange-200",
+          desc: "text-muted-foreground dark:text-orange-200/60",
         };
       case "Silver":
         return {
-          card: "bg-gradient-to-br from-slate-100/40 to-white border-slate-200",
+          card: "bg-gradient-to-br from-slate-500/10 to-card border-border",
           container: "bg-gradient-to-br from-slate-400 to-slate-600 shadow-[0_0_20px_rgba(71,85,105,0.2)]",
           icon: "text-slate-50",
           badge: "bg-slate-100 border-slate-200 text-slate-700",
           bar: "bg-slate-500",
-          title: "text-slate-900",
-          desc: "text-slate-700/60",
+          title: "text-foreground",
+          desc: "text-muted-foreground",
         };
       case "Gold":
         return {
-          card: "bg-gradient-to-br from-yellow-100/60 to-white border-yellow-300 shadow-yellow-200/40",
+          card: "bg-gradient-to-br from-yellow-500/10 to-card border-yellow-500/30 shadow-yellow-200/40",
           container: "bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 shadow-[0_0_25px_rgba(234,179,8,0.4)]",
           icon: "text-yellow-50",
           badge: "bg-yellow-300 border-yellow-400 text-yellow-900 font-bold",
           bar: "bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.3)]",
-          title: "text-yellow-950",
-          desc: "text-yellow-900/60",
+          title: "text-foreground dark:text-yellow-200",
+          desc: "text-muted-foreground dark:text-yellow-200/60",
         };
       case "Diamond":
         return {
@@ -236,13 +236,13 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
         };
       default:
         return {
-          card: "bg-white border-slate-200",
+          card: "bg-card border-border",
           container: "bg-slate-100 border border-slate-200",
           icon: "text-slate-300",
           badge: "bg-slate-100 border-slate-200 text-slate-400",
           bar: "bg-slate-200",
-          title: "text-slate-800",
-          desc: "text-slate-500",
+          title: "text-foreground",
+          desc: "text-muted-foreground",
         };
     }
   };
@@ -353,7 +353,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                   Tiến độ hiện tại
                 </span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-black text-slate-800">
+                  <span className="text-lg font-black text-foreground">
                     {Math.round(achievement.progress).toLocaleString()}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase">
@@ -361,7 +361,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                   </span>
                 </div>
               </div>
-              <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-0.5">
+              <div className="h-4 bg-muted rounded-full overflow-hidden border border-border p-0.5">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}

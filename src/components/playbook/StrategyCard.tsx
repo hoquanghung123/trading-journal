@@ -20,7 +20,7 @@ export function StrategyCard({ model, onClick, stats }: StrategyCardProps) {
   return (
     <div
       onClick={onClick}
-      className="bg-white group rounded-2xl overflow-hidden cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-500 flex flex-col h-full hover:shadow-2xl hover:shadow-primary/5 relative"
+      className="bg-card group rounded-2xl overflow-hidden cursor-pointer border border-primary/10 hover:border-primary/30 transition-all duration-500 flex flex-col h-full hover:shadow-2xl hover:shadow-primary/5 relative"
     >
       {/* Thumbnail Area */}
       <div className="h-44 w-full bg-primary/[0.02] border-b border-primary/5 relative overflow-hidden flex items-center justify-center">

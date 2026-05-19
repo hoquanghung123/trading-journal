@@ -146,7 +146,7 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-[32px] p-8 border border-border shadow-sm space-y-6">
+      <div className="bg-card rounded-[32px] p-8 border border-border shadow-sm space-y-6">
 
       <div className="h-[200px] w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -185,7 +185,7 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
                 name={user}
                 stroke={colors[user]}
                 strokeWidth={3}
-                dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
+                dot={{ r: 4, strokeWidth: 2, fill: "var(--card)" }}
                 activeDot={{ r: 6, strokeWidth: 0 }}
                 animationDuration={1500}
               />
@@ -194,7 +194,7 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-3 pt-6 border-t border-slate-100">
+      <div className="flex flex-wrap gap-x-6 gap-y-3 pt-6 border-t border-border">
         {usernames.map((user) => {
           const totalXp = data.reduce((sum, d) => sum + (d.users[user] || 0), 0);
           return (
@@ -203,7 +203,7 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
                 className="w-2.5 h-2.5 rounded-full"
                 style={{ backgroundColor: colors[user] }}
               />
-              <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">
+              <span className="text-[10px] font-black text-foreground uppercase tracking-tight">
                 {user}
               </span>
               <span className="text-[10px] font-bold text-slate-400">{totalXp} XP</span>

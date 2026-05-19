@@ -78,6 +78,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
                   if (color) {
                     document.documentElement.style.setProperty('--primary', color);
                   }
+                  const theme = localStorage.getItem('tg_theme') || 'light';
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
                 } catch (e) {}
               })();
             `,
@@ -194,16 +200,21 @@ function RootComponent() {
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }
 
-        const dateWasComplete = isPrepDay(currentEntries.filter(x => x.date === updatedEntry.date));
+        const dateWasComplete = isPrepDay(
+          currentEntries.filter((x) => x.date === updatedEntry.date),
+        );
 
         await upsertEntry(updatedEntry as DayEntry);
-        
-        const updatedList = [...currentEntries.filter(x => x.id !== updatedEntry.id), updatedEntry as DayEntry];
-        const isNowComplete = isPrepDay(updatedList.filter(x => x.date === updatedEntry.date));
-        
+
+        const updatedList = [
+          ...currentEntries.filter((x) => x.id !== updatedEntry.id),
+          updatedEntry as DayEntry,
+        ];
+        const isNowComplete = isPrepDay(updatedList.filter((x) => x.date === updatedEntry.date));
+
         if (!dateWasComplete && isNowComplete) {
-           const stats = calculateStreak(updatedList);
-           triggerCelebration(stats.currentStreak);
+          const stats = calculateStreak(updatedList);
+          triggerCelebration(stats.currentStreak);
         }
 
         toast.success(`Đã lưu ${targetAsset} thành công!`, { id: toastId });

@@ -35,7 +35,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
   return (
     <div
       id={`bias-entry-${entry.id}`}
-      className="bg-white rounded-2xl w-[85vw] md:w-[calc((100vw-var(--sidebar-width)-64px)/3)] shrink-0 flex flex-col overflow-hidden border border-border shadow-sm scroll-mx-6 transition-all duration-300"
+      className="bg-card rounded-2xl w-[85vw] md:w-[calc((100vw-var(--sidebar-width)-64px)/3)] shrink-0 flex flex-col overflow-hidden border border-border shadow-sm scroll-mx-6 transition-all duration-300"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-border bg-muted/20">
@@ -50,7 +50,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">
             {getAssetIconUrl(entry.asset) && (
-              <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center">
+              <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-background flex items-center justify-center">
                 <img
                   src={getAssetIconUrl(entry.asset)!}
                   alt={entry.asset}
@@ -132,7 +132,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
                     setSession(s);
                     focus(`h4-${s}` as SlotKind);
                   }}
-                  className={`flex-1 px-1 py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all ${active ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 px-1 py-1.5 rounded-lg text-[10px] font-bold tracking-wider transition-all ${active ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <div className="flex items-center justify-center gap-1">
                     {s}

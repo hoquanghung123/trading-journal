@@ -170,7 +170,7 @@ export function ReviewPage() {
                       <Edit2 className="h-4 w-4 lg:h-5 lg:w-5" />
                     </button>
                   </DialogTrigger>
-                  <DialogContent className="bg-white border-border text-foreground rounded-2xl shadow-xl">
+                  <DialogContent className="bg-card border-border text-foreground rounded-2xl shadow-xl">
                     <DialogHeader>
                       <DialogTitle className="text-primary font-bold text-xl">
                         Create / Edit Different Period
@@ -251,7 +251,7 @@ export function ReviewPage() {
             onClick={() => setActiveTab("reflection")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeTab === "reflection"
-                ? "bg-white text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -262,7 +262,7 @@ export function ReviewPage() {
             onClick={() => setActiveTab("trade-notes")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeTab === "trade-notes"
-                ? "bg-white text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >

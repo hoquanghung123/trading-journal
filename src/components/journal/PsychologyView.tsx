@@ -187,7 +187,7 @@ export function PsychologyView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-2.5 rounded-2xl border border-border bg-white shadow-sm w-full sm:w-auto justify-center">
+          <div className="flex items-center gap-4 px-4 py-2.5 rounded-2xl border border-border bg-card shadow-sm w-full sm:w-auto justify-center">
             <CalendarDays className="w-5 h-5 text-primary" />
             <input
               type="date"
@@ -216,7 +216,7 @@ export function PsychologyView() {
                         className={`text-2xl sm:text-3xl p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center ${
                           active
                             ? "bg-primary/10 border-primary shadow-lg scale-105"
-                            : "bg-white border-muted hover:border-primary/30"
+                            : "bg-card border-border hover:border-primary/30"
                         }`}
                       >
                         {m}
@@ -392,7 +392,7 @@ function Section({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-2xl border border-border p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-300">
+    <section className="bg-card rounded-2xl border border-border p-4 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-300">
       <div className="flex items-center justify-between mb-6 sm:mb-8 gap-4">
         <h2 className="text-[10px] sm:text-sm font-black uppercase tracking-widest text-primary">
           {title}
@@ -483,7 +483,7 @@ function TagPicker({
               className={`px-4 py-2 rounded-xl text-xs font-bold tracking-wide border-2 transition-all duration-200 ${
                 active
                   ? "bg-primary text-white border-primary shadow-lg scale-105"
-                  : "bg-white border-muted text-muted-foreground hover:border-primary/30"
+                  : "bg-card border-border text-muted-foreground hover:border-primary/30"
               }`}
             >
               {opt}

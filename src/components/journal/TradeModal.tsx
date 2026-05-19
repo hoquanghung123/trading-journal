@@ -203,8 +203,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-full h-full sm:h-auto sm:max-w-5xl max-h-[100vh] sm:max-h-[96vh] p-0 gap-0 bg-white border-white/20 text-foreground flex flex-col overflow-hidden rounded-none sm:rounded-[48px] shadow-2xl animate-in fade-in zoom-in-95 duration-300 left-0 top-0 translate-x-0 translate-y-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]">
-        <DialogHeader className="px-6 sm:px-10 py-6 border-b border-border/50 bg-white sm:rounded-t-[48px]">
+      <DialogContent className="w-full h-full sm:h-auto sm:max-w-5xl max-h-[100vh] sm:max-h-[96vh] p-0 gap-0 bg-card border-white/20 text-foreground flex flex-col overflow-hidden rounded-none sm:rounded-[48px] shadow-2xl animate-in fade-in zoom-in-95 duration-300 left-0 top-0 translate-x-0 translate-y-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]">
+        <DialogHeader className="px-6 sm:px-10 py-6 border-b border-border/50 bg-card sm:rounded-t-[48px]">
           <DialogTitle className="text-xl font-black uppercase tracking-tighter text-foreground flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg forest-gradient flex items-center justify-center shadow-lg shadow-primary/20">
@@ -236,7 +236,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
                   activeTab === tab.id
                     ? "forest-gradient text-white shadow-lg shadow-primary/20 scale-[1.02]"
-                    : "bg-white/50 border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/30"
+                    : "bg-background border border-border/50 text-muted-foreground hover:bg-muted hover:border-primary/30"
                 }`}
               >
                 <tab.icon
@@ -296,7 +296,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                               : s === "Opened"
                                 ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
                                 : "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
-                            : "bg-white border-border text-muted-foreground hover:border-primary/30"
+                            : "bg-background border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
                         {s}
@@ -320,7 +320,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                                 : g === "A"
                                   ? "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
                                   : "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
-                              : "bg-white border-border text-muted-foreground hover:border-primary/30"
+                              : "bg-background border-border text-muted-foreground hover:border-primary/30"
                           }`}
                         >
                           {g}
@@ -332,7 +332,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
                           !t.grade
                             ? "bg-muted/50 border-muted-foreground/20 text-muted-foreground"
-                            : "bg-white border-border text-muted-foreground/30 hover:border-destructive/30 hover:text-destructive"
+                            : "bg-background border-border text-muted-foreground/30 hover:border-destructive/30 hover:text-destructive"
                         }`}
                         title="Clear Grade"
                       >
@@ -355,7 +355,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                             ? s === "buy"
                               ? "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20 scale-[1.02]"
                               : "bg-rose-500 text-white border-rose-500 shadow-rose-500/20 scale-[1.02]"
-                            : "bg-white border-border text-muted-foreground hover:border-primary/30"
+                            : "bg-background border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
                         {s}
@@ -447,9 +447,9 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
               {/* Missed Confluences Checklist */}
               {!t.complianceCheck && t.setupId && (
-                <div className="bg-rose-50/50 border border-rose-100 rounded-[32px] p-8 space-y-6 animate-in slide-in-from-top-2 duration-300">
+                <div className="bg-rose-500/5 border border-rose-500/10 rounded-[32px] p-8 space-y-6 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
                       <AlertCircle className="w-5 h-5 text-rose-500" />
                     </div>
                     <div>
@@ -495,13 +495,13 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                             }}
                             className={`flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer select-none ${
                               isMissed
-                                ? "bg-white border-rose-200 shadow-sm shadow-rose-100"
-                                : "bg-white/50 border-transparent hover:border-rose-100"
+                                ? "bg-rose-500/10 border-rose-500/30 text-rose-500 shadow-sm"
+                                : "bg-background border hover:border-rose-500/20"
                             }`}
                           >
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                                isMissed ? "bg-rose-500 border-rose-500" : "bg-white border-muted"
+                                isMissed ? "bg-rose-500 border-rose-500" : "bg-background border-muted"
                               }`}
                             >
                               {isMissed && (
@@ -509,7 +509,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                               )}
                             </div>
                             <span
-                              className={`text-xs font-bold ${isMissed ? "text-rose-600" : "text-muted-foreground"}`}
+                              className={`text-xs font-bold ${isMissed ? "text-rose-500" : "text-muted-foreground"}`}
                             >
                               {c}
                             </span>
@@ -558,7 +558,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </Field>
                 <Field label="Net PnL (Calculated)">
                   <div
-                    className={`h-12 w-full rounded-xl flex items-center px-4 text-sm font-black border transition-all ${t.netPnl > 0 ? "bg-emerald-50 border-emerald-200 text-emerald-600" : t.netPnl < 0 ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-muted/30 border-border"}`}
+                    className={`h-12 w-full rounded-xl flex items-center px-4 text-sm font-black border transition-all ${t.netPnl > 0 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : t.netPnl < 0 ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-muted/30 border-border"}`}
                   >
                     {t.netPnl > 0 ? "+" : ""}
                     {t.netPnl.toFixed(2)}
@@ -755,7 +755,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   <Trash2 className="w-4 h-4" /> Delete Entry
                 </button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white border-border rounded-[32px] shadow-2xl p-10 max-w-md animate-in fade-in zoom-in-95 duration-300">
+              <AlertDialogContent className="bg-card border-border rounded-[32px] shadow-2xl p-10 max-w-md animate-in fade-in zoom-in-95 duration-300">
                 <AlertDialogHeader className="flex flex-col items-center text-center">
                   <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">
                     <AlertCircle className="w-8 h-8 text-destructive" />

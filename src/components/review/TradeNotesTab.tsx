@@ -128,7 +128,7 @@ function TradeNoteCard({ trade }: { trade: Trade }) {
   }).format(new Date(trade.entryTime));
 
   return (
-    <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       {/* Card Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/20">
         <div className="flex items-center gap-3">
@@ -145,7 +145,7 @@ function TradeNoteCard({ trade }: { trade: Trade }) {
           {/* Symbol + icon */}
           <div className="flex items-center gap-1.5">
             {getAssetIconUrl(trade.symbol) && (
-              <div className="w-5 h-5 rounded-full overflow-hidden bg-white shadow-sm border border-border/40 flex items-center justify-center shrink-0">
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-background shadow-sm border border-border/40 flex items-center justify-center shrink-0">
                 <img
                   src={getAssetIconUrl(trade.symbol)!}
                   alt={trade.symbol}
@@ -331,7 +331,7 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
               className={cn(
                 "px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
                 outcomeFilter === opt.value
-                  ? "bg-white text-foreground shadow-sm"
+                  ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -348,7 +348,7 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
             "flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all",
             noteFilter === "has-note"
               ? "bg-primary text-white border-primary shadow-sm"
-              : "border-border/60 text-muted-foreground hover:text-foreground bg-white",
+              : "border-border/60 text-muted-foreground hover:text-foreground bg-card",
           )}
         >
           <StickyNote className="w-3.5 h-3.5" />
@@ -360,7 +360,7 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
             "flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all",
             noteFilter === "no-note"
               ? "bg-destructive text-white border-destructive shadow-sm"
-              : "border-border/60 text-muted-foreground hover:text-foreground bg-white",
+              : "border-border/60 text-muted-foreground hover:text-foreground bg-card",
           )}
         >
           <FileText className="w-3.5 h-3.5" />
@@ -370,7 +370,7 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
 
       {/* Trade cards */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-border/50 text-muted-foreground/50">
+        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-border/50 text-muted-foreground/50">
           <StickyNote className="w-10 h-10 mb-4 opacity-20" />
           <p className="text-sm font-bold uppercase tracking-widest">
             {periodTrades.length === 0

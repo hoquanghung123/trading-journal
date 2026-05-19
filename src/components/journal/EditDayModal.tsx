@@ -46,11 +46,11 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-white sm:rounded-[32px] w-full max-w-3xl h-full sm:h-auto max-h-[100vh] sm:max-h-[94vh] overflow-y-auto shadow-2xl border border-white/20 animate-in fade-in zoom-in-95 duration-300 relative"
+        className="bg-card sm:rounded-[32px] w-full max-w-3xl h-full sm:h-auto max-h-[100vh] sm:max-h-[94vh] overflow-y-auto shadow-2xl border border-white/20 animate-in fade-in zoom-in-95 duration-300 relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-border/50 sticky top-0 bg-white/80 backdrop-blur-md z-20">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-border/50 sticky top-0 bg-card/80 backdrop-blur-md z-20">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Plus className="w-6 h-6 text-primary" />
@@ -161,7 +161,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                       setSession(s);
                       setFocusKey(`h4-${s}`);
                     }}
-                    className={`px-5 py-2 rounded-xl text-xs font-black tracking-widest border-2 transition-all ${session === s ? "bg-primary text-white border-primary shadow-lg scale-105" : "bg-white border-border text-muted-foreground hover:border-primary/30"}`}
+                    className={`px-5 py-2 rounded-xl text-xs font-black tracking-widest border-2 transition-all ${session === s ? "bg-primary text-white border-primary shadow-lg scale-105" : "bg-background border-border text-muted-foreground hover:border-primary/30"}`}
                   >
                     {s}
                   </button>
@@ -266,7 +266,7 @@ function BiasPicker({ value, onChange }: { value: Bias; onChange: (v: Bias) => v
                   : b === "bearish"
                     ? "bg-destructive text-destructive-foreground border-destructive shadow-lg shadow-destructive/20"
                     : "bg-warning text-warning-foreground border-warning shadow-lg shadow-warning/20"
-                : "bg-white border-border text-muted-foreground hover:border-primary/30"
+                : "bg-background border-border text-muted-foreground hover:border-primary/30"
             }`}
           >
             {biasLabel(b)}

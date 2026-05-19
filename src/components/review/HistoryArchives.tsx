@@ -51,7 +51,7 @@ export function HistoryArchives({
   }, [reviews, search, filter]);
 
   return (
-    <Card className="bg-white border-border shadow-sm rounded-2xl h-full flex flex-col overflow-hidden">
+    <Card className="bg-card border-border shadow-sm rounded-2xl h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-6 pt-8 px-8">
         <CardTitle className="text-foreground text-2xl font-bold flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -96,10 +96,10 @@ export function HistoryArchives({
               </span>
             </div>
             <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-[140px] h-12 bg-white border-border rounded-xl text-sm font-bold shadow-sm">
+              <SelectTrigger className="w-[140px] h-12 bg-card border-border rounded-xl text-sm font-bold shadow-sm">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
-              <SelectContent className="bg-white border-border rounded-xl shadow-xl">
+              <SelectContent className="bg-card border-border rounded-xl shadow-xl">
                 <SelectItem value="all" className="font-bold">
                   All
                 </SelectItem>
@@ -147,13 +147,13 @@ export function HistoryArchives({
                         onClick={() => onSelectPeriod(isSelected ? null : rev.period)}
                         className={`
                           grid grid-cols-12 items-center p-5 cursor-pointer transition-all duration-300
-                          hover:bg-white hover:shadow-lg hover:z-10 relative group
+                          hover:bg-muted hover:shadow-lg hover:z-10 relative group
                           ${isSelected ? "bg-primary/5 text-primary" : "text-foreground"}
                         `}
                       >
                         <div className="col-span-8 flex items-center gap-4">
                           <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isSelected ? "bg-primary text-white shadow-lg" : "bg-white border border-border text-muted-foreground group-hover:text-primary"}`}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isSelected ? "bg-primary text-white shadow-lg" : "bg-card border border-border text-muted-foreground group-hover:text-primary"}`}
                           >
                             <CalendarDays className="h-5 w-5" />
                           </div>
@@ -167,7 +167,7 @@ export function HistoryArchives({
                         <div className="col-span-4 text-right flex items-center justify-end gap-3">
                           <Badge
                             variant="outline"
-                            className={`rounded-lg px-3 py-1 text-[10px] font-black uppercase border-border bg-white shadow-sm ${rev.type === "weekly" ? "text-blue-600" : "text-purple-600"}`}
+                            className={`rounded-lg px-3 py-1 text-[10px] font-black uppercase border-border bg-card shadow-sm ${rev.type === "weekly" ? "text-blue-600" : "text-purple-600"}`}
                           >
                             {rev.type}
                           </Badge>
@@ -183,7 +183,7 @@ export function HistoryArchives({
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-white border-border rounded-2xl shadow-2xl">
+                              <AlertDialogContent className="bg-card border-border rounded-2xl shadow-2xl">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="text-xl font-bold text-foreground">
                                     Are you absolutely sure?
@@ -219,7 +219,7 @@ export function HistoryArchives({
                       side="top"
                       align="start"
                       sideOffset={10}
-                      className="w-[400px] bg-white border-border shadow-2xl p-0 rounded-[24px] z-50 overflow-hidden"
+                      className="w-[400px] bg-card border-border shadow-2xl p-0 rounded-[24px] z-50 overflow-hidden"
                     >
                       <div className="bg-primary/5 px-6 py-4 border-b border-border/50 flex items-center justify-between">
                         <div>

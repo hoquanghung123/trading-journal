@@ -33,7 +33,7 @@ export function PlaybookGrid({ models, onSelectModel, onAddNew, stats }: Playboo
       </div>
 
       {models.length === 0 ? (
-        <div className="bg-white rounded-2xl p-16 flex flex-col items-center justify-center text-center border-2 border-dashed border-border shadow-sm">
+        <div className="bg-card rounded-2xl p-16 flex flex-col items-center justify-center text-center border-2 border-dashed border-border shadow-sm">
           <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-6">
             <FolderOpen className="w-10 h-10 text-muted-foreground/50" />
           </div>

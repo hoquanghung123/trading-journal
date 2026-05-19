@@ -37,7 +37,7 @@ export function MistakesWidget({
     previousReview && previousReview.topMistakes.some((m) => m.text.trim() !== "");
 
   return (
-    <Card className="bg-white border-destructive/20 shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
+    <Card className="bg-card border-destructive/20 shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
       <CardHeader className="bg-destructive/5 border-b border-destructive/10 pb-6">
         <CardTitle className="text-destructive text-xl font-bold flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
@@ -70,7 +70,7 @@ export function MistakesWidget({
                     />
                     <Label
                       htmlFor={`prev-mistake-${index}`}
-                      className={`text-sm font-semibold leading-relaxed transition-all ${mistake.fixed ? "text-muted-foreground line-through opacity-50" : "text-amber-900 group-hover:text-amber-700"}`}
+                      className={`text-sm font-semibold leading-relaxed transition-all ${mistake.fixed ? "text-muted-foreground line-through opacity-50" : "text-amber-700 dark:text-amber-400 group-hover:text-amber-700"}`}
                     >
                       {mistake.text}
                     </Label>

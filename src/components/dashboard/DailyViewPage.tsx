@@ -70,7 +70,7 @@ export function DailyViewPage() {
 
   if (!selectedDate) {
     return (
-      <div className="min-h-screen bg-[#F8FAF9] p-6 flex flex-col items-center justify-center text-muted-foreground">
+      <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center text-muted-foreground">
         <div className="w-20 h-20 rounded-[28px] bg-white shadow-xl flex items-center justify-center mb-6">
           <Calendar className="w-10 h-10 text-primary/40" />
         </div>
@@ -89,7 +89,7 @@ export function DailyViewPage() {
   const dateObj = parseISO(selectedDate);
 
   return (
-    <div className="min-h-screen bg-[#F8FAF9] p-6 lg:p-10">
+    <div className="min-h-screen bg-background p-6 lg:p-10">
       <div className="max-w-[1100px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -159,7 +159,7 @@ export function DailyViewPage() {
                     <div
                       key={t.id}
                       onClick={() => openTrade(t)}
-                      className="group p-8 flex items-center justify-between hover:bg-[#F8FAF9]/50 cursor-pointer transition-all duration-300"
+                      className="group p-8 flex items-center justify-between hover:bg-muted/50 cursor-pointer transition-all duration-300"
                     >
                       <div className="flex items-center gap-8">
                         {/* Time & Index */}
