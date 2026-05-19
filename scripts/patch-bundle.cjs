@@ -32,14 +32,7 @@ try {
   const rootWranglerPath = path.join(__dirname, "../wrangler.json");
   const distWranglerPath = path.join(__dirname, "../dist/client/wrangler.json");
 
-  if (process.env.CF_PAGES === "1") {
-    console.log("Building inside Cloudflare Pages Git Integration environment (CF_PAGES=1).");
-    console.log("Skipping dist/client/wrangler.json to prevent publishing conflicts.");
-    if (fs.existsSync(distWranglerPath)) {
-      fs.unlinkSync(distWranglerPath);
-      console.log("Cleaned up existing wrangler.json from publish directory.");
-    }
-  } else if (fs.existsSync(rootWranglerPath)) {
+  if (fs.existsSync(rootWranglerPath)) {
     console.log("Patching wrangler.json for redirected deployment...");
     const config = JSON.parse(fs.readFileSync(rootWranglerPath, "utf8"));
 

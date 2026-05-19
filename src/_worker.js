@@ -31,17 +31,21 @@ export default {
           let object = null;
 
           try {
-            object = await env.R2.get(path);
-            if (object) {
-              const headers = new Headers();
-              if (typeof object.writeHttpMetadata === "function") {
-                object.writeHttpMetadata(headers);
+            if (env.R2) {
+              object = await env.R2.get(path);
+              if (object) {
+                const headers = new Headers();
+                if (typeof object.writeHttpMetadata === "function") {
+                  object.writeHttpMetadata(headers);
+                }
+                // It's in R2, we can cache it for a long time
+                headers.set("Cache-Control", "public, max-age=31536000, immutable");
+                headers.set("X-Debug-All", JSON.stringify({ ...debug, source: "R2" }));
+                headers.set("X-Content-Source", "R2");
+                return new Response(object.body, { headers });
               }
-              // It's in R2, we can cache it for a long time
-              headers.set("Cache-Control", "public, max-age=31536000, immutable");
-              headers.set("X-Debug-All", JSON.stringify({ ...debug, source: "R2" }));
-              headers.set("X-Content-Source", "R2");
-              return new Response(object.body, { headers });
+            } else {
+              debug.error = "R2-Binding-Missing";
             }
           } catch (e) {
             debug.error = "R2-Get-Error: " + e.message;
@@ -60,18 +64,20 @@ export default {
             const contentType = response.headers.get("content-type") || "image/png";
 
             // Background push to R2
-            ctx.waitUntil(
-              (async () => {
-                try {
-                  await env.R2.put(path, blob.stream(), {
-                    httpMetadata: { contentType },
-                  });
-                  console.log(`Successfully migrated ${path} to R2`);
-                } catch (e) {
-                  console.error("Auto-migration failed:", e.message);
-                }
-              })(),
-            );
+            if (env.R2) {
+              ctx.waitUntil(
+                (async () => {
+                  try {
+                    await env.R2.put(path, blob.stream(), {
+                      httpMetadata: { contentType },
+                    });
+                    console.log(`Successfully migrated ${path} to R2`);
+                  } catch (e) {
+                    console.error("Auto-migration failed:", e.message);
+                  }
+                })(),
+              );
+            }
 
             // CRITICAL: DO NOT CACHE the fallback response!
             // This ensures the next request (after migration) hits the Worker again and gets the R2 version.
