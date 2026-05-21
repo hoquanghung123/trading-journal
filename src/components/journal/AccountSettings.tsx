@@ -12,6 +12,7 @@ import {
   Send,
   HelpCircle,
   ShieldAlert,
+  Globe,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings, type UserSettings } from "@/lib/settings";
@@ -28,6 +29,14 @@ const PRESET_COLORS = [
   { name: "Midnight Purple", hex: "#7c3aed" },
   { name: "Slate", hex: "#475569" },
   { name: "Amber", hex: "#d97706" },
+];
+
+const CURRENCIES = ["USD", "EUR", "GBP", "CHF", "AUD", "NZD", "JPY", "CAD"];
+const IMPACTS = [
+  { id: "high", name: "High Impact (Red)", color: "bg-rose-500", text: "text-rose-600" },
+  { id: "medium", name: "Medium Impact (Orange)", color: "bg-orange-500", text: "text-orange-600" },
+  { id: "low", name: "Low Impact (Yellow)", color: "bg-amber-400", text: "text-amber-600", desc: "Special: Only Crude Oil Inventories" },
+  { id: "holiday", name: "Holiday (Grey)", color: "bg-slate-400", text: "text-slate-600" }
 ];
 
 export function AccountSettings() {
@@ -396,6 +405,193 @@ export function AccountSettings() {
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* Economic News Section */}
+          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                <Globe className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Economic Calendar News</h2>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Receive Forex Factory economic calendar reminders via Telegram
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Main Switch */}
+              <label className="flex items-center justify-between p-6 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-border/50 group-hover:scale-110 transition-transform">
+                    <Globe className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-black uppercase tracking-widest text-foreground block">
+                      Enable News Telegram Reminders
+                    </span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      Automatically send news alerts daily and weekly
+                    </span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.forexNewsReminder ?? false}
+                    onChange={(e) =>
+                      setLocalSettings({ ...localSettings, forexNewsReminder: e.target.checked })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-14 h-7 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                </div>
+              </label>
+
+              {localSettings.forexNewsReminder && (
+                <div className="space-y-6 pt-4 border-t border-border/50 animate-fadeIn">
+                  {/* Currencies Selection */}
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      Currencies to Track
+                    </h3>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                      {CURRENCIES.map((currency) => {
+                        const currencies = localSettings.forexNewsCurrencies || [];
+                        const isChecked = currencies.includes(currency);
+                        return (
+                          <button
+                            key={currency}
+                            type="button"
+                            onClick={() => {
+                              const nextCurrencies = isChecked
+                                ? currencies.filter((c) => c !== currency)
+                                : [...currencies, currency];
+                              setLocalSettings({
+                                ...localSettings,
+                                forexNewsCurrencies: nextCurrencies,
+                              });
+                            }}
+                            className={`
+                              px-3 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95
+                              ${isChecked 
+                                ? "bg-primary border-primary text-white shadow-sm" 
+                                : "bg-muted/10 border-border/50 text-muted-foreground hover:bg-muted/20 hover:text-foreground"}
+                            `}
+                          >
+                            {currency}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Impact levels Selection */}
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      News Impact Filter
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {IMPACTS.map((impact) => {
+                        const impacts = localSettings.forexNewsImpacts || [];
+                        const isChecked = impacts.includes(impact.id);
+                        return (
+                          <button
+                            key={impact.id}
+                            type="button"
+                            onClick={() => {
+                              const nextImpacts = isChecked
+                                ? impacts.filter((imp) => imp !== impact.id)
+                                : [...impacts, impact.id];
+                              setLocalSettings({
+                                ...localSettings,
+                                forexNewsImpacts: nextImpacts,
+                              });
+                            }}
+                            className={`
+                              flex items-start gap-3 p-4 rounded-2xl border text-left transition-all active:scale-[0.98]
+                              ${isChecked 
+                                ? "bg-white border-primary/50 ring-2 ring-primary/10 shadow-sm" 
+                                : "bg-muted/10 border-border/50 text-muted-foreground hover:bg-muted/20"}
+                            `}
+                          >
+                            <div className={`w-4 h-4 rounded-full mt-0.5 ${impact.color} flex items-center justify-center shrink-0`}>
+                              {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
+                            <div>
+                              <span className={`text-xs font-bold block ${isChecked ? "text-foreground" : "text-muted-foreground"}`}>
+                                {impact.name}
+                              </span>
+                              {impact.desc && (
+                                <span className="text-[10px] font-medium text-amber-600 block mt-0.5 uppercase tracking-wider">
+                                  {impact.desc}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Notification Timing */}
+                  <div className="space-y-3">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      Notification Timing (Vietnam GMT+7)
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Daily Timing */}
+                      <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Tomorrow's News Notification</span>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="time"
+                            value={localSettings.forexNewsTimeDaily || "21:00"}
+                            onChange={(e) =>
+                              setLocalSettings({
+                                ...localSettings,
+                                forexNewsTimeDaily: e.target.value,
+                              })
+                            }
+                            className="flex-1 bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                          />
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            Every Night
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Weekly Timing */}
+                      <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Weekly News Notification</span>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="time"
+                            value={localSettings.forexNewsTimeWeekly || "08:00"}
+                            onChange={(e) =>
+                              setLocalSettings({
+                                ...localSettings,
+                                forexNewsTimeWeekly: e.target.value,
+                              })
+                            }
+                            className="flex-1 bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
+                          />
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            Sunday Mornings
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 

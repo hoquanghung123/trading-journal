@@ -17,6 +17,11 @@ export interface UserSettings {
   londonTime: string;
   nyTime: string;
   executionSchema?: any[];
+  forexNewsReminder: boolean;
+  forexNewsCurrencies: string[];
+  forexNewsImpacts: string[];
+  forexNewsTimeDaily: string;
+  forexNewsTimeWeekly: string;
 }
 
 type Row = {
@@ -36,6 +41,11 @@ type Row = {
   london_time: string;
   ny_time: string;
   execution_schema: any[] | null;
+  forex_news_reminder: boolean | null;
+  forex_news_currencies: string[] | null;
+  forex_news_impacts: string[] | null;
+  forex_news_time_daily: string | null;
+  forex_news_time_weekly: string | null;
 };
 
 const fromRow = (r: Row): UserSettings => ({
@@ -55,6 +65,11 @@ const fromRow = (r: Row): UserSettings => ({
   londonTime: r.london_time || "13:00",
   nyTime: r.ny_time || "19:00",
   executionSchema: r.execution_schema || [],
+  forexNewsReminder: r.forex_news_reminder ?? false,
+  forexNewsCurrencies: r.forex_news_currencies || ['USD', 'EUR', 'GBP', 'CHF', 'AUD', 'NZD', 'JPY', 'CAD'],
+  forexNewsImpacts: r.forex_news_impacts || ['high', 'medium'],
+  forexNewsTimeDaily: r.forex_news_time_daily || '21:00',
+  forexNewsTimeWeekly: r.forex_news_time_weekly || '08:00',
 });
 
 export async function fetchSettings(): Promise<UserSettings> {
@@ -88,6 +103,11 @@ export async function fetchSettings(): Promise<UserSettings> {
       london_time: "13:00",
       ny_time: "19:00",
       execution_schema: [],
+      forex_news_reminder: false,
+      forex_news_currencies: ['USD', 'EUR', 'GBP', 'CHF', 'AUD', 'NZD', 'JPY', 'CAD'],
+      forex_news_impacts: ['high', 'medium'],
+      forex_news_time_daily: "21:00",
+      forex_news_time_weekly: "08:00",
     };
     const { error: insError } = await supabase.from("user_settings").insert(defaultSettings);
     if (insError) throw insError;
@@ -124,6 +144,11 @@ export async function updateSettings(patch: Partial<UserSettings>): Promise<void
   if (patch.londonTime !== undefined) update.london_time = patch.londonTime;
   if (patch.nyTime !== undefined) update.ny_time = patch.nyTime;
   if (patch.executionSchema !== undefined) update.execution_schema = patch.executionSchema;
+  if (patch.forexNewsReminder !== undefined) update.forex_news_reminder = patch.forexNewsReminder;
+  if (patch.forexNewsCurrencies !== undefined) update.forex_news_currencies = patch.forexNewsCurrencies;
+  if (patch.forexNewsImpacts !== undefined) update.forex_news_impacts = patch.forexNewsImpacts;
+  if (patch.forexNewsTimeDaily !== undefined) update.forex_news_time_daily = patch.forexNewsTimeDaily;
+  if (patch.forexNewsTimeWeekly !== undefined) update.forex_news_time_weekly = patch.forexNewsTimeWeekly;
   update.updated_at = new Date().toISOString();
 
 

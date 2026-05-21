@@ -382,6 +382,11 @@ export type Database = {
           updated_at: string | null;
           user_id: string;
           execution_schema: Json | null;
+          forex_news_reminder: boolean | null;
+          forex_news_currencies: string[] | null;
+          forex_news_impacts: string[] | null;
+          forex_news_time_daily: string | null;
+          forex_news_time_weekly: string | null;
         };
         Insert: {
           created_at?: string | null;
@@ -391,6 +396,11 @@ export type Database = {
           updated_at?: string | null;
           user_id: string;
           execution_schema?: Json | null;
+          forex_news_reminder?: boolean | null;
+          forex_news_currencies?: string[] | null;
+          forex_news_impacts?: string[] | null;
+          forex_news_time_daily?: string | null;
+          forex_news_time_weekly?: string | null;
         };
         Update: {
           created_at?: string | null;
@@ -400,6 +410,11 @@ export type Database = {
           updated_at?: string | null;
           user_id?: string;
           execution_schema?: Json | null;
+          forex_news_reminder?: boolean | null;
+          forex_news_currencies?: string[] | null;
+          forex_news_impacts?: string[] | null;
+          forex_news_time_daily?: string | null;
+          forex_news_time_weekly?: string | null;
         };
         Relationships: [];
       };

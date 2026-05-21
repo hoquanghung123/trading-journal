@@ -7,10 +7,153 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
+// Global cache in V8 isolate memory to prevent rate limits
+let cachedCalendar: any[] | null = null;
+let lastFetchedTime = 0;
+
+async function fetchCalendarEvents(): Promise<any[]> {
+  const nowMs = Date.now();
+  // Cache for 10 minutes to respect the 2 requests per 5 minutes limit
+  if (cachedCalendar && (nowMs - lastFetchedTime < 10 * 60 * 1000)) {
+    console.log("Using cached Forex calendar events");
+    return cachedCalendar;
+  }
+  
+  try {
+    console.log("Fetching fresh Forex calendar events...");
+    const res = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      }
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch Forex calendar: ${res.statusText}`);
+    }
+    const data = await res.json();
+    cachedCalendar = data;
+    lastFetchedTime = nowMs;
+    return data;
+  } catch (err) {
+    console.error("Error fetching Forex calendar:", err);
+    return cachedCalendar || [];
+  }
+}
+
+// Vietnam Timezone Helpers (GMT+7)
+const getVNTimezoneDay = (date: Date) => {
+  const vnOffsetDate = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  return vnOffsetDate.getUTCDay();
+};
+
+const getVNDayOfWeekString = (date: Date) => {
+  const day = getVNTimezoneDay(date);
+  const days = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  return days[day];
+};
+
+const getVNParts = (date: Date) => {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(date);
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
+  return {
+    year: getPart("year"),
+    month: getPart("month"),
+    day: getPart("day"),
+    hour: getPart("hour"),
+    minute: getPart("minute")
+  };
+};
+
+const getVNDateString = (date: Date) => {
+  const p = getVNParts(date);
+  return `${p.year}-${p.month}-${p.day}`;
+};
+
+const getVNTime = (date: Date) => {
+  const p = getVNParts(date);
+  return `${p.hour}:${p.minute}`;
+};
+
+// Premium economic news formatter
+export function formatNewsMessage(
+  events: any[],
+  currencies: string[],
+  impacts: string[],
+  title: string
+): string {
+  const filtered = events.filter((e) => {
+    const eventCurrency = e.country?.toUpperCase();
+    if (!currencies.map(c => c.toUpperCase()).includes(eventCurrency)) {
+      return false;
+    }
+
+    const eventImpact = e.impact?.toLowerCase();
+    if (!impacts.map(i => i.toLowerCase()).includes(eventImpact)) {
+      return false;
+    }
+
+    if (eventImpact === "low") {
+      const eventTitle = e.title?.toLowerCase() || "";
+      if (!eventTitle.includes("crude oil inventories")) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    return `📅 *${title}*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🟢 Không có tin tức kinh tế quan trọng nào cần lưu ý theo cấu hình bộ lọc của bạn.\n━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+
+  filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  let message = `📅 *${title}*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+  let currentGroupDate = "";
+  for (const e of filtered) {
+    const eventDate = new Date(e.date);
+    const dateStr = getVNDateString(eventDate);
+    const dayName = getVNDayOfWeekString(eventDate);
+
+    if (dateStr !== currentGroupDate) {
+      if (currentGroupDate !== "") {
+        message += "\n";
+      }
+      message += `*📅 ${dayName} (${dateStr})*\n`;
+      currentGroupDate = dateStr;
+    }
+
+    const timeStr = getVNTime(eventDate);
+    const eventCurrency = e.country?.toUpperCase() || "";
+    
+    let emoji = "⚪";
+    if (e.impact.toLowerCase() === "high") emoji = "🔴";
+    else if (e.impact.toLowerCase() === "medium") emoji = "🟠";
+    else if (e.impact.toLowerCase() === "low") emoji = "🟡";
+
+    message += `${emoji} *${timeStr} (${eventCurrency})* - ${e.title}\n`;
+  }
+  
+  message += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `*Mức độ ảnh hưởng:* 🔴 Cao | 🟠 Trung bình | 🟡 Thấp (dầu thô) | ⚪ Khác\n`;
+  message += `_Lọc theo: ${currencies.join(", ")}_`;
+
+  return message;
+}
+
 Deno.serve(async (req) => {
   const now = new Date();
   
-  // Get current time in Vietnam (HH:mm format)
   const currentTime = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Ho_Chi_Minh",
     hour: "2-digit",
@@ -20,10 +163,9 @@ Deno.serve(async (req) => {
 
   console.log(`Checking reminders for: ${currentTime}`);
 
-  // 1. Fetch users who have any kind of reminders enabled
   const { data: users, error } = await supabase
     .from("user_settings")
-    .select("user_id, telegram_chat_id, daily_reminder, weekly_reminder, daily_reminder_time, weekly_reminder_time, asian_reminder, asian_time, london_reminder, london_time, ny_reminder, ny_time")
+    .select("user_id, telegram_chat_id, daily_reminder, weekly_reminder, daily_reminder_time, weekly_reminder_time, asian_reminder, asian_time, london_reminder, london_time, ny_reminder, ny_time, forex_news_reminder, forex_news_currencies, forex_news_impacts, forex_news_time_daily, forex_news_time_weekly")
     .not("telegram_chat_id", "is", null);
 
   if (error) {
@@ -31,7 +173,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 
-  const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+  const dayOfWeek = now.getDay();
   const notificationsSent = [];
 
   for (const user of users) {
@@ -49,22 +191,83 @@ Deno.serve(async (req) => {
       notificationsSent.push({ userId: user.user_id, type: "weekly" });
     }
 
-    // B. Asian Bias Reminder
+    // C. Asian Bias Reminder
     if (user.asian_reminder && user.asian_time?.substring(0, 5) === currentTime) {
       await sendTelegramMessage(chat_id, "🌏 *Phiên Á (Asian Session)*\n\nĐã đến giờ lập kế hoạch Bias cho phiên Á rồi. Hãy xem qua các cặp tiền liên quan và cập nhật phân tích của bạn nhé! 🕯️");
       notificationsSent.push({ userId: user.user_id, type: "asian" });
     }
 
-    // C. London Bias Reminder
+    // D. London Bias Reminder
     if (user.london_reminder && user.london_time?.substring(0, 5) === currentTime) {
       await sendTelegramMessage(chat_id, "🏛️ *Phiên Âu (London Session)*\n\nPhiên London sắp bắt đầu. Đã đến lúc xác định Bias và tìm kiếm cơ hội giao dịch cho phiên này rồi! ⚡");
       notificationsSent.push({ userId: user.user_id, type: "london" });
     }
 
-    // D. NY Bias Reminder
+    // E. NY Bias Reminder
     if (user.ny_reminder && user.ny_time?.substring(0, 5) === currentTime) {
       await sendTelegramMessage(chat_id, "🗽 *Phiên Mỹ (NY Session)*\n\nPhiên New York đã sẵn sàng. Hãy dành ít phút để kiểm tra lại Bias và tin tức quan trọng trước khi vào lệnh nhé! 🇺🇸");
       notificationsSent.push({ userId: user.user_id, type: "ny" });
+    }
+
+    // F. Forex Economic News Reminders
+    if (user.forex_news_reminder && user.forex_news_currencies && user.forex_news_currencies.length > 0) {
+      // 1. Tomorrow's News Reminder (Every Night)
+      if (user.forex_news_time_daily?.substring(0, 5) === currentTime) {
+        try {
+          const events = await fetchCalendarEvents();
+          const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const tomorrowDateStr = getVNDateString(tomorrow);
+          
+          const tomorrowEvents = events.filter((e) => {
+            const eventDate = new Date(e.date);
+            return getVNDateString(eventDate) === tomorrowDateStr;
+          });
+
+          const formattedTitle = `TIN TỨC KINH TẾ NGÀY MAI (${getVNDayOfWeekString(tomorrow)}, ${tomorrowDateStr})`;
+          const text = formatNewsMessage(
+            tomorrowEvents,
+            user.forex_news_currencies,
+            user.forex_news_impacts || ["high", "medium"],
+            formattedTitle
+          );
+
+          await sendTelegramMessage(chat_id, text);
+          notificationsSent.push({ userId: user.user_id, type: "forex_daily" });
+        } catch (err) {
+          console.error(`Error sending tomorrow's news reminder for ${user.user_id}:`, err);
+        }
+      }
+
+      // 2. Weekly News Reminder (On Sunday)
+      const vnDayOfWeek = getVNTimezoneDay(now);
+      if (vnDayOfWeek === 0 && user.forex_news_time_weekly?.substring(0, 5) === currentTime) {
+        try {
+          const events = await fetchCalendarEvents();
+          const startOfWeek = new Date(now.getTime());
+          const endOfWeek = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
+          const startOfWeekStr = getVNDateString(startOfWeek);
+          const endOfWeekStr = getVNDateString(endOfWeek);
+
+          const weeklyEvents = events.filter((e) => {
+            const eventDate = new Date(e.date);
+            const dateStr = getVNDateString(eventDate);
+            return dateStr >= startOfWeekStr && dateStr <= endOfWeekStr;
+          });
+
+          const formattedTitle = `TIN TỨC KINH TẾ TUẦN MỚI (Từ ${startOfWeekStr} đến ${endOfWeekStr})`;
+          const text = formatNewsMessage(
+            weeklyEvents,
+            user.forex_news_currencies,
+            user.forex_news_impacts || ["high", "medium"],
+            formattedTitle
+          );
+
+          await sendTelegramMessage(chat_id, text);
+          notificationsSent.push({ userId: user.user_id, type: "forex_weekly" });
+        } catch (err) {
+          console.error(`Error sending weekly news reminder for ${user.user_id}:`, err);
+        }
+      }
     }
   }
 
@@ -80,7 +283,7 @@ Deno.serve(async (req) => {
 async function sendTelegramMessage(chatId: string, text: string) {
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -89,6 +292,9 @@ async function sendTelegramMessage(chatId: string, text: string) {
         parse_mode: "Markdown",
       }),
     });
+    if (!res.ok) {
+      console.error(`Telegram send failed: ${res.status} ${await res.text()}`);
+    }
   } catch (err) {
     console.error("Failed to send telegram message:", err);
   }

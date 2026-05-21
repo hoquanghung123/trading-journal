@@ -1,7 +1,7 @@
 ---
 type: project
 created: 2026-05-17
-updated: 2026-05-17
+updated: 2026-05-19
 ---
 
 # Project Conventions: Telegram Bias Bot & Supabase Functions
@@ -34,3 +34,20 @@ This document summarizes the architectural and implementation conventions establ
 
 ## 🪙 Asset & Forex Filtering Rules
 - **Non-Forex Select:** Only indices, metals, and cryptos are shown in the `/bias` command list. Always filter out forex symbols by checking `is_forex` value inside the database.
+
+## 🎨 Premium HSL Dark Mode & Leak Prevention
+- **Dark Mode Standard:** The interface is built on a custom, state-of-the-art "Solar Eclipse" dark theme.
+- **Strict Leak Prevention:**
+  - Never use plain light-theme utility classes like `bg-white` or `bg-white/50` for card views, dialog components, alert pop-ups, lists, or checklists.
+  - Always use responsive, cohesive theme variables: `bg-card` for main cards and dialog elements, `bg-background` for inner slots or active tab indicators, and `border-border/50` or `border-primary/10` for subtle borders.
+  - ACCENTS: For financial performance indicators or checklist states, use translucent contrast colors (e.g. `bg-emerald-500/10 border-emerald-500/20 text-emerald-500` for gains, `bg-rose-500/10 border-rose-500/20 text-rose-500` for losses or missed rules) to maintain high contrast and premium aesthetics without harsh glare.
+
+## ☁️ Cloudflare Pages Deploy & Worker Safety
+- **Wrangler Redirection File Requirement:**
+  - When using a root `wrangler.json` with `"pages_build_output_dir": "dist/client"`, Cloudflare Pages mandates the existence of a corresponding `wrangler.json` inside the build output directory (`dist/client/wrangler.json`) after compilation with `"pages_build_output_dir": "."`. Deleting or skipping this generated file will fail the deployment immediately with code 1.
+- **R2 Bucket Bindings UI Mapping:**
+  - Declared bindings (like `R2` bound to `tradingjournal-chart`) must be manually linked in the Cloudflare Pages dashboard project settings under **Settings -> Functions -> R2 Bucket Bindings** for *both* **Production** and **Preview** environments. Failure to do so will result in an `"Unknown internal error occurred"` error at the publish stage.
+- **Worker Robustness Guardrails:**
+  - The SSR worker (`src/_worker.js`) must always wrap R2 operations in an existence check (`if (env.R2)`) before executing functions like `env.R2.get` or `env.R2.put`. This ensures graceful fallback to Supabase and prevents internal Server 500 crashes if the R2 bindings are disabled or unlinked.
+
+

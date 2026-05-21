@@ -260,11 +260,14 @@ Deno.serve(async (req) => {
         } else {
           await sendTelegramMessage(
             chatId,
-            "✅ <b>Chúc mừng!</b>\n\nTài khoản của bạn đã được liên kết thành công với Chartmate Trading Journal. Bạn sẽ nhận được các thông báo nhắc nhở tại đây.\n\nHãy gõ lệnh <code>/bias</code> để bắt đầu ghi chép nhận định thị trường!"
+            "✅ <b>Chúc mừng!</b>\n\nTài khoản của bạn đã được liên kết thành công với Chartmate Trading Journal. Bạn sẽ nhận được các thông báo nhắc nhở tại đây.\n\n<b>Các lệnh hỗ trợ:</b>\n• <code>/bias</code> - Ghi chép nhận định thị trường\n• <code>/news_tomorrow</code> - Tra cứu tin tức kinh tế ngày mai\n• <code>/news_week</code> - Tra cứu tin tức kinh tế tuần này"
           );
         }
       } else {
-        await sendTelegramMessage(chatId, "👋 Chào mừng bạn đến với Chartmate Bot! Vui lòng nhấn nút 'Connect Now' trên website để liên kết tài khoản.");
+        await sendTelegramMessage(
+          chatId,
+          "👋 Chào mừng bạn đến với Chartmate Bot!\n\n<b>Các lệnh hỗ trợ:</b>\n• <code>/bias</code> - Ghi chép nhận định thị trường\n• <code>/news_tomorrow</code> - Tra cứu tin tức kinh tế ngày mai\n• <code>/news_week</code> - Tra cứu tin tức kinh tế tuần này\n\n<i>Nhấn nút 'Connect Now' trên website để liên kết tài khoản nếu chưa kết nối.</i>"
+        );
       }
       return new Response("OK");
     }
@@ -273,6 +276,82 @@ Deno.serve(async (req) => {
     const userId = await getUserByChatId(chatId);
     if (!userId) {
       await sendTelegramMessage(chatId, "⚠️ Vui lòng liên kết tài khoản trước khi thực hiện ghi chép! Dùng nút kết nối trên website.");
+      return new Response("OK");
+    }
+
+    // Handle /news_tomorrow command
+    if (text.startsWith("/news_tomorrow")) {
+      const userSettings = await getUserUserSettings(userId);
+      if (!userSettings) {
+        await sendTelegramMessage(chatId, "⚠️ Không tìm thấy cấu hình cài đặt của bạn.");
+        return new Response("OK");
+      }
+
+      await sendTelegramMessage(chatId, "⏳ <b>Đang tải tin tức ngày mai từ Forex Factory...</b>");
+
+      try {
+        const events = await fetchCalendarEvents();
+        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const tomorrowDateStr = getVNDateString(tomorrow);
+        
+        const tomorrowEvents = events.filter((e) => {
+          const eventDate = new Date(e.date);
+          return getVNDateString(eventDate) === tomorrowDateStr;
+        });
+
+        const formattedTitle = `TRUY VẤN: TIN TỨC KINH TẾ NGÀY MAI (${getVNDayOfWeekString(tomorrow)}, ${tomorrowDateStr})`;
+        const newsMessage = formatNewsMessage(
+          tomorrowEvents,
+          userSettings.forex_news_currencies || ['USD', 'EUR', 'GBP', 'CHF', 'AUD', 'NZD', 'JPY', 'CAD'],
+          userSettings.forex_news_impacts || ["high", "medium"],
+          formattedTitle
+        );
+
+        await sendTelegramMessage(chatId, newsMessage, undefined, "Markdown");
+      } catch (err) {
+        console.error("Error fetching news:", err);
+        await sendTelegramMessage(chatId, "❌ Đã xảy ra lỗi khi tải tin tức kinh tế. Vui lòng thử lại sau!");
+      }
+      return new Response("OK");
+    }
+
+    // Handle /news_week command
+    if (text.startsWith("/news_week")) {
+      const userSettings = await getUserUserSettings(userId);
+      if (!userSettings) {
+        await sendTelegramMessage(chatId, "⚠️ Không tìm thấy cấu hình cài đặt của bạn.");
+        return new Response("OK");
+      }
+
+      await sendTelegramMessage(chatId, "⏳ <b>Đang tải tin tức tuần này từ Forex Factory...</b>");
+
+      try {
+        const events = await fetchCalendarEvents();
+        const now = new Date();
+        const startOfWeek = new Date();
+        const endOfWeek = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
+        const startOfWeekStr = getVNDateString(startOfWeek);
+        const endOfWeekStr = getVNDateString(endOfWeek);
+
+        const weeklyEvents = events.filter((e) => {
+          const eventDate = new Date(e.date);
+          const dateStr = getVNDateString(eventDate);
+          return dateStr >= startOfWeekStr && dateStr <= endOfWeekStr;
+        });
+
+        const formattedTitle = `TRUY VẤN: TIN TỨC KINH TẾ TUẦN NÀY (Từ ${startOfWeekStr} đến ${endOfWeekStr})`;
+        const newsMessage = formatNewsMessage(
+          weeklyEvents,
+          userSettings.forex_news_currencies || ['USD', 'EUR', 'GBP', 'CHF', 'AUD', 'NZD', 'JPY', 'CAD'],
+          userSettings.forex_news_impacts || ["high", "medium"],
+          formattedTitle
+        );
+
+        await sendTelegramMessage(chatId, newsMessage, undefined, "Markdown");
+      } catch (err) {
+        console.error("Error fetching news:", err);
+        await sendTelegramMessage(chatId, "❌ Đã xảy ra lỗi khi tải tin tức kinh tế. Vui lòng thử lại sau!");
+      }
       return new Response("OK");
     }
 
@@ -379,6 +458,156 @@ Deno.serve(async (req) => {
     return new Response("Error", { status: 500 });
   }
 });
+
+// --- FOREX NEWS HELPERS ---
+let cachedCalendar: any[] | null = null;
+let lastFetchedTime = 0;
+
+async function fetchCalendarEvents(): Promise<any[]> {
+  const nowMs = Date.now();
+  if (cachedCalendar && (nowMs - lastFetchedTime < 10 * 60 * 1000)) {
+    return cachedCalendar;
+  }
+  
+  try {
+    const res = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      }
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch Forex calendar: ${res.statusText}`);
+    }
+    const data = await res.json();
+    cachedCalendar = data;
+    lastFetchedTime = nowMs;
+    return data;
+  } catch (err) {
+    console.error("Error fetching Forex calendar:", err);
+    return cachedCalendar || [];
+  }
+}
+
+const getVNTimezoneDay = (date: Date) => {
+  const vnOffsetDate = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  return vnOffsetDate.getUTCDay();
+};
+
+const getVNDayOfWeekString = (date: Date) => {
+  const day = getVNTimezoneDay(date);
+  const days = ["Chủ Nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  return days[day];
+};
+
+const getVNParts = (date: Date) => {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(date);
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
+  return {
+    year: getPart("year"),
+    month: getPart("month"),
+    day: getPart("day"),
+    hour: getPart("hour"),
+    minute: getPart("minute")
+  };
+};
+
+const getVNDateString = (date: Date) => {
+  const p = getVNParts(date);
+  return `${p.year}-${p.month}-${p.day}`;
+};
+
+const getVNTime = (date: Date) => {
+  const p = getVNParts(date);
+  return `${p.hour}:${p.minute}`;
+};
+
+function formatNewsMessage(
+  events: any[],
+  currencies: string[],
+  impacts: string[],
+  title: string
+): string {
+  const filtered = events.filter((e) => {
+    const eventCurrency = e.country?.toUpperCase();
+    if (!currencies.map(c => c.toUpperCase()).includes(eventCurrency)) {
+      return false;
+    }
+
+    const eventImpact = e.impact?.toLowerCase();
+    if (!impacts.map(i => i.toLowerCase()).includes(eventImpact)) {
+      return false;
+    }
+
+    if (eventImpact === "low") {
+      const eventTitle = e.title?.toLowerCase() || "";
+      if (!eventTitle.includes("crude oil inventories")) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    return `📅 *${title}*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🟢 Không có tin tức kinh tế quan trọng nào cần lưu ý theo cấu hình bộ lọc của bạn.\n━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }
+
+  filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  let message = `📅 *${title}*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+  let currentGroupDate = "";
+  for (const e of filtered) {
+    const eventDate = new Date(e.date);
+    const dateStr = getVNDateString(eventDate);
+    const dayName = getVNDayOfWeekString(eventDate);
+
+    if (dateStr !== currentGroupDate) {
+      if (currentGroupDate !== "") {
+        message += "\n";
+      }
+      message += `*📅 ${dayName} (${dateStr})*\n`;
+      currentGroupDate = dateStr;
+    }
+
+    const timeStr = getVNTime(eventDate);
+    const eventCurrency = e.country?.toUpperCase() || "";
+    
+    let emoji = "⚪";
+    if (e.impact.toLowerCase() === "high") emoji = "🔴";
+    else if (e.impact.toLowerCase() === "medium") emoji = "🟠";
+    else if (e.impact.toLowerCase() === "low") emoji = "🟡";
+
+    message += `${emoji} *${timeStr} (${eventCurrency})* - ${e.title}\n`;
+  }
+  
+  message += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `*Mức độ ảnh hưởng:* 🔴 Cao | 🟠 Trung bình | 🟡 Thấp (dầu thô) | ⚪ Khác\n`;
+  message += `_Lọc theo: ${currencies.join(", ")}_`;
+
+  return message;
+}
+
+async function getUserUserSettings(userId: string) {
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("forex_news_currencies, forex_news_impacts")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
+}
 
 // --- 3. HELPER DATABASE FUNCTIONS ---
 async function getUserByChatId(chatId: string): Promise<string | null> {
@@ -596,14 +825,14 @@ function getH4BiasSubMenuReplyMarkup(sessionName: string, entryId: string) {
   };
 }
 
-async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: any) {
+async function sendTelegramMessage(chatId: string, text: string, replyMarkup?: any, parseMode?: string) {
   const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
 
   const body: any = {
     chat_id: chatId,
     text: text,
-    parse_mode: "HTML",
+    parse_mode: parseMode || "HTML",
   };
   if (replyMarkup) {
     body.reply_markup = replyMarkup;

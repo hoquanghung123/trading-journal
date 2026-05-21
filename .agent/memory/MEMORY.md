@@ -5,3 +5,7 @@
 - [project] Callback data payloads must be shortened to satisfy Telegram's 64-byte limit → project-conventions.md
 - [project] Always use parse_mode HTML instead of fragile Markdown to prevent text crashes → project-conventions.md
 - [project] Exclude forex asset symbols from /bias selection list → project-conventions.md
+- [project] Cohesive custom dark theme rules & styling leak prevention conventions → project-conventions.md
+- [project] Cloudflare Pages wrangler redirection files & R2 binding rules → project-conventions.md
+
+
