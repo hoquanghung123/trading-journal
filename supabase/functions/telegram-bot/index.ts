@@ -561,6 +561,33 @@ const getVNTime = (date: Date) => {
   return `${p.hour}:${p.minute}`;
 };
 
+const getNYParts = (date: Date) => {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+  const parts = formatter.formatToParts(date);
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || "";
+  return {
+    year: getPart("year"),
+    month: getPart("month"),
+    day: getPart("day"),
+    hour: getPart("hour"),
+    minute: getPart("minute")
+  };
+};
+
+const getNYTime = (date: Date) => {
+  const p = getNYParts(date);
+  return `${p.hour}:${p.minute}`;
+};
+
 function formatNewsMessage(
   events: any[],
   currencies: string[],
@@ -611,6 +638,7 @@ function formatNewsMessage(
     }
 
     const timeStr = getVNTime(eventDate);
+    const nyTimeStr = getNYTime(eventDate);
     const eventCurrency = e.country?.toUpperCase() || "";
     
     let emoji = "⚪";
@@ -618,7 +646,7 @@ function formatNewsMessage(
     else if (e.impact.toLowerCase() === "medium") emoji = "🟠";
     else if (e.impact.toLowerCase() === "low") emoji = "🟡";
 
-    message += `${emoji} *${timeStr} (${eventCurrency})* - ${e.title}\n`;
+    message += `${emoji} *${timeStr} VN (${nyTimeStr} NY)* - *(${eventCurrency})* - ${e.title}\n`;
   }
   
   message += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
