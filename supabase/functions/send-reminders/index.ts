@@ -218,20 +218,34 @@ Deno.serve(async (req) => {
           const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
           const tomorrowDateStr = getVNDateString(tomorrow);
           
-          const tomorrowEvents = events.filter((e) => {
-            const eventDate = new Date(e.date);
-            return getVNDateString(eventDate) === tomorrowDateStr;
-          });
+          // CHECK IF FEED IS OUTDATED (Sunday morning New York timezone sync)
+          const maxDateStr = events.reduce((max, e) => {
+            if (!e.date) return max;
+            const dateStr = getVNDateString(new Date(e.date));
+            return dateStr > max ? dateStr : max;
+          }, "");
 
-          const formattedTitle = `TIN TỨC KINH TẾ NGÀY MAI (${getVNDayOfWeekString(tomorrow)}, ${tomorrowDateStr})`;
-          const text = formatNewsMessage(
-            tomorrowEvents,
-            user.forex_news_currencies,
-            user.forex_news_impacts || ["high", "medium"],
-            formattedTitle
-          );
+          if (maxDateStr && maxDateStr < tomorrowDateStr) {
+            const warningMessage = `⚠️ *Dữ liệu ngày mai chưa được cập nhật*\n\n` +
+              `Hiện tại máy chủ Forex Factory (múi giờ Mỹ) chưa bước sang tuần mới nên lịch tin tức cho ngày *${tomorrowDateStr}* chưa sẵn sàng.\n\n` +
+              `Bản tin ngày mai sẽ sẵn sàng vào khoảng *11:00 trưa hôm nay (Chủ Nhật)*. Bạn vui lòng thử lại sau thời gian này nhé! ☕`;
+            await sendTelegramMessage(chat_id, warningMessage);
+          } else {
+            const tomorrowEvents = events.filter((e) => {
+              const eventDate = new Date(e.date);
+              return getVNDateString(eventDate) === tomorrowDateStr;
+            });
 
-          await sendTelegramMessage(chat_id, text);
+            const formattedTitle = `TIN TỨC KINH TẾ NGÀY MAI (${getVNDayOfWeekString(tomorrow)}, ${tomorrowDateStr})`;
+            const text = formatNewsMessage(
+              tomorrowEvents,
+              user.forex_news_currencies,
+              user.forex_news_impacts || ["high", "medium"],
+              formattedTitle
+            );
+
+            await sendTelegramMessage(chat_id, text);
+          }
           notificationsSent.push({ userId: user.user_id, type: "forex_daily" });
         } catch (err) {
           console.error(`Error sending tomorrow's news reminder for ${user.user_id}:`, err);
@@ -248,21 +262,35 @@ Deno.serve(async (req) => {
           const startOfWeekStr = getVNDateString(startOfWeek);
           const endOfWeekStr = getVNDateString(endOfWeek);
 
-          const weeklyEvents = events.filter((e) => {
-            const eventDate = new Date(e.date);
-            const dateStr = getVNDateString(eventDate);
-            return dateStr >= startOfWeekStr && dateStr <= endOfWeekStr;
-          });
+          // CHECK IF FEED IS OUTDATED (Sunday morning New York timezone sync)
+          const maxDateStr = events.reduce((max, e) => {
+            if (!e.date) return max;
+            const dateStr = getVNDateString(new Date(e.date));
+            return dateStr > max ? dateStr : max;
+          }, "");
 
-          const formattedTitle = `TIN TỨC KINH TẾ TUẦN MỚI (Từ ${startOfWeekStr} đến ${endOfWeekStr})`;
-          const text = formatNewsMessage(
-            weeklyEvents,
-            user.forex_news_currencies,
-            user.forex_news_impacts || ["high", "medium"],
-            formattedTitle
-          );
+          if (maxDateStr && maxDateStr < startOfWeekStr) {
+            const warningMessage = `⚠️ *Dữ liệu tuần mới chưa được cập nhật*\n\n` +
+              `Hiện tại máy chủ Forex Factory (múi giờ Mỹ) chưa bước sang tuần mới nên lịch tin tức từ *${startOfWeekStr}* đến *${endOfWeekStr}* chưa sẵn sàng.\n\n` +
+              `Bản tin tuần mới sẽ tự động khả dụng vào khoảng *11:00 trưa hôm nay (Chủ Nhật)*. Bạn vui lòng thử lại sau thời gian này hoặc điều chỉnh khung giờ nhận tin muộn hơn trong phần cài đặt nhé! ☕`;
+            await sendTelegramMessage(chat_id, warningMessage);
+          } else {
+            const weeklyEvents = events.filter((e) => {
+              const eventDate = new Date(e.date);
+              const dateStr = getVNDateString(eventDate);
+              return dateStr >= startOfWeekStr && dateStr <= endOfWeekStr;
+            });
 
-          await sendTelegramMessage(chat_id, text);
+            const formattedTitle = `TIN TỨC KINH TẾ TUẦN MỚI (Từ ${startOfWeekStr} đến ${endOfWeekStr})`;
+            const text = formatNewsMessage(
+              weeklyEvents,
+              user.forex_news_currencies,
+              user.forex_news_impacts || ["high", "medium"],
+              formattedTitle
+            );
+
+            await sendTelegramMessage(chat_id, text);
+          }
           notificationsSent.push({ userId: user.user_id, type: "forex_weekly" });
         } catch (err) {
           console.error(`Error sending weekly news reminder for ${user.user_id}:`, err);
