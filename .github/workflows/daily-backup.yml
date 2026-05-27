@@ -70,8 +70,6 @@ jobs:
           # Save outputs for the next steps
           echo "db_size=${DB_SIZE}" >> $GITHUB_OUTPUT
           echo "db_filename=${FILENAME}" >> $GITHUB_OUTPUT
-        env:
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
       - name: Copy Cloudflare R2 Assets to OneDrive
         id: r2_sync
