@@ -42,15 +42,10 @@ jobs:
           secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
           endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           acl = private
-
-          [onedrive]
-          type = onedrive
-          client_id = ${{ secrets.ONEDRIVE_CLIENT_ID }}
-          client_secret = ${{ secrets.ONEDRIVE_CLIENT_SECRET }}
-          token = ${{ secrets.ONEDRIVE_TOKEN_JSON }}
-          drive_id = ${{ secrets.ONEDRIVE_DRIVE_ID }}
-          drive_type = personal
           EOF
+          
+          # Append the OneDrive configuration from GitHub Secrets
+          echo "${{ secrets.RCLONE_CONFIG_ONEDRIVE }}" >> ~/.config/rclone/rclone.conf
 
       - name: Backup Postgres Database (SQL)
         id: db_backup
