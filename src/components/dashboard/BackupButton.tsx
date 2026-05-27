@@ -17,6 +17,8 @@ export function BackupButton() {
     });
 
     try {
+      // Proactively refresh user session if expired
+      await supabase.auth.getUser();
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 

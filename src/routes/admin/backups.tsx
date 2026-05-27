@@ -85,27 +85,17 @@ function AdminBackupsDashboard() {
   // 2. Mutation to trigger backup workflow securely
   const triggerMutation = useMutation({
     mutationFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Vui lòng đăng nhập lại.");
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-      const functionUrl = `${supabaseUrl}/functions/v1/trigger-backup-workflow`;
-
-      const res = await fetch(functionUrl, {
+      // Use the official Supabase SDK functions invoker.
+      // This automatically attaches the active (and auto-refreshed) user JWT session token.
+      const { data, error } = await supabase.functions.invoke("trigger-backup-workflow", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: "Không thể gọi API" }));
-        throw new Error(errData.error ?? `HTTP ${res.status}`);
+      if (error) {
+        throw new Error(error.message || "Không thể kích hoạt sao lưu");
       }
 
-      return res.json();
+      return data;
     },
     onSuccess: () => {
       toast.success("Đã kích hoạt sao lưu!", {
