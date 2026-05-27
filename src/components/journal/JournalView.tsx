@@ -33,6 +33,7 @@ import { onBiasFocus, onShowCelebration } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
+import { supabase } from "@/integrations/supabase/client";
 
 const newEntry = (asset: string): DayEntry => ({
   id: uid(),
@@ -111,6 +112,23 @@ export function JournalView() {
     };
 
     checkPsych();
+  }, []);
+
+  // Subscribe to real-time updates from Supabase for live reloading
+  useEffect(() => {
+    const channel = supabase.channel('journal_entries_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'journal_entries' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

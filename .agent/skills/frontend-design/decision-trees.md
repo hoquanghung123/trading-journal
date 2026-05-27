@@ -120,7 +120,6 @@ WHAT EMOTION/ACTION DO YOU WANT?
 ```
 
 ### The Process:
-
 1. Identify the emotion needed
 2. Narrow to color FAMILY
 3. ASK user for preference within family
@@ -160,7 +159,6 @@ WHAT'S THE CONTENT TYPE?
 ```
 
 ### Selection Process:
-
 1. Identify content type
 2. Choose style DIRECTION
 3. ASK user if they have brand fonts
@@ -171,13 +169,11 @@ WHAT'S THE CONTENT TYPE?
 ## 5. E-commerce Guidelines {#e-commerce}
 
 ### Key Principles (Not Fixed Rules)
-
 - **Trust first:** How will you show security?
 - **Action-oriented:** Where are the CTAs?
 - **Scannable:** Can users compare quickly?
 
 ### Color Thinking:
-
 ```
 E-commerce typically needs:
 ├── Trust color (often blue family) → ASK preference
@@ -188,7 +184,6 @@ E-commerce typically needs:
 ```
 
 ### Layout Principles:
-
 ```
 ┌────────────────────────────────────────────────────┐
 │  HEADER: Brand + Search + Cart                      │
@@ -215,7 +210,6 @@ E-commerce typically needs:
 ```
 
 ### Psychology to Apply:
-
 - Hick's Law: Limit navigation choices
 - Fitts' Law: Size CTAs appropriately
 - Social proof: Show where relevant
@@ -226,13 +220,11 @@ E-commerce typically needs:
 ## 6. SaaS Dashboard Guidelines {#saas}
 
 ### Key Principles
-
 - **Functional first:** Data clarity over decoration
 - **Calm UI:** Reduce cognitive load
 - **Consistent:** Predictable patterns
 
 ### Color Thinking:
-
 ```
 Dashboard typically needs:
 ├── Background: Light OR dark (ASK preference)
@@ -243,7 +235,6 @@ Dashboard typically needs:
 ```
 
 ### Layout Principles:
-
 ```
 Consider these patterns (not mandated):
 
@@ -263,7 +254,6 @@ OPTION C: Collapsed + Expandable
 ```
 
 ### Psychology to Apply:
-
 - Hick's Law: Group navigation items
 - Miller's Law: Chunk information
 - Cognitive Load: Whitespace, consistency
@@ -273,13 +263,11 @@ OPTION C: Collapsed + Expandable
 ## 7. Landing Page Guidelines {#landing-page}
 
 ### Key Principles
-
 - **Hero-centric:** First impression matters most
 - **Single focus:** One primary CTA
 - **Emotional:** Connect before selling
 
 ### Color Thinking:
-
 ```
 Landing page typically needs:
 ├── Brand primary: Hero background or accent
@@ -290,7 +278,6 @@ Landing page typically needs:
 ```
 
 ### Structure Principles:
-
 ```
 ┌────────────────────────────────────────────────────┐
 │  Navigation: Minimal, CTA visible                   │
@@ -316,7 +303,6 @@ Landing page typically needs:
 ```
 
 ### Psychology to Apply:
-
 - Visceral: Beautiful hero impression
 - Serial Position: Key info top/bottom
 - Social Proof: Testimonials work
@@ -326,13 +312,11 @@ Landing page typically needs:
 ## 8. Portfolio Guidelines {#portfolio}
 
 ### Key Principles
-
 - **Personality:** Show who you are
 - **Work-focused:** Let projects speak
 - **Memorable:** Stand out from templates
 
 ### Color Thinking:
-
 ```
 Portfolio is personal - many options:
 ├── Minimal: Neutrals + one signature accent
@@ -343,7 +327,6 @@ Portfolio is personal - many options:
 ```
 
 ### Structure Principles:
-
 ```
 ┌────────────────────────────────────────────────────┐
 │  Navigation: Unique to your personality             │
@@ -363,7 +346,6 @@ Portfolio is personal - many options:
 ```
 
 ### Psychology to Apply:
-
 - Von Restorff: Be uniquely memorable
 - Reflective: Personal story creates connection
 - Emotional: Personality over professionalism
@@ -405,36 +387,30 @@ Portfolio is personal - many options:
 ## 10. Complexity Estimation
 
 ### Quick Projects (Hours)
-
 ```
 Simple landing page
 Small portfolio
 Basic form
 Single component
 ```
-
 → Approach: Minimal decisions, focused execution
 
 ### Medium Projects (Days)
-
 ```
 Multi-page site
 Dashboard with modules
 E-commerce category
 Complex forms
 ```
-
 → Approach: Establish tokens, custom components
 
 ### Large Projects (Weeks)
-
 ```
 Full SaaS application
 E-commerce platform
 Custom design system
 Complex workflows
 ```
-
 → Approach: Full design system, documentation, testing
 
 ---

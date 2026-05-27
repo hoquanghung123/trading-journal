@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Master Checklist Runner - Antigravity Kit
+Master Checklist Runner - AG Kit
 ==========================================
 
 Orchestrates all validation scripts in priority order.
@@ -87,7 +87,7 @@ def run_script(name: str, script_path: Path, project_path: str, url: Optional[st
     print_step(f"Running: {name}")
     
     # Build command
-    cmd = ["python3", str(script_path), project_path]
+    cmd = ["python", str(script_path), project_path]
     if url and ("lighthouse" in script_path.name.lower() or "playwright" in script_path.name.lower()):
         cmd.append(url)
     
@@ -161,7 +161,7 @@ def print_summary(results: List[dict]):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run Antigravity Kit validation checklist",
+        description="Run AG Kit validation checklist",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

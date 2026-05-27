@@ -1,6 +1,7 @@
 ---
 name: systematic-debugging
 description: 4-phase systematic debugging methodology with root cause analysis and evidence-based verification. Use when debugging complex issues.
+when_to_use: "When debugging complex issues, performing root cause analysis, or using evidence-based problem solving. Use with /debug workflow."
 allowed-tools: Read, Glob, Grep
 ---
 
@@ -9,24 +10,20 @@ allowed-tools: Read, Glob, Grep
 > Source: obra/superpowers
 
 ## Overview
-
 This skill provides a structured approach to debugging that prevents random guessing and ensures problems are properly understood before solving.
 
 ## 4-Phase Debugging Process
 
 ### Phase 1: Reproduce
-
 Before fixing, reliably reproduce the issue.
 
 ```markdown
 ## Reproduction Steps
-
 1. [Exact step to reproduce]
 2. [Next step]
 3. [Expected vs actual result]
 
 ## Reproduction Rate
-
 - [ ] Always (100%)
 - [ ] Often (50-90%)
 - [ ] Sometimes (10-50%)
@@ -34,12 +31,10 @@ Before fixing, reliably reproduce the issue.
 ```
 
 ### Phase 2: Isolate
-
 Narrow down the source.
 
 ```markdown
 ## Isolation Questions
-
 - When did this start happening?
 - What changed recently?
 - Does it happen in all environments?
@@ -48,14 +43,11 @@ Narrow down the source.
 ```
 
 ### Phase 3: Understand
-
 Find the root cause, not just symptoms.
 
 ```markdown
 ## Root Cause Analysis
-
 ### The 5 Whys
-
 1. Why: [First observation]
 2. Why: [Deeper reason]
 3. Why: [Still deeper]
@@ -64,12 +56,10 @@ Find the root cause, not just symptoms.
 ```
 
 ### Phase 4: Fix & Verify
-
 Fix and verify it's truly fixed.
 
 ```markdown
 ## Fix Verification
-
 - [ ] Bug no longer reproduces
 - [ ] Related functionality still works
 - [ ] No new issues introduced
@@ -80,20 +70,17 @@ Fix and verify it's truly fixed.
 
 ```markdown
 ## Before Starting
-
 - [ ] Can reproduce consistently
 - [ ] Have minimal reproduction case
 - [ ] Understand expected behavior
 
 ## During Investigation
-
 - [ ] Check recent changes (git log)
 - [ ] Check logs for errors
 - [ ] Add logging if needed
 - [ ] Use debugger/breakpoints
 
 ## After Fix
-
 - [ ] Root cause documented
 - [ ] Fix verified
 - [ ] Regression test added

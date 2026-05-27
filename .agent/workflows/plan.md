@@ -11,7 +11,7 @@ $ARGUMENTS
 ## 🔴 CRITICAL RULES
 
 1. **NO CODE WRITING** - This command creates plan file only
-2. **Use project-planner agent** - NOT Antigravity Agent's native Plan mode
+2. **Use project-planner agent** - NOT AG Kit Agent's native Plan mode
 3. **Socratic Gate** - Ask clarifying questions before planning
 4. **Dynamic Naming** - Plan file named based on task
 
@@ -45,19 +45,18 @@ RULES:
 
 ## Expected Output
 
-| Deliverable            | Location                   |
-| ---------------------- | -------------------------- |
-| Project Plan           | `docs/PLAN-{task-slug}.md` |
-| Task Breakdown         | Inside plan file           |
-| Agent Assignments      | Inside plan file           |
-| Verification Checklist | Phase X in plan file       |
+| Deliverable | Location |
+|-------------|----------|
+| Project Plan | `docs/PLAN-{task-slug}.md` |
+| Task Breakdown | Inside plan file |
+| Agent Assignments | Inside plan file |
+| Verification Checklist | Phase X in plan file |
 
 ---
 
 ## After Planning
 
 Tell user:
-
 ```
 [OK] Plan created: docs/PLAN-{slug}.md
 
@@ -71,13 +70,13 @@ Next steps:
 
 ## Naming Examples
 
-| Request                           | Plan File                     |
-| --------------------------------- | ----------------------------- |
+| Request | Plan File |
+|---------|-----------|
 | `/plan e-commerce site with cart` | `docs/PLAN-ecommerce-cart.md` |
-| `/plan mobile app for fitness`    | `docs/PLAN-fitness-app.md`    |
-| `/plan add dark mode feature`     | `docs/PLAN-dark-mode.md`      |
-| `/plan fix authentication bug`    | `docs/PLAN-auth-fix.md`       |
-| `/plan SaaS dashboard`            | `docs/PLAN-saas-dashboard.md` |
+| `/plan mobile app for fitness` | `docs/PLAN-fitness-app.md` |
+| `/plan add dark mode feature` | `docs/PLAN-dark-mode.md` |
+| `/plan fix authentication bug` | `docs/PLAN-auth-fix.md` |
+| `/plan SaaS dashboard` | `docs/PLAN-saas-dashboard.md` |
 
 ---
 
