@@ -73,20 +73,20 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
-      - name: Sync Cloudflare R2 Assets to OneDrive
+      - name: Copy Cloudflare R2 Assets to OneDrive
         id: r2_sync
         run: |
-          echo "Starting full Cloudflare R2 bucket clone to OneDrive..."
+          echo "Starting Cloudflare R2 bucket copy to OneDrive (Additive)..."
           
-          # Execute the direct sync
-          rclone sync r2:tradingjournal-chart onedrive:trading-journal-backups/r2_charts --verbose
+          # Execute additive copy (does not delete target files)
+          rclone copy r2:tradingjournal-chart onedrive:trading-journal-backups/r2_charts --verbose
           
           # Gather synced bucket statistics
           STATS=$(rclone size r2:tradingjournal-chart --json)
           R2_SIZE=$(echo $STATS | jq '.bytes')
           R2_COUNT=$(echo $STATS | jq '.count')
           
-          echo "R2 Sync successful. Total files: ${R2_COUNT}, Total size: ${R2_SIZE} bytes."
+          echo "R2 copy successful. Total files: ${R2_COUNT}, Total size: ${R2_SIZE} bytes."
           
           # Save outputs
           echo "r2_size=${R2_SIZE}" >> $GITHUB_OUTPUT
