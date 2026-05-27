@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as HelloRouteImport } from './routes/hello'
 import { Route as DebugRouteImport } from './routes/debug'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StorageSplatRouteImport } from './routes/storage.$'
+import { Route as AdminBackupsRouteImport } from './routes/admin/backups'
 
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
@@ -30,6 +32,11 @@ const DebugRoute = DebugRouteImport.update({
   path: '/debug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -40,39 +47,73 @@ const StorageSplatRoute = StorageSplatRouteImport.update({
   path: '/storage/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminBackupsRoute = AdminBackupsRouteImport.update({
+  id: '/backups',
+  path: '/backups',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
+  '/admin/backups': typeof AdminBackupsRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
+  '/admin/backups': typeof AdminBackupsRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
+  '/admin/backups': typeof AdminBackupsRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/debug' | '/hello' | '/progress' | '/storage/$'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/debug'
+    | '/hello'
+    | '/progress'
+    | '/admin/backups'
+    | '/storage/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/debug' | '/hello' | '/progress' | '/storage/$'
-  id: '__root__' | '/' | '/debug' | '/hello' | '/progress' | '/storage/$'
+  to:
+    | '/'
+    | '/admin'
+    | '/debug'
+    | '/hello'
+    | '/progress'
+    | '/admin/backups'
+    | '/storage/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/debug'
+    | '/hello'
+    | '/progress'
+    | '/admin/backups'
+    | '/storage/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   DebugRoute: typeof DebugRoute
   HelloRoute: typeof HelloRoute
   ProgressRoute: typeof ProgressRoute
@@ -102,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -116,11 +164,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorageSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/backups': {
+      id: '/admin/backups'
+      path: '/backups'
+      fullPath: '/admin/backups'
+      preLoaderRoute: typeof AdminBackupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminBackupsRoute: typeof AdminBackupsRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminBackupsRoute: AdminBackupsRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   DebugRoute: DebugRoute,
   HelloRoute: HelloRoute,
   ProgressRoute: ProgressRoute,

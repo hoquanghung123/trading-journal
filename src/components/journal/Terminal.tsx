@@ -17,6 +17,7 @@ import {
   TrendingUp,
   UserCircle,
   Flame,
+  Shield,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { queryClient } from "@/lib/query-client";
@@ -239,6 +240,20 @@ function Shell() {
           >
             {isLeftCollapsed && !isMobileOpen ? (
               <>
+                {profile?.role === "admin" && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href="/admin/backups"
+                        className="w-full flex items-center justify-center py-2.5 rounded-xl text-sm font-medium text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 transition-all"
+                      >
+                        <Shield className="w-4 h-4 shrink-0 text-primary" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Admin Panel</TooltipContent>
+                  </Tooltip>
+                )}
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -265,6 +280,15 @@ function Shell() {
               </>
             ) : (
               <>
+                {profile?.role === "admin" && (
+                  <a
+                    href="/admin/backups"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 transition-all"
+                  >
+                    <Shield className="w-4 h-4 shrink-0 text-primary" /> Admin Panel
+                  </a>
+                )}
+
                 <button
                   onClick={() => setAssetsOpen(true)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"

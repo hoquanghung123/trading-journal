@@ -50,6 +50,7 @@ export interface Profile {
   currentStreak: number;
   longestStreak: number;
   activeTitle?: string;
+  role?: string;
 }
 
 export const ASSETS = ["GC1!", "NQ1!", "ES1!", "BTCUSD", "EURUSD", "GBPUSD"];
@@ -131,6 +132,7 @@ const fromProfileRow = (r: any): Profile => ({
   currentStreak: r.current_streak || 0,
   longestStreak: r.longest_streak || 0,
   activeTitle: r.active_title ?? undefined,
+  role: r.role ?? "member",
 });
 
 export async function fetchEntries(): Promise<DayEntry[]> {

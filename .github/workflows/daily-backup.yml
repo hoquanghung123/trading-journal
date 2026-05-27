@@ -1,0 +1,118 @@
+name: Daily Database and R2 Sync to OneDrive
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Every day at 00:00 UTC
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  backup:
+    name: Backup Database & R2 to OneDrive
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+          # Install Rclone
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Initialize Backup Log as Running
+        run: |
+          curl -s -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/record-backup-log" \
+            -H "Authorization: Bearer ${{ secrets.BACKUP_API_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"db_status": "running", "r2_status": "running", "log_message": "GitHub Actions daily backup pipeline initiated."}'
+
+      - name: Configure Rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          cat << EOF > ~/.config/rclone/rclone.conf
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          acl = private
+
+          [onedrive]
+          type = onedrive
+          client_id = ${{ secrets.ONEDRIVE_CLIENT_ID }}
+          client_secret = ${{ secrets.ONEDRIVE_CLIENT_SECRET }}
+          token = ${{ secrets.ONEDRIVE_TOKEN_JSON }}
+          drive_id = ${{ secrets.ONEDRIVE_DRIVE_ID }}
+          drive_type = personal
+          EOF
+
+      - name: Backup Postgres Database (SQL)
+        id: db_backup
+        run: |
+          TIMESTAMP=$(date +'%Y_%m_%d_%H%M%S')
+          FILENAME="backup_db_${TIMESTAMP}.sql"
+          echo "Dumping database to ${FILENAME}..."
+          
+          # Run pg_dump
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" -F p -v -f "${FILENAME}"
+          
+          # Measure file size
+          DB_SIZE=$(stat -c%s "${FILENAME}")
+          echo "Database dump successful. Size: ${DB_SIZE} bytes."
+          
+          # Copy to OneDrive
+          echo "Uploading database backup to OneDrive..."
+          rclone copy "${FILENAME}" onedrive:trading-journal-backups/database/
+          
+          # Save outputs for the next steps
+          echo "db_size=${DB_SIZE}" >> $GITHUB_OUTPUT
+          echo "db_filename=${FILENAME}" >> $GITHUB_OUTPUT
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+      - name: Sync Cloudflare R2 Assets to OneDrive
+        id: r2_sync
+        run: |
+          echo "Starting full Cloudflare R2 bucket clone to OneDrive..."
+          
+          # Execute the direct sync
+          rclone sync r2:tradingjournal-chart onedrive:trading-journal-backups/r2_charts --verbose
+          
+          # Gather synced bucket statistics
+          STATS=$(rclone size r2:tradingjournal-chart --json)
+          R2_SIZE=$(echo $STATS | jq '.bytes')
+          R2_COUNT=$(echo $STATS | jq '.count')
+          
+          echo "R2 Sync successful. Total files: ${R2_COUNT}, Total size: ${R2_SIZE} bytes."
+          
+          # Save outputs
+          echo "r2_size=${R2_SIZE}" >> $GITHUB_OUTPUT
+          echo "r2_count=${R2_COUNT}" >> $GITHUB_OUTPUT
+
+      - name: Record Success Log in Supabase
+        if: success()
+        run: |
+          DB_SIZE=${{ steps.db_backup.outputs.db_size }}
+          R2_SIZE=${{ steps.r2_sync.outputs.r2_size }}
+          R2_COUNT=${{ steps.r2_sync.outputs.r2_count }}
+          DB_FILE="${{ steps.db_backup.outputs.db_filename }}"
+          
+          MSG="Completed daily backup to OneDrive at $(date -u +'%Y-%m-%d %H:%M:%S UTC'). SQL Backup: ${DB_FILE} (${DB_SIZE} bytes). R2 Synced: ${R2_COUNT} charts (${R2_SIZE} bytes)."
+          
+          curl -s -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/record-backup-log" \
+            -H "Authorization: Bearer ${{ secrets.BACKUP_API_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"db_status\": \"success\", \"r2_status\": \"success\", \"db_size_bytes\": ${DB_SIZE}, \"r2_files_count\": ${R2_COUNT}, \"r2_size_bytes\": ${R2_SIZE}, \"log_message\": \"${MSG}\"}"
+
+      - name: Record Failure Log in Supabase
+        if: failure()
+        run: |
+          MSG="Daily backup pipeline FAILED. Please review the GitHub Actions execution logs for details."
+          
+          curl -s -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/record-backup-log" \
+            -H "Authorization: Bearer ${{ secrets.BACKUP_API_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"db_status\": \"failed\", \"r2_status\": \"failed\", \"log_message\": \"${MSG}\"}"
