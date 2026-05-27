@@ -32,6 +32,8 @@ jobs:
             -d '{"db_status": "running", "r2_status": "running", "log_message": "GitHub Actions daily backup pipeline initiated."}'
 
       - name: Configure Rclone
+        env:
+          RCLONE_ONEDRIVE_CONF: ${{ secrets.RCLONE_CONFIG_ONEDRIVE }}
         run: |
           mkdir -p ~/.config/rclone
           cat << EOF > ~/.config/rclone/rclone.conf
@@ -44,8 +46,8 @@ jobs:
           acl = private
           EOF
           
-          # Append the OneDrive configuration from GitHub Secrets
-          echo "${{ secrets.RCLONE_CONFIG_ONEDRIVE }}" >> ~/.config/rclone/rclone.conf
+          # Safely append the OneDrive configuration from the env variable
+          echo "$RCLONE_ONEDRIVE_CONF" >> ~/.config/rclone/rclone.conf
 
       - name: Backup Postgres Database (SQL)
         id: db_backup
