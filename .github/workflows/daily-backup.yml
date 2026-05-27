@@ -1,3 +1,6 @@
+# Hybrid Backup Architecture:
+# 1. Real-time R2 sync to OneDrive is managed inside the Cloudflare Pages Worker (src/lib/storage.ts & src/_worker.js).
+# 2. This GitHub Actions workflow runs the daily full sweep (Database SQL dump + complete R2 assets backup) and records stats on the Admin Dashboard.
 name: Daily Database and R2 Sync to OneDrive
 
 on:
