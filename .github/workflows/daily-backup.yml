@@ -55,6 +55,7 @@ jobs:
       - name: Backup Postgres Database (SQL)
         id: db_backup
         run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
           TIMESTAMP=$(date +'%Y_%m_%d_%H%M%S')
           FILENAME="backup_db_${TIMESTAMP}.sql"
           echo "Dumping database to ${FILENAME}..."
