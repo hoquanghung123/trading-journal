@@ -60,7 +60,7 @@ export default {
           const response = await fetch(targetUrl);
 
           if (response.ok) {
-            const blob = await response.blob();
+            const arrayBuffer = await response.arrayBuffer();
             const contentType = response.headers.get("content-type") || "image/png";
 
             // Background push to R2
@@ -68,12 +68,17 @@ export default {
               ctx.waitUntil(
                 (async () => {
                   try {
-                    await env.R2.put(path, blob.stream(), {
+                    await env.R2.put(path, arrayBuffer, {
                       httpMetadata: { contentType },
                     });
                     console.log(`Successfully migrated ${path} to R2`);
+
+                    // Also sync to OneDrive in real-time
+                    if (env.RCLONE_CONFIG_ONEDRIVE) {
+                      await syncToOneDrive(path, arrayBuffer, contentType, env.RCLONE_CONFIG_ONEDRIVE);
+                    }
                   } catch (e) {
-                    console.error("Auto-migration failed:", e.message);
+                    console.error("Auto-migration / OneDrive sync failed:", e.message);
                   }
                 })(),
               );
@@ -81,7 +86,7 @@ export default {
 
             // CRITICAL: DO NOT CACHE the fallback response!
             // This ensures the next request (after migration) hits the Worker again and gets the R2 version.
-            return new Response(blob, {
+            return new Response(arrayBuffer, {
               headers: {
                 "Content-Type": contentType,
                 "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -157,3 +162,100 @@ export default {
     }
   },
 };
+
+/**
+ * Safely parses the RCLONE_CONFIG_ONEDRIVE INI-style string.
+ */
+function parseRcloneConfig(configStr) {
+  if (!configStr) return null;
+  const config = {};
+  const lines = configStr.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("[") || trimmed.startsWith("#") || trimmed.startsWith(";")) {
+      continue;
+    }
+    const idx = trimmed.indexOf("=");
+    if (idx !== -1) {
+      const key = trimmed.substring(0, idx).trim();
+      const val = trimmed.substring(idx + 1).trim();
+      config[key] = val;
+    }
+  }
+  return config;
+}
+
+/**
+ * Syncs a file ArrayBuffer to OneDrive in the background using Microsoft Graph API.
+ */
+async function syncToOneDrive(path, data, contentType, rcloneConfigStr) {
+  try {
+    const config = parseRcloneConfig(rcloneConfigStr);
+    if (!config || !config.client_id || !config.client_secret || !config.token || !config.drive_id) {
+      console.warn("syncToOneDrive: Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable.");
+      return;
+    }
+
+    let tokenObj;
+    try {
+      tokenObj = JSON.parse(config.token);
+    } catch (e) {
+      console.error("syncToOneDrive: Failed to parse token JSON:", e.message);
+      return;
+    }
+
+    const refreshToken = tokenObj.refresh_token;
+    if (!refreshToken) {
+      console.error("syncToOneDrive: Missing refresh_token in token JSON.");
+      return;
+    }
+
+    // 1. Refresh Microsoft Graph OAuth Access Token
+    const tokenResponse = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: config.client_id,
+        client_secret: config.client_secret,
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const errText = await tokenResponse.text();
+      console.error(`syncToOneDrive: Failed to refresh Microsoft token: ${tokenResponse.status} ${errText}`);
+      return;
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      console.error("syncToOneDrive: No access_token returned from Microsoft.");
+      return;
+    }
+
+    // 2. Upload file to OneDrive via Microsoft Graph API
+    const uploadUrl = `https://graph.microsoft.com/v1.0/drives/${config.drive_id}/root:/trading-journal-backups/r2_charts/${path}:/content`;
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": contentType,
+      },
+      body: data,
+    });
+
+    if (uploadResponse.ok) {
+      console.log(`syncToOneDrive: Successfully synced ${path} to OneDrive!`);
+    } else {
+      const errText = await uploadResponse.text();
+      console.error(`syncToOneDrive: Failed to upload ${path} to OneDrive: ${uploadResponse.status} ${errText}`);
+    }
+  } catch (error) {
+    console.error("syncToOneDrive: Unexpected error during sync:", error.message);
+  }
+}

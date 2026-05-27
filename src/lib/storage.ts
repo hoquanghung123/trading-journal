@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { syncToOneDrive } from "./onedrive";
 
 /**
  * Server function to upload a file to Cloudflare R2.
@@ -9,6 +10,8 @@ export const uploadToR2 = createServerFn({ method: "POST" }).handler(
     const request = getRequest();
     // @ts-ignore
     const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
+    // @ts-ignore
+    const ctx = request?.context?.cloudflare?.context || request?.context?.cloudflare || request?.context;
     const r2 = env?.R2;
 
     if (!r2) {
@@ -26,6 +29,21 @@ export const uploadToR2 = createServerFn({ method: "POST" }).handler(
     await r2.put(data.path, bytes, {
       httpMetadata: { contentType: data.contentType },
     });
+
+    // Real-time OneDrive sync in the background
+    if (env?.RCLONE_CONFIG_ONEDRIVE) {
+      const syncPromise = syncToOneDrive(data.path, bytes, data.contentType, env.RCLONE_CONFIG_ONEDRIVE);
+      if (ctx && typeof ctx.waitUntil === "function") {
+        ctx.waitUntil(syncPromise);
+      } else {
+        // Fallback for runtimes without waitUntil (failsafe non-blocking)
+        syncPromise.catch((err) => {
+          console.error("Failed to sync to OneDrive in background:", err);
+        });
+      }
+    } else {
+      console.warn("RCLONE_CONFIG_ONEDRIVE environment variable not found. Skipping real-time OneDrive sync.");
+    }
 
     return { success: true };
   },
