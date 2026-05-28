@@ -146,64 +146,79 @@ function AdminBackupsDashboard() {
     return new Date(Date.now() - tzOffset).toISOString().split("T")[0];
   };
   const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>(getTodayLocalDate());
-  const [selectedHistoryAsset, setSelectedHistoryAsset] = useState<string>("GC1!");
+  const [historyFilterTable, setHistoryFilterTable] = useState<string>("all");
   const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<any | null>(null);
 
-  // React Query to fetch all unique assets from journal entries
-  const { data: uniqueAssets } = useQuery<string[]>({
-    queryKey: ["journal_assets_list"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("journal_entries")
-        .select("asset")
-        .order("asset");
-      if (error) throw error;
-      const assets = Array.from(new Set(data?.map((d) => d.asset) || []));
-      return assets.length > 0 ? assets : ["GC1!", "NQ1!", "ES1!", "BTCUSD", "EURUSD", "GBPUSD"];
-    }
-  });
-
-  // React Query to fetch historical revisions for the selected date and asset
+  // React Query to fetch historical revisions for the selected date and table type
   const { data: historyRevisions, isLoading: isHistoryLoading, refetch: refetchHistory } = useQuery<any[]>({
-    queryKey: ["journal_history", selectedHistoryDate, selectedHistoryAsset],
+    queryKey: ["system_history", selectedHistoryDate, historyFilterTable],
     queryFn: async () => {
-      if (!selectedHistoryDate || !selectedHistoryAsset) return [];
-      const { data, error } = await (supabase as any)
-        .from("journal_entries_history")
+      if (!selectedHistoryDate) return [];
+      
+      let query = (supabase as any)
+        .from("system_temporal_history")
         .select("*")
-        .eq("date", selectedHistoryDate)
-        .eq("asset", selectedHistoryAsset)
-        .order("history_timestamp", { ascending: false });
+        .gte("history_timestamp", `${selectedHistoryDate}T00:00:00+07:00`)
+        .lte("history_timestamp", `${selectedHistoryDate}T23:59:59.999+07:00`);
+
+      if (historyFilterTable !== "all") {
+        query = query.eq("table_name", historyFilterTable);
+      }
+
+      const { data, error } = await query.order("history_timestamp", { ascending: false });
       if (error) throw error;
       return data || [];
     },
-    enabled: activeTab === "history" && !!selectedHistoryDate && !!selectedHistoryAsset,
+    enabled: activeTab === "history" && !!selectedHistoryDate,
   });
 
   // Mutation to restore a specific revision
   const restoreVersionMutation = useMutation({
     mutationFn: async (versionId: string) => {
-      const { data, error } = await (supabase as any).rpc("restore_single_journal_version", {
-        target_date: selectedHistoryDate,
-        target_asset: selectedHistoryAsset,
+      const { data, error } = await (supabase as any).rpc("restore_single_system_version", {
         version_id: versionId,
       });
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      toast.success("Khôi phục nhật ký thành công!", {
-        description: `Đã khôi phục phiên bản của ngày ${selectedHistoryDate} (${selectedHistoryAsset}).`,
+      toast.success("Khôi phục bản ghi thành công!", {
+        description: "Dữ liệu đã được quay về trạng thái đã chọn.",
       });
       refetchHistory();
       refetch(); // Refetch daily backup logs
     },
     onError: (err: any) => {
-      toast.error("Khôi phục phiên bản thất bại", {
+      toast.error("Khôi phục thất bại", {
         description: err.message,
       });
     },
   });
+
+  // Mutation to restore bulk batch versions
+  const restoreBatchMutation = useMutation({
+    mutationFn: async (vars: { batchTimestamp: string; tableName: string }) => {
+      const { data, error } = await (supabase as any).rpc("restore_batch_system_versions", {
+        batch_timestamp: vars.batchTimestamp,
+        target_table: vars.tableName,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Hoàn tác hàng loạt thành công!", {
+        description: "Toàn bộ các dòng trong lô đã được khôi phục về trạng thái cũ.",
+      });
+      refetchHistory();
+      refetch(); // Refetch daily backup logs
+    },
+    onError: (err: any) => {
+      toast.error("Khôi phục hàng loạt thất bại", {
+        description: err.message,
+      });
+    },
+  });
+
 
   // 1. React Query to fetch daily backup logs
   const { data: logs, isLoading, refetch } = useQuery<BackupLog[]>({
@@ -951,27 +966,27 @@ function AdminBackupsDashboard() {
 
               <div className="flex-1 space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
-                  Chọn Loại Tài Sản
+                  Chọn Loại Bảng Dữ Liệu
                 </label>
-                <div className="relative flex gap-2">
+                <div className="relative">
                   <select
-                    value={selectedHistoryAsset}
-                    onChange={(e) => setSelectedHistoryAsset(e.target.value)}
-                    className="flex-1 h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-black focus:border-primary/60 focus:outline-none transition-colors appearance-none cursor-pointer"
+                    value={historyFilterTable}
+                    onChange={(e) => setHistoryFilterTable(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-black focus:border-primary/60 focus:outline-none transition-colors appearance-none cursor-pointer"
                   >
-                    {uniqueAssets?.map((asset) => (
-                      <option key={asset} value={asset} className="bg-[#070b13] font-bold text-xs text-slate-100">
-                        {asset}
-                      </option>
-                    ))}
+                    <option value="all" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                      Tất cả bảng dữ liệu (All Tables)
+                    </option>
+                    <option value="journal_entries" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                      Nhật ký biểu đồ (journal_entries)
+                    </option>
+                    <option value="trades" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                      Giao dịch (trades)
+                    </option>
+                    <option value="psychology_logs" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                      Nhật ký tâm lý (psychology_logs)
+                    </option>
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Nhập khác..."
-                    value={selectedHistoryAsset}
-                    onChange={(e) => setSelectedHistoryAsset(e.target.value.toUpperCase())}
-                    className="w-32 h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-black uppercase placeholder-muted-foreground/30 focus:border-primary/60 focus:outline-none transition-colors"
-                  />
                 </div>
               </div>
             </div>
@@ -998,106 +1013,172 @@ function AdminBackupsDashboard() {
                   </div>
                 ) : historyRevisions && historyRevisions.length > 0 ? (
                   <div className="relative border-l-2 border-border/30 pl-6 ml-4 space-y-8 py-2">
-                    {historyRevisions.map((rev) => {
-                      const hasWeekly = !!rev.weekly_img;
-                      const hasDaily = !!rev.daily_img;
-                      const hasMonthly = !!rev.monthly_img;
-                      const hasYearly = !!rev.yearly_img;
-                      const h4Sessions = rev.h4 ? Object.keys(rev.h4) : [];
+                    {(() => {
+                      // Grouping function inside rendering closure
+                      const groups: any[] = [];
+                      const seen = new Set();
+                      
+                      historyRevisions.forEach((rev) => {
+                        const batchKey = `${rev.history_timestamp}_${rev.table_name}`;
+                        if (!seen.has(batchKey)) {
+                          seen.add(batchKey);
+                          const items = historyRevisions.filter(
+                            (r) => r.history_timestamp === rev.history_timestamp && r.table_name === rev.table_name
+                          );
+                          groups.push({
+                            batch_id: batchKey,
+                            history_timestamp: rev.history_timestamp,
+                            history_action: rev.history_action,
+                            table_name: rev.table_name,
+                            items,
+                          });
+                        }
+                      });
 
-                      return (
-                        <div key={rev.history_id} className="relative group/timeline animate-in slide-in-from-left duration-300">
-                          {/* Timeline Dot Indicator */}
-                          <span className="absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#070b13] border-2 border-primary/80 group-hover/timeline:border-primary transition-colors">
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          </span>
+                      return groups.map((group) => {
+                        const isBatch = group.items.length > 1;
+                        const tableNameViet = 
+                          group.table_name === "journal_entries" ? "Nhật ký biểu đồ" :
+                          group.table_name === "trades" ? "Lịch sử Giao dịch" : "Nhật ký Tâm lý";
 
-                          <div className="bg-black/30 border border-border/50 hover:border-primary/30 p-5 rounded-2xl transition-all shadow-md hover:shadow-lg flex flex-col md:flex-row justify-between gap-6 items-start md:items-center">
-                            
-                            {/* Left side: revision meta */}
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-mono font-bold text-foreground">
-                                  {formatDateTime(rev.history_timestamp)}
-                                </span>
-                                {rev.history_action === "UPDATE" ? (
-                                  <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                    UPDATE
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                                    DELETE
-                                  </span>
-                                )}
+                        return (
+                          <div key={group.batch_id} className="relative group/timeline animate-in slide-in-from-left duration-300">
+                            {/* Timeline Dot Indicator */}
+                            <span className="absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#070b13] border-2 border-primary/80 group-hover/timeline:border-primary transition-colors">
+                              <span className={`h-1.5 w-1.5 rounded-full ${isBatch ? "bg-cyan-400 animate-ping" : "bg-primary"}`} />
+                            </span>
+
+                            <div className="bg-black/30 border border-border/50 hover:border-primary/30 p-5 rounded-2xl transition-all shadow-md hover:shadow-lg space-y-4">
+                              <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+                                
+                                {/* Left side: revision meta */}
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs font-mono font-bold text-foreground">
+                                      {formatDateTime(group.history_timestamp)}
+                                    </span>
+                                    {group.history_action === "UPDATE" ? (
+                                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                        UPDATE
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                        DELETE
+                                      </span>
+                                    )}
+                                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                                      {group.table_name}
+                                    </span>
+                                  </div>
+
+                                  <div className="text-slate-300 font-bold text-xs">
+                                    {isBatch ? (
+                                      <span className="text-glow-cyan flex items-center gap-1.5">
+                                        <Layers size={12} className="text-primary" />
+                                        Khôi phục Hàng loạt {tableNameViet} ({group.items.length} bản ghi)
+                                      </span>
+                                    ) : (
+                                      <span>Khôi phục bản ghi {tableNameViet}</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Right side: batch quick actions */}
+                                <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
+                                  {isBatch && (
+                                    <button
+                                      onClick={() => {
+                                        if (window.confirm(`Bạn có chắc chắn muốn HOÀN TÁC HÀNG LOẠT (${group.items.length} dòng) thuộc bảng ${group.table_name} về thời điểm ${formatDateTime(group.history_timestamp)}?`)) {
+                                          restoreBatchMutation.mutate({
+                                            batchTimestamp: group.history_timestamp,
+                                            tableName: group.table_name,
+                                          });
+                                        }
+                                      }}
+                                      disabled={restoreBatchMutation.isPending}
+                                      className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
+                                    >
+                                      {restoreBatchMutation.isPending ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                      ) : (
+                                        <Layers size={12} />
+                                      )}
+                                      Undo Batch ({group.items.length})
+                                    </button>
+                                  )}
+                                  
+                                  {!isBatch && (
+                                    <button
+                                      onClick={() => {
+                                        if (window.confirm(`Bạn có chắc chắn muốn khôi phục bản ghi ${tableNameViet} về phiên bản lưu lúc ${formatDateTime(group.history_timestamp)}?`)) {
+                                          restoreVersionMutation.mutate(group.items[0].history_id);
+                                        }
+                                      }}
+                                      disabled={restoreVersionMutation.isPending}
+                                      className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
+                                    >
+                                      {restoreVersionMutation.isPending ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                      ) : (
+                                        <RefreshCw size={12} />
+                                      )}
+                                      Rollback
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
-                              <div className="flex flex-wrap gap-2 pt-1">
-                                {hasWeekly && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                                    Weekly
-                                  </span>
-                                )}
-                                {hasDaily && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                                    Daily
-                                  </span>
-                                )}
-                                {hasMonthly && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                                    Monthly
-                                  </span>
-                                )}
-                                {hasYearly && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                                    Yearly
-                                  </span>
-                                )}
-                                {h4Sessions.length > 0 && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-black uppercase tracking-widest text-primary">
-                                    H4: {h4Sessions.join(", ")}
-                                  </span>
-                                )}
-                              </div>
-
-                              {rev.notes && (
-                                <p className="text-[11px] text-muted-foreground/80 line-clamp-1 italic max-w-xl">
-                                  "{rev.notes}"
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Right side: quick actions */}
-                            <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
-                              <button
-                                onClick={() => setSelectedHistoryVersion(rev)}
-                                className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all text-xs font-black uppercase tracking-wider active:scale-95"
-                              >
-                                <Eye size={12} />
-                                Xem chi tiết
-                              </button>
-                              
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC nhật ký ngày ${selectedHistoryDate} (${selectedHistoryAsset}) về phiên bản lưu lúc ${formatDateTime(rev.history_timestamp)}? Dòng dữ liệu hiện tại sẽ bị thay thế hoàn toàn.`)) {
-                                    restoreVersionMutation.mutate(rev.history_id);
+                              {/* Nested items inside the batch */}
+                              <div className="bg-black/40 border border-border/30 rounded-xl overflow-hidden divide-y divide-border/20">
+                                {group.items.map((item: any) => {
+                                  let summaryText = "";
+                                  if (group.table_name === "journal_entries") {
+                                    summaryText = `Tài sản: ${item.snapshot_data?.asset || "—"} | Notes: ${item.snapshot_data?.notes || "Không có ghi chú"}`;
+                                  } else if (group.table_name === "trades") {
+                                    summaryText = `Giao dịch: ${item.snapshot_data?.symbol} (${item.snapshot_data?.side}) | Net PnL: $${item.snapshot_data?.net_pnl || "0"} | R:R: ${item.snapshot_data?.actual_rr || "—"}`;
+                                  } else if (group.table_name === "psychology_logs") {
+                                    summaryText = `Tâm lý ngày: ${item.snapshot_data?.date} | Mood: ${item.snapshot_data?.morning_mood || "—"} | Emotion: ${item.snapshot_data?.pre_trade_emotion || "—"}`;
                                   }
-                                }}
-                                disabled={restoreVersionMutation.isPending}
-                                className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
-                              >
-                                {restoreVersionMutation.isPending ? (
-                                  <Loader2 size={12} className="animate-spin" />
-                                ) : (
-                                  <RefreshCw size={12} />
-                                )}
-                                Rollback
-                              </button>
-                            </div>
 
+                                  return (
+                                    <div key={item.history_id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-muted/5 transition-colors">
+                                      <div className="text-[11px] text-slate-300 font-mono truncate max-w-lg">
+                                        {summaryText}
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                          onClick={() => setSelectedHistoryVersion(item)}
+                                          className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
+                                        >
+                                          <Eye size={10} />
+                                          Chi tiết
+                                        </button>
+                                        
+                                        {isBatch && (
+                                          <button
+                                            onClick={() => {
+                                              if (window.confirm(`Khôi phục riêng lẻ bản ghi này?`)) {
+                                                restoreVersionMutation.mutate(item.history_id);
+                                              }
+                                            }}
+                                            disabled={restoreVersionMutation.isPending}
+                                            className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
+                                          >
+                                            <RefreshCw size={10} />
+                                            Rollback
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -1109,7 +1190,7 @@ function AdminBackupsDashboard() {
                         Chưa ghi nhận phiên bản sửa đổi nào
                       </h3>
                       <p className="text-[11px] text-muted-foreground/60 max-w-sm mx-auto">
-                        Hệ thống PITR tự động tạo revision khi bạn có thay đổi (UPDATE hoặc DELETE) trên biểu đồ ngày {selectedHistoryDate} và tài sản {selectedHistoryAsset}.
+                        Hệ thống PITR tự động tạo revision khi bạn có thay đổi (UPDATE hoặc DELETE) trên bất kỳ bảng dữ liệu nào của ngày hôm nay.
                       </p>
                     </div>
                   </div>
@@ -1304,206 +1385,378 @@ function AdminBackupsDashboard() {
       )}
 
       {/* MODAL 3: Detailed History Revision Preview */}
-      {selectedHistoryVersion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedHistoryVersion(null)}>
-          <div
-            className="w-full max-w-4xl bg-[#0c1220] border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <History size={16} className="text-primary" />
-                <span className="text-xs font-black uppercase tracking-widest text-foreground">
-                  Chi tiết bản lưu lịch sử ({formatDateTime(selectedHistoryVersion.history_timestamp)})
-                </span>
-              </div>
-              <button
-                onClick={() => setSelectedHistoryVersion(null)}
-                className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 px-3 py-1.5 rounded-lg border border-border/60 transition-all active:scale-95"
-              >
-                Đóng
-              </button>
-            </div>
+      {selectedHistoryVersion && (() => {
+        const snap = selectedHistoryVersion.snapshot_data || {};
+        const tableName = selectedHistoryVersion.table_name;
+        const tableNameViet = 
+          tableName === "journal_entries" ? "Nhật ký biểu đồ" :
+          tableName === "trades" ? "Lịch sử Giao dịch" : "Nhật ký Tâm lý";
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto font-sans text-xs text-slate-300 space-y-6 flex-1">
-              
-              {/* Revision Info Banner */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-muted/10 p-4 rounded-xl border border-border/40">
-                <div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                    Hành động
-                  </span>
-                  <span className="font-bold text-foreground text-xs uppercase text-glow-cyan">
-                    {selectedHistoryVersion.history_action}
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedHistoryVersion(null)}>
+            <div
+              className="w-full max-w-4xl bg-[#0c1220] border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <History size={16} className="text-primary animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-200">
+                    Bản sao lưu {tableNameViet} ({formatDateTime(selectedHistoryVersion.history_timestamp)})
                   </span>
                 </div>
-                <div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                    Tài sản & Ngày
-                  </span>
-                  <span className="font-bold text-foreground text-xs uppercase">
-                    {selectedHistoryVersion.asset} · {selectedHistoryVersion.date}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                    Thời gian tạo bản ghi gốc
-                  </span>
-                  <span className="font-bold text-foreground text-xs">
-                    {formatDateTime(selectedHistoryVersion.created_at)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Note details */}
-              {selectedHistoryVersion.notes && (
-                <div className="space-y-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                    Ghi chú chi tiết (Notes)
-                  </span>
-                  <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed font-semibold whitespace-pre-wrap">
-                    {selectedHistoryVersion.notes}
-                  </div>
-                </div>
-              )}
-
-              {/* Biases Grid */}
-              <div className="space-y-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                  Định hướng phân tích (Biases)
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Weekly Bias</span>
-                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.weekly_bias}</span>
-                  </div>
-                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Daily Bias</span>
-                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.daily_bias}</span>
-                  </div>
-                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Monthly Bias</span>
-                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.monthly_bias || "—"}</span>
-                  </div>
-                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Yearly Bias</span>
-                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.yearly_bias || "—"}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Charts Images Grid */}
-              <div className="space-y-4">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                  Danh sách biểu đồ đã chụp (Charts)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Weekly Chart */}
-                  {selectedHistoryVersion.weekly_img && (
-                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">weekly outlook chart</span>
-                      <a href={`/storage/${selectedHistoryVersion.weekly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
-                        <img src={`/storage/${selectedHistoryVersion.weekly_img}`} alt="Weekly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Daily Chart */}
-                  {selectedHistoryVersion.daily_img && (
-                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily outlook chart</span>
-                      <a href={`/storage/${selectedHistoryVersion.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
-                        <img src={`/storage/${selectedHistoryVersion.daily_img}`} alt="Daily Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Monthly Chart */}
-                  {selectedHistoryVersion.monthly_img && (
-                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">monthly outlook chart</span>
-                      <a href={`/storage/${selectedHistoryVersion.monthly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
-                        <img src={`/storage/${selectedHistoryVersion.monthly_img}`} alt="Monthly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Yearly Chart */}
-                  {selectedHistoryVersion.yearly_img && (
-                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">yearly outlook chart</span>
-                      <a href={`/storage/${selectedHistoryVersion.yearly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
-                        <img src={`/storage/${selectedHistoryVersion.yearly_img}`} alt="Yearly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* H4 Sessions Details */}
-              {selectedHistoryVersion.h4 && Object.keys(selectedHistoryVersion.h4).length > 0 && (
-                <div className="space-y-3">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
-                    Chi tiết các phiên H4 (H4 Sessions)
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(selectedHistoryVersion.h4).map(([sess, val]: [string, any]) => {
-                      const img = typeof val === "string" ? val : val?.img;
-                      const bias = typeof val === "string" ? null : val?.bias;
-
-                      return (
-                        <div key={sess} className="bg-black/30 border border-border/40 p-4 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between border-b border-border/20 pb-2">
-                            <span className="text-xs font-black uppercase text-primary tracking-widest">{sess} Session</span>
-                            {bias && (
-                              <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
-                                {bias}
-                              </span>
-                            )}
-                          </div>
-                          {img && (
-                            <div className="rounded-lg overflow-hidden border border-border/20 max-h-[140px]">
-                              <a href={`/storage/${img}`} target="_blank" rel="noreferrer" className="block relative group/h4 cursor-pointer">
-                                <img src={`/storage/${img}`} alt={`${sess} Session`} className="w-full h-full object-cover rounded-lg group-hover/h4:scale-102 transition-transform" />
-                              </a>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-border/20">
                 <button
                   onClick={() => setSelectedHistoryVersion(null)}
-                  className="inline-flex h-10 px-5 items-center justify-center rounded-xl border border-border/60 text-muted-foreground hover:text-slate-100 hover:bg-muted/30 transition-all active:scale-95 text-xs font-black uppercase tracking-wider"
+                  className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 px-3 py-1.5 rounded-lg border border-border/60 transition-all active:scale-95"
                 >
                   Đóng
                 </button>
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC nhật ký ngày ${selectedHistoryDate} (${selectedHistoryAsset}) về phiên bản lưu lúc ${formatDateTime(selectedHistoryVersion.history_timestamp)}? Dòng dữ liệu hiện tại sẽ bị thay thế hoàn toàn.`)) {
-                      setSelectedHistoryVersion(null);
-                      restoreVersionMutation.mutate(selectedHistoryVersion.history_id);
-                    }
-                  }}
-                  disabled={restoreVersionMutation.isPending}
-                  className="inline-flex h-10 px-5 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all active:scale-95 text-xs font-black uppercase tracking-wider disabled:opacity-50"
-                >
-                  <RefreshCw size={12} className={restoreVersionMutation.isPending ? "animate-spin" : ""} />
-                  Khôi phục (Rollback) ngay
-                </button>
               </div>
 
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto font-sans text-xs text-slate-300 space-y-6 flex-1">
+                
+                {/* Revision Info Banner */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-muted/10 p-4 rounded-xl border border-border/40">
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                      Hành động
+                    </span>
+                    <span className={`font-bold text-xs uppercase ${selectedHistoryVersion.history_action === 'DELETE' ? 'text-rose-400 text-glow-rose' : 'text-amber-400 text-glow-cyan'}`}>
+                      {selectedHistoryVersion.history_action}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                      ID bản ghi / Bảng hệ thống
+                    </span>
+                    <span className="font-bold text-foreground text-[10px] font-mono break-all block mt-0.5">
+                      {selectedHistoryVersion.row_id} ({tableName})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                      Thời điểm chụp snapshot
+                    </span>
+                    <span className="font-bold text-foreground text-xs block mt-0.5">
+                      {formatDateTime(selectedHistoryVersion.history_timestamp)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 1. DYNAMIC LAYOUT: JOURNAL ENTRIES */}
+                {tableName === "journal_entries" && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4 bg-black/20 p-4 rounded-xl border border-border/20">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Tài sản (Asset)</span>
+                        <span className="text-sm font-black text-primary uppercase mt-0.5 block">{snap.asset}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ngày biểu đồ (Date)</span>
+                        <span className="text-sm font-bold text-foreground mt-0.5 block">{snap.date}</span>
+                      </div>
+                    </div>
+
+                    {snap.notes && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ghi chú nhật ký</span>
+                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed font-semibold whitespace-pre-wrap">
+                          {snap.notes}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Định hướng phân tích (Biases)</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Weekly Bias</span>
+                          <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.weekly_bias || "—"}</span>
+                        </div>
+                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Daily Bias</span>
+                          <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.daily_bias || "—"}</span>
+                        </div>
+                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Monthly Bias</span>
+                          <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.monthly_bias || "—"}</span>
+                        </div>
+                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Yearly Bias</span>
+                          <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.yearly_bias || "—"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chart Images */}
+                    <div className="space-y-4">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Biểu đồ kỹ thuật</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {snap.weekly_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">weekly outlook chart</span>
+                            <a href={`/storage/${snap.weekly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.weekly_img}`} alt="Weekly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                        {snap.daily_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily outlook chart</span>
+                            <a href={`/storage/${snap.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.daily_img}`} alt="Daily Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                        {snap.monthly_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">monthly outlook chart</span>
+                            <a href={`/storage/${snap.monthly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.monthly_img}`} alt="Monthly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                        {snap.yearly_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">yearly outlook chart</span>
+                            <a href={`/storage/${snap.yearly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.yearly_img}`} alt="Yearly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* H4 Sessions Details */}
+                    {snap.h4 && Object.keys(snap.h4).length > 0 && (
+                      <div className="space-y-3">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                          Chi tiết các phiên H4 (H4 Sessions)
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {Object.entries(snap.h4).map(([sess, val]: [string, any]) => {
+                            const img = typeof val === "string" ? val : val?.img;
+                            const bias = typeof val === "string" ? null : val?.bias;
+
+                            return (
+                              <div key={sess} className="bg-black/30 border border-border/40 p-4 rounded-xl space-y-3">
+                                <div className="flex items-center justify-between border-b border-border/20 pb-2">
+                                  <span className="text-xs font-black uppercase text-primary tracking-widest">{sess} Session</span>
+                                  {bias && (
+                                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
+                                      {bias}
+                                    </span>
+                                  )}
+                                </div>
+                                {img && (
+                                  <div className="rounded-lg overflow-hidden border border-border/20 max-h-[140px]">
+                                    <a href={`/storage/${img}`} target="_blank" rel="noreferrer" className="block relative group/h4 cursor-pointer">
+                                      <img src={`/storage/${img}`} alt={`${sess} Session`} className="w-full h-full object-cover rounded-lg group-hover/h4:scale-102 transition-transform" />
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 2. DYNAMIC LAYOUT: TRADES */}
+                {tableName === "trades" && (
+                  <div className="space-y-6">
+                    {/* Header Financials banner */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Cặp Giao Dịch</span>
+                        <span className="font-black text-primary text-sm uppercase block mt-1">{snap.symbol} ({snap.side})</span>
+                      </div>
+                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Net Profit/Loss</span>
+                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-emerald-400 text-glow-cyan" : "text-rose-400 text-glow-rose"}`}>
+                          ${snap.net_pnl || "0.00"}
+                        </span>
+                      </div>
+                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Tỷ lệ R:R Đạt được</span>
+                        <span className="font-bold text-foreground text-sm block mt-1">{snap.actual_rr || "0.0"}R</span>
+                      </div>
+                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Rủi Ro (Risk %)</span>
+                        <span className="font-bold text-foreground text-sm block mt-1">{snap.risk_percent || "0.0"}%</span>
+                      </div>
+                    </div>
+
+                    {/* Detailed Metadata Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-black/20 p-4 rounded-xl border border-border/20">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Trạng thái</span>
+                        <span className="font-semibold text-slate-200 uppercase mt-0.5 block">{snap.status || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Đánh giá (Grade)</span>
+                        <span className="font-semibold text-slate-200 mt-0.5 block">{snap.grade || "N/A"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Tuân thủ nguyên tắc</span>
+                        <span className={`font-black uppercase text-[10px] mt-1 inline-block px-2 py-0.5 rounded ${snap.compliance_check ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+                          {snap.compliance_check ? "PASSED" : "FAILED"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Thời gian vào lệnh</span>
+                        <span className="font-semibold text-slate-300 mt-0.5 block">{snap.entry_time ? formatDateTime(snap.entry_time) : "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Thời gian thoát lệnh</span>
+                        <span className="font-semibold text-slate-300 mt-0.5 block">{snap.exit_time ? formatDateTime(snap.exit_time) : "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">setup_id (Thiết lập)</span>
+                        <span className="font-mono text-[10px] text-muted-foreground truncate block mt-0.5">{snap.setup_id || "Chưa gán"}</span>
+                      </div>
+                    </div>
+
+                    {snap.notes && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ghi chú lệnh giao dịch</span>
+                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap font-semibold">
+                          {snap.notes}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chart Images for Trade */}
+                    <div className="space-y-4">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Hình ảnh lệnh giao dịch (Trade Charts)</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {snap.before_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">before entry chart</span>
+                            <a href={`/storage/${snap.before_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.before_img}`} alt="Before Entry" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                        {snap.after_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">after exit chart</span>
+                            <a href={`/storage/${snap.after_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.after_img}`} alt="After Exit" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                        {snap.daily_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily chart</span>
+                            <a href={`/storage/${snap.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.daily_img}`} alt="Daily Chart" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                        {snap.h1_img && (
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">H1 chart</span>
+                            <a href={`/storage/${snap.h1_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                              <img src={`/storage/${snap.h1_img}`} alt="H1 Chart" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. DYNAMIC LAYOUT: PSYCHOLOGY LOGS */}
+                {tableName === "psychology_logs" && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-black/20 p-4 rounded-xl border border-border/20">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ngày Nhật Ký</span>
+                        <span className="text-sm font-bold text-slate-100 mt-0.5 block">{snap.date}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Trạng thái tâm trạng buổi sáng (Mood)</span>
+                        <span className="text-sm font-black text-primary mt-0.5 block uppercase">{snap.morning_mood || "Chưa ghi nhận"}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">ID Giao Dịch liên kết</span>
+                        <span className="font-mono text-[10px] text-muted-foreground mt-1 truncate block">{snap.trade_id || "N/A"}</span>
+                      </div>
+                    </div>
+
+                    {snap.morning_notes && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ghi chép đầu ngày (Morning Notes)</span>
+                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap font-semibold">
+                          {snap.morning_notes}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Cảm xúc trước giao dịch (Pre-trade Emotion)</span>
+                        <span className="font-bold text-slate-200 text-xs block">{snap.pre_trade_emotion || "—"}</span>
+                      </div>
+                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Cảm xúc sau giao dịch (Post-trade Emotion)</span>
+                        <span className="font-bold text-slate-200 text-xs block">{snap.post_trade_emotion || "—"}</span>
+                      </div>
+                    </div>
+
+                    {snap.entry_rationale && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Lý do vào lệnh (Entry Rationale)</span>
+                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap">
+                          {snap.entry_rationale}
+                        </div>
+                      </div>
+                    )}
+
+                    {snap.exit_assessment && (
+                      <div className="space-y-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Đánh giá thoát lệnh (Exit Assessment)</span>
+                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap">
+                          {snap.exit_assessment}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-border/20">
+                  <button
+                    onClick={() => setSelectedHistoryVersion(null)}
+                    className="inline-flex h-10 px-5 items-center justify-center rounded-xl border border-border/60 text-muted-foreground hover:text-slate-100 hover:bg-muted/30 transition-all active:scale-95 text-xs font-black uppercase tracking-wider"
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC bản ghi này về phiên bản lưu lúc ${formatDateTime(selectedHistoryVersion.history_timestamp)}?`)) {
+                        setSelectedHistoryVersion(null);
+                        restoreVersionMutation.mutate(selectedHistoryVersion.history_id);
+                      }
+                    }}
+                    disabled={restoreVersionMutation.isPending}
+                    className="inline-flex h-10 px-5 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all active:scale-95 text-xs font-black uppercase tracking-wider disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={restoreVersionMutation.isPending ? "animate-spin" : ""} />
+                    Khôi phục (Rollback) ngay
+                  </button>
+                </div>
+
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

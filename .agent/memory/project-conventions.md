@@ -53,7 +53,14 @@ This document summarizes the architectural and implementation conventions establ
 ## 💾 Hybrid Backup & Real-time OneDrive Sync
 - **PostgreSQL Version Matching:** Supabase uses PostgreSQL v17. The GitHub Actions backup pipeline (`daily-backup.yml`) forces installation of `postgresql-client-17` and overrides the local runner `PATH` to resolve to `pg_dump` v17.
 - **Rclone JSON Safe Config:** Passing rclone secrets as individual variables is highly prone to Bash character-escaping issues. Instead, inject the raw token as a single environment secret `RCLONE_CONFIG_ONEDRIVE` and parse it dynamically.
-- **Real-time OneDrive Sync:** Image sync runs as a non-blocking background task (`ctx.waitUntil`) on Cloudflare Pages. It intercepts both client-side uploads (`uploadToR2` in `src/lib/storage.ts`) and lazy backend migrations (`src/_worker.js`).
+- **Real-time OneDrive Sync:** Image sync runs as a non-blocking background task on Cloudflare Pages. It intercepts both client-side uploads (`uploadToR2` in `src/lib/storage.ts`) and lazy backend migrations (`src/_worker.js`).
+- **Worker Background Execution Context Fallback:** In runtimes where Cloudflare's `ctx.waitUntil` is not available (e.g. Server Functions or Standard Worker contexts), background sync promises must be explicitly `await`ed. This ensures the CPU execution thread is kept alive long enough to complete the Microsoft Graph API transfer.
+- **Sync Logs Table Security (RLS) & Clean View:**
+  - The `realtime_sync_logs` table has Row Level Security (RLS) enabled.
+  - **INSERT** is allowed for both `anon` and `authenticated` roles to let workers log their sync attempts.
+  - **SELECT** is strictly restricted to `authenticated` users, hiding log contents from the public anon key.
+  - **UPDATE & DELETE** are completely disabled for anon and authenticated users, securing logs from malicious tampering.
+  - **Client-Side Deduplication:** The Admin Dashboard filters and deduplicates real-time logs by `path` (keeping only the newest entry per file) to prevent duplicate starting/success rows and ensure a clean, modern UI.
 - **Configuration Requirement:** Requires adding `RCLONE_CONFIG_ONEDRIVE` as a **Secret Environment Variable** under Settings in the Cloudflare Pages dashboard for live runtime integration.
 
 
