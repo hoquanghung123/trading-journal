@@ -20,6 +20,34 @@ export function parseRcloneConfig(configStr: string): Record<string, string> | n
   return config;
 }
 
+async function logSyncResult(path: string, status: string, errorMessage?: string) {
+  try {
+    const supabaseUrl = (globalThis as any).SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = (globalThis as any).SUPABASE_SERVICE_ROLE_KEY || (globalThis as any).SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("logSyncResult: Supabase credentials not found in global scope.");
+      return;
+    }
+    
+    await fetch(`${supabaseUrl.replace(/\/$/, "")}/rest/v1/realtime_sync_logs`, {
+      method: "POST",
+      headers: {
+        "apikey": supabaseKey,
+        "Authorization": `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        path,
+        status,
+        error_message: errorMessage || null
+      })
+    });
+  } catch (e) {
+    console.error("logSyncResult failed:", e);
+  }
+}
+
 /**
  * Syncs a file byte array to OneDrive in the background using Microsoft Graph API.
  */
@@ -30,9 +58,13 @@ export async function syncToOneDrive(
   rcloneConfigStr: string
 ): Promise<void> {
   try {
+    await logSyncResult(path, "starting", "Config length: " + (rcloneConfigStr || "").length);
+
     const config = parseRcloneConfig(rcloneConfigStr);
     if (!config || !config.token || !config.drive_id) {
-      console.warn("syncToOneDrive: Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable (requires at least token and drive_id).");
+      const msg = "Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable (requires at least token and drive_id).";
+      console.warn("syncToOneDrive:", msg);
+      await logSyncResult(path, "failed_validation", msg);
       return;
     }
 
@@ -43,13 +75,17 @@ export async function syncToOneDrive(
     try {
       tokenObj = JSON.parse(config.token);
     } catch (e: any) {
-      console.error("syncToOneDrive: Failed to parse token JSON:", e.message);
+      const msg = "Failed to parse token JSON: " + e.message;
+      console.error("syncToOneDrive:", msg);
+      await logSyncResult(path, "failed_token_parse", msg);
       return;
     }
 
     const refreshToken = tokenObj.refresh_token;
     if (!refreshToken) {
-      console.error("syncToOneDrive: Missing refresh_token in token JSON.");
+      const msg = "Missing refresh_token in token JSON.";
+      console.error("syncToOneDrive:", msg);
+      await logSyncResult(path, "failed_no_refresh_token", msg);
       return;
     }
 
@@ -69,14 +105,18 @@ export async function syncToOneDrive(
 
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text();
-      console.error(`syncToOneDrive: Failed to refresh Microsoft token: ${tokenResponse.status} ${errText}`);
+      const msg = `Failed to refresh Microsoft token: ${tokenResponse.status} ${errText}`;
+      console.error("syncToOneDrive:", msg);
+      await logSyncResult(path, "failed_token_refresh", msg);
       return;
     }
 
     const tokenData = (await tokenResponse.json()) as any;
     const accessToken = tokenData.access_token;
     if (!accessToken) {
-      console.error("syncToOneDrive: No access_token returned from Microsoft.");
+      const msg = "No access_token returned from Microsoft.";
+      console.error("syncToOneDrive:", msg);
+      await logSyncResult(path, "failed_no_access_token", msg);
       return;
     }
 
@@ -90,16 +130,21 @@ export async function syncToOneDrive(
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": contentType,
       },
-      body: data,
+      body: data as any,
     });
 
     if (uploadResponse.ok) {
       console.log(`syncToOneDrive: Successfully synced ${path} to OneDrive!`);
+      await logSyncResult(path, "success");
     } else {
       const errText = await uploadResponse.text();
-      console.error(`syncToOneDrive: Failed to upload ${path} to OneDrive: ${uploadResponse.status} ${errText}`);
+      const msg = `Failed to upload to OneDrive: ${uploadResponse.status} ${errText}`;
+      console.error("syncToOneDrive:", msg);
+      await logSyncResult(path, "failed_upload", msg);
     }
   } catch (error: any) {
-    console.error("syncToOneDrive: Unexpected error during sync:", error.message);
+    const msg = "Unexpected error during sync: " + error.message;
+    console.error("syncToOneDrive:", msg);
+    await logSyncResult(path, "failed_unexpected", msg);
   }
 }
