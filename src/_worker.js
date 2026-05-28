@@ -14,6 +14,8 @@ export default {
       if (env.SUPABASE_SERVICE_ROLE_KEY)
         globalThis.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
       if (env.R2) globalThis.R2 = env.R2;
+      if (env.RCLONE_CONFIG_ONEDRIVE)
+        globalThis.RCLONE_CONFIG_ONEDRIVE = env.RCLONE_CONFIG_ONEDRIVE;
 
       const url = new URL(request.url);
 
@@ -191,10 +193,13 @@ function parseRcloneConfig(configStr) {
 async function syncToOneDrive(path, data, contentType, rcloneConfigStr) {
   try {
     const config = parseRcloneConfig(rcloneConfigStr);
-    if (!config || !config.client_id || !config.client_secret || !config.token || !config.drive_id) {
-      console.warn("syncToOneDrive: Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable.");
+    if (!config || !config.token || !config.drive_id) {
+      console.warn("syncToOneDrive: Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable (requires at least token and drive_id).");
       return;
     }
+
+    const clientId = config.client_id || "b15665d9-eda6-4092-8539-0eec376afd59";
+    const clientSecret = config.client_secret || "qtyfaBBYA403=unZUP40~_#";
 
     let tokenObj;
     try {
@@ -217,8 +222,8 @@ async function syncToOneDrive(path, data, contentType, rcloneConfigStr) {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: config.client_id,
-        client_secret: config.client_secret,
+        client_id: clientId,
+        client_secret: clientSecret,
         grant_type: "refresh_token",
         refresh_token: refreshToken,
       }).toString(),
