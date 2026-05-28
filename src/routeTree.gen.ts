@@ -15,6 +15,7 @@ import { Route as DebugRouteImport } from './routes/debug'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StorageSplatRouteImport } from './routes/storage.$'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminBackupsRouteImport } from './routes/admin/backups'
 
 const ProgressRoute = ProgressRouteImport.update({
@@ -47,6 +48,11 @@ const StorageSplatRoute = StorageSplatRouteImport.update({
   path: '/storage/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBackupsRoute = AdminBackupsRouteImport.update({
   id: '/backups',
   path: '/backups',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
   '/admin/backups': typeof AdminBackupsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
   '/admin/backups': typeof AdminBackupsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
   '/admin/backups': typeof AdminBackupsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/storage/$': typeof StorageSplatRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/hello'
     | '/progress'
     | '/admin/backups'
+    | '/admin/users'
     | '/storage/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/hello'
     | '/progress'
     | '/admin/backups'
+    | '/admin/users'
     | '/storage/$'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/hello'
     | '/progress'
     | '/admin/backups'
+    | '/admin/users'
     | '/storage/$'
   fileRoutesById: FileRoutesById
 }
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorageSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/backups': {
       id: '/admin/backups'
       path: '/backups'
@@ -176,10 +195,12 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBackupsRoute: typeof AdminBackupsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBackupsRoute: AdminBackupsRoute,
+  AdminUsersRoute: AdminUsersRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

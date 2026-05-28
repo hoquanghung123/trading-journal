@@ -23,6 +23,7 @@ import {
 import { focusBiasEntry, navigateToPage, triggerCelebration } from "../lib/nav-bus";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../lib/query-client";
+import { ImpersonationBanner } from "../components/shared/ImpersonationBanner";
 
 function NotFoundComponent() {
   return (
@@ -244,6 +245,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ImpersonationBanner />
       <Outlet />
       <Toaster position="top-right" richColors />
     </QueryClientProvider>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -369,15 +369,33 @@ function AdminBackupsDashboard() {
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
         
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors group"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-            Về Terminal
-          </a>
-          <div className="h-6 px-3 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors group"
+            >
+              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+              Về Terminal
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link
+              to="/admin/users"
+              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+              activeProps={{ className: "text-primary font-black" }}
+            >
+              👥 Users
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <Link
+              to="/admin/backups"
+              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+              activeProps={{ className: "text-primary font-black" }}
+            >
+              💾 Backups
+            </Link>
+          </div>
+          <div className="h-6 px-3 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center self-start sm:self-auto">
             <span className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">
               Admin Control Panel
             </span>
