@@ -170,7 +170,15 @@ function AdminBackupsDashboard() {
     }
   });
 
-  const realtimeLogs = realtimeLogsRaw || [];
+  // Deduplicate by path, keeping only the most recent entry for each file (since they are ordered descending by created_at)
+  const realtimeLogs: RealtimeSyncLog[] = [];
+  const seenPaths = new Set<string>();
+  for (const log of realtimeLogsRaw || []) {
+    if (log.path && !seenPaths.has(log.path)) {
+      seenPaths.add(log.path);
+      realtimeLogs.push(log);
+    }
+  }
 
   // 3. Mutation to trigger manual file re-sync
   const syncFileMutation = useMutation({
