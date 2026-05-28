@@ -31,16 +31,19 @@ export const uploadToR2 = createServerFn({ method: "POST" }).handler(
       httpMetadata: { contentType: data.contentType },
     });
 
-    // Real-time OneDrive sync in the background
+    // Real-time OneDrive sync
     if (rcloneConfig) {
       const syncPromise = syncToOneDrive(data.path, bytes, data.contentType, rcloneConfig);
       if (ctx && typeof ctx.waitUntil === "function") {
         ctx.waitUntil(syncPromise);
       } else {
-        // Fallback for runtimes without waitUntil (failsafe non-blocking)
-        syncPromise.catch((err) => {
-          console.error("Failed to sync to OneDrive in background:", err);
-        });
+        // Fallback: if waitUntil is not available (like in some ServerFn runtimes),
+        // we MUST await the promise so Cloudflare does not terminate the execution immediately.
+        try {
+          await syncPromise;
+        } catch (err) {
+          console.error("Failed to sync to OneDrive:", err);
+        }
       }
     } else {
       console.warn("RCLONE_CONFIG_ONEDRIVE environment variable not found. Skipping real-time OneDrive sync.");
