@@ -31,10 +31,13 @@ export async function syncToOneDrive(
 ): Promise<void> {
   try {
     const config = parseRcloneConfig(rcloneConfigStr);
-    if (!config || !config.client_id || !config.client_secret || !config.token || !config.drive_id) {
-      console.warn("syncToOneDrive: Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable.");
+    if (!config || !config.token || !config.drive_id) {
+      console.warn("syncToOneDrive: Missing or incomplete RCLONE_CONFIG_ONEDRIVE environment variable (requires at least token and drive_id).");
       return;
     }
+
+    const clientId = config.client_id || "b15665d9-eda6-4092-8539-0eec376afd59";
+    const clientSecret = config.client_secret || "qtyfaBBYA403=unZUP40~_#";
 
     let tokenObj: any;
     try {
@@ -57,8 +60,8 @@ export async function syncToOneDrive(
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        client_id: config.client_id,
-        client_secret: config.client_secret,
+        client_id: clientId,
+        client_secret: clientSecret,
         grant_type: "refresh_token",
         refresh_token: refreshToken,
       }).toString(),

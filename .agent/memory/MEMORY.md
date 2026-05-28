@@ -7,5 +7,6 @@
 - [project] Exclude forex asset symbols from /bias selection list → project-conventions.md
 - [project] Cohesive custom dark theme rules & styling leak prevention conventions → project-conventions.md
 - [project] Cloudflare Pages wrangler redirection files & R2 binding rules → project-conventions.md
+- [project] Hybrid backup (daily GHA full sweep) and real-time OneDrive sync (via Cloudflare Pages worker and Graph API) → project-conventions.md
 
 

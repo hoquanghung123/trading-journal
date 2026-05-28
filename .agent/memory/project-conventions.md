@@ -1,7 +1,7 @@
 ---
 type: project
 created: 2026-05-17
-updated: 2026-05-19
+updated: 2026-05-28
 ---
 
 # Project Conventions: Telegram Bias Bot & Supabase Functions
@@ -49,5 +49,12 @@ This document summarizes the architectural and implementation conventions establ
   - Declared bindings (like `R2` bound to `tradingjournal-chart`) must be manually linked in the Cloudflare Pages dashboard project settings under **Settings -> Functions -> R2 Bucket Bindings** for *both* **Production** and **Preview** environments. Failure to do so will result in an `"Unknown internal error occurred"` error at the publish stage.
 - **Worker Robustness Guardrails:**
   - The SSR worker (`src/_worker.js`) must always wrap R2 operations in an existence check (`if (env.R2)`) before executing functions like `env.R2.get` or `env.R2.put`. This ensures graceful fallback to Supabase and prevents internal Server 500 crashes if the R2 bindings are disabled or unlinked.
+
+## 💾 Hybrid Backup & Real-time OneDrive Sync
+- **PostgreSQL Version Matching:** Supabase uses PostgreSQL v17. The GitHub Actions backup pipeline (`daily-backup.yml`) forces installation of `postgresql-client-17` and overrides the local runner `PATH` to resolve to `pg_dump` v17.
+- **Rclone JSON Safe Config:** Passing rclone secrets as individual variables is highly prone to Bash character-escaping issues. Instead, inject the raw token as a single environment secret `RCLONE_CONFIG_ONEDRIVE` and parse it dynamically.
+- **Real-time OneDrive Sync:** Image sync runs as a non-blocking background task (`ctx.waitUntil`) on Cloudflare Pages. It intercepts both client-side uploads (`uploadToR2` in `src/lib/storage.ts`) and lazy backend migrations (`src/_worker.js`).
+- **Configuration Requirement:** Requires adding `RCLONE_CONFIG_ONEDRIVE` as a **Secret Environment Variable** under Settings in the Cloudflare Pages dashboard for live runtime integration.
+
 
 
