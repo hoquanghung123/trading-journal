@@ -9,13 +9,14 @@ export const uploadToR2 = createServerFn({ method: "POST" }).handler(
   async ({ data }: { data: { path: string; base64: string; contentType: string } }) => {
     const request = getRequest();
     // @ts-ignore
-    const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
+    const rawEnv = request?.context?.cloudflare?.env || request?.context || {};
+    const r2 = rawEnv?.R2 || (globalThis as any).R2;
+    const rcloneConfig = rawEnv?.RCLONE_CONFIG_ONEDRIVE || (globalThis as any).RCLONE_CONFIG_ONEDRIVE;
     // @ts-ignore
     const ctx = request?.context?.cloudflare?.context || request?.context?.cloudflare || request?.context;
-    const r2 = env?.R2;
 
     if (!r2) {
-      console.error("R2 binding 'R2' not found in context:", Object.keys(env || {}));
+      console.error("R2 binding 'R2' not found in context or globalThis:", Object.keys(rawEnv || {}));
       throw new Error("R2 binding 'R2' not found.");
     }
 
@@ -31,8 +32,8 @@ export const uploadToR2 = createServerFn({ method: "POST" }).handler(
     });
 
     // Real-time OneDrive sync in the background
-    if (env?.RCLONE_CONFIG_ONEDRIVE) {
-      const syncPromise = syncToOneDrive(data.path, bytes, data.contentType, env.RCLONE_CONFIG_ONEDRIVE);
+    if (rcloneConfig) {
+      const syncPromise = syncToOneDrive(data.path, bytes, data.contentType, rcloneConfig);
       if (ctx && typeof ctx.waitUntil === "function") {
         ctx.waitUntil(syncPromise);
       } else {
@@ -83,11 +84,11 @@ export const deleteFromR2 = createServerFn({ method: "POST" }).handler(
   async ({ data: path }: { data: string }) => {
     const request = getRequest();
     // @ts-ignore
-    const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
-    const r2 = env?.R2;
+    const rawEnv = request?.context?.cloudflare?.env || request?.context || {};
+    const r2 = rawEnv?.R2 || (globalThis as any).R2;
 
     if (!r2) {
-      throw new Error("R2 binding 'R2' not found.");
+      throw new Error("R2 binding 'R2' not found in context or globalThis.");
     }
 
     await r2.delete(path);
@@ -103,8 +104,8 @@ export const fetchFromR2 = createServerFn({ method: "GET" }).handler(
   async ({ data: path }: { data: string }) => {
     const request = getRequest();
     // @ts-ignore
-    const env = request?.context?.cloudflare?.env || request?.context || (globalThis as any);
-    const r2 = env?.R2;
+    const rawEnv = request?.context?.cloudflare?.env || request?.context || {};
+    const r2 = rawEnv?.R2 || (globalThis as any).R2;
 
     if (!r2) {
       console.error("R2 binding 'R2' not found in fetch handler");
