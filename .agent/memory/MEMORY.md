@@ -8,5 +8,10 @@
 - [project] Cohesive custom dark theme rules & styling leak prevention conventions → project-conventions.md
 - [project] Cloudflare Pages wrangler redirection files & R2 binding rules → project-conventions.md
 - [project] Hybrid backup (daily GHA full sweep) and real-time OneDrive sync (via Cloudflare Pages worker and Graph API) → project-conventions.md
+- [project] Explicit await fallback for Cloudflare Pages worker background task context → project-conventions.md
+- [project] Strict RLS hardening (no update/delete, restricted select) on realtime_sync_logs table → project-conventions.md
+- [project] Centralized temporal history table secured via statement-level immutability triggers → project-conventions.md
+
+
 
 

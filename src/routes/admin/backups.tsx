@@ -360,7 +360,7 @@ function AdminBackupsDashboard() {
   const countFailedToday = todayLogs.filter((log) => log.status === "failed").length;
 
   return (
-    <div className="min-h-screen bg-[#070b13] text-slate-100 p-6 md:p-10 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground p-6 md:p-10 font-sans relative overflow-hidden">
       {/* Dynamic light glows */}
       <div className="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
@@ -419,7 +419,7 @@ function AdminBackupsDashboard() {
             <button
               onClick={() => refetchRealtime()}
               disabled={isRealtimeLoading}
-              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white border border-primary/30 bg-primary/10 hover:bg-primary/20 active:scale-95 transition-all shrink-0"
+              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white forest-gradient hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 disabled:pointer-events-none shrink-0"
             >
               <RefreshCw size={14} className={isRealtimeLoading ? "animate-spin" : ""} />
               Làm mới Logs
@@ -430,7 +430,7 @@ function AdminBackupsDashboard() {
             <button
               onClick={() => refetchHistory()}
               disabled={isHistoryLoading}
-              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white border border-primary/30 bg-primary/10 hover:bg-primary/20 active:scale-95 transition-all shrink-0"
+              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white forest-gradient hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 disabled:pointer-events-none shrink-0"
             >
               <RefreshCw size={14} className={isHistoryLoading ? "animate-spin" : ""} />
               Làm mới Lịch sử
@@ -872,7 +872,7 @@ function AdminBackupsDashboard() {
                             {/* Path info */}
                             <td className="px-6 py-4">
                               <div className="flex flex-col gap-0.5 max-w-md truncate">
-                                <span className="font-bold text-slate-300 font-mono text-[11px] truncate" title={log.path}>
+                                <span className="font-bold text-foreground/80 font-mono text-[11px] truncate" title={log.path}>
                                   {userPrefix && <span className="text-muted-foreground/60">{userPrefix}/</span>}
                                   <span className="text-foreground">{fileName}</span>
                                 </span>
@@ -959,7 +959,7 @@ function AdminBackupsDashboard() {
                     type="date"
                     value={selectedHistoryDate}
                     onChange={(e) => setSelectedHistoryDate(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-bold font-mono focus:border-primary/60 focus:outline-none transition-colors animate-all"
+                    className="w-full h-12 px-4 rounded-xl bg-muted/50 dark:bg-black/40 border border-border/50 text-foreground text-xs font-bold font-mono focus:border-primary/60 focus:outline-none transition-colors animate-all"
                   />
                 </div>
               </div>
@@ -972,18 +972,18 @@ function AdminBackupsDashboard() {
                   <select
                     value={historyFilterTable}
                     onChange={(e) => setHistoryFilterTable(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-black focus:border-primary/60 focus:outline-none transition-colors appearance-none cursor-pointer"
+                    className="w-full h-12 px-4 rounded-xl bg-muted/50 dark:bg-black/40 border border-border/50 text-foreground text-xs font-black focus:border-primary/60 focus:outline-none transition-colors appearance-none cursor-pointer"
                   >
-                    <option value="all" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                    <option value="all" className="bg-card font-bold text-xs text-foreground">
                       Tất cả bảng dữ liệu (All Tables)
                     </option>
-                    <option value="journal_entries" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                    <option value="journal_entries" className="bg-card font-bold text-xs text-foreground">
                       Nhật ký biểu đồ (journal_entries)
                     </option>
-                    <option value="trades" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                    <option value="trades" className="bg-card font-bold text-xs text-foreground">
                       Giao dịch (trades)
                     </option>
-                    <option value="psychology_logs" className="bg-[#070b13] font-bold text-xs text-slate-100">
+                    <option value="psychology_logs" className="bg-card font-bold text-xs text-foreground">
                       Nhật ký tâm lý (psychology_logs)
                     </option>
                   </select>
@@ -1044,11 +1044,11 @@ function AdminBackupsDashboard() {
                         return (
                           <div key={group.batch_id} className="relative group/timeline animate-in slide-in-from-left duration-300">
                             {/* Timeline Dot Indicator */}
-                            <span className="absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#070b13] border-2 border-primary/80 group-hover/timeline:border-primary transition-colors">
+                            <span className="absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-background border-2 border-primary/80 group-hover/timeline:border-primary transition-colors">
                               <span className={`h-1.5 w-1.5 rounded-full ${isBatch ? "bg-cyan-400 animate-ping" : "bg-primary"}`} />
                             </span>
 
-                            <div className="bg-black/30 border border-border/50 hover:border-primary/30 p-5 rounded-2xl transition-all shadow-md hover:shadow-lg space-y-4">
+                            <div className="bg-card/40 dark:bg-black/30 border border-border/50 hover:border-primary/30 p-5 rounded-2xl transition-all shadow-md hover:shadow-lg space-y-4">
                               <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
                                 
                                 {/* Left side: revision meta */}
@@ -1129,7 +1129,7 @@ function AdminBackupsDashboard() {
                               </div>
 
                               {/* Nested items inside the batch */}
-                              <div className="bg-black/40 border border-border/30 rounded-xl overflow-hidden divide-y divide-border/20">
+                              <div className="bg-muted/40 dark:bg-black/40 border border-border/30 rounded-xl overflow-hidden divide-y divide-border/20">
                                 {group.items.map((item: any) => {
                                   let summaryText = "";
                                   if (group.table_name === "journal_entries") {
@@ -1142,7 +1142,7 @@ function AdminBackupsDashboard() {
 
                                   return (
                                     <div key={item.history_id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-muted/5 transition-colors">
-                                      <div className="text-[11px] text-slate-300 font-mono truncate max-w-lg">
+                                      <div className="text-[11px] text-foreground/80 font-mono truncate max-w-lg">
                                         {summaryText}
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
@@ -1162,7 +1162,7 @@ function AdminBackupsDashboard() {
                                               }
                                             }}
                                             disabled={restoreVersionMutation.isPending}
-                                            className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
+                                            className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-emerald-500/20 dark:border-emerald-500/10 bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
                                           >
                                             <RefreshCw size={10} />
                                             Rollback
@@ -1206,7 +1206,7 @@ function AdminBackupsDashboard() {
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div
-            className="w-full max-w-2xl bg-[#0c1220] border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[80vh]"
+            className="w-full max-w-2xl bg-card border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Terminal Header */}
@@ -1265,7 +1265,7 @@ function AdminBackupsDashboard() {
       {selectedRealtimeLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedRealtimeLog(null)}>
           <div
-            className="w-full max-w-2xl bg-[#0c1220] border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]"
+            className="w-full max-w-2xl bg-card border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1395,14 +1395,14 @@ function AdminBackupsDashboard() {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedHistoryVersion(null)}>
             <div
-              className="w-full max-w-4xl bg-[#0c1220] border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
+              className="w-full max-w-4xl bg-card border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <History size={16} className="text-primary animate-pulse" />
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-200">
+                  <span className="text-xs font-black uppercase tracking-widest text-foreground">
                     Bản sao lưu {tableNameViet} ({formatDateTime(selectedHistoryVersion.history_timestamp)})
                   </span>
                 </div>
@@ -1448,7 +1448,7 @@ function AdminBackupsDashboard() {
                 {/* 1. DYNAMIC LAYOUT: JOURNAL ENTRIES */}
                 {tableName === "journal_entries" && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4 bg-black/20 p-4 rounded-xl border border-border/20">
+                    <div className="grid grid-cols-2 gap-4 bg-muted/40 dark:bg-black/20 p-4 rounded-xl border border-border/20">
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Tài sản (Asset)</span>
                         <span className="text-sm font-black text-primary uppercase mt-0.5 block">{snap.asset}</span>
@@ -1462,7 +1462,7 @@ function AdminBackupsDashboard() {
                     {snap.notes && (
                       <div className="space-y-2">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ghi chú nhật ký</span>
-                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed font-semibold whitespace-pre-wrap">
+                        <div className="bg-muted/40 dark:bg-black/30 border border-border/40 p-4 rounded-xl text-foreground/90 leading-relaxed font-semibold whitespace-pre-wrap">
                           {snap.notes}
                         </div>
                       </div>
@@ -1471,19 +1471,19 @@ function AdminBackupsDashboard() {
                     <div className="space-y-2">
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Định hướng phân tích (Biases)</span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                        <div className="bg-muted/40 dark:bg-black/20 p-3 rounded-xl border border-border/30 text-center">
                           <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Weekly Bias</span>
                           <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.weekly_bias || "—"}</span>
                         </div>
-                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                        <div className="bg-muted/40 dark:bg-black/20 p-3 rounded-xl border border-border/30 text-center">
                           <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Daily Bias</span>
                           <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.daily_bias || "—"}</span>
                         </div>
-                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                        <div className="bg-muted/40 dark:bg-black/20 p-3 rounded-xl border border-border/30 text-center">
                           <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Monthly Bias</span>
                           <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.monthly_bias || "—"}</span>
                         </div>
-                        <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                        <div className="bg-muted/40 dark:bg-black/20 p-3 rounded-xl border border-border/30 text-center">
                           <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Yearly Bias</span>
                           <span className="font-bold text-foreground text-xs uppercase block mt-1">{snap.yearly_bias || "—"}</span>
                         </div>
@@ -1495,7 +1495,7 @@ function AdminBackupsDashboard() {
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Biểu đồ kỹ thuật</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {snap.weekly_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">weekly outlook chart</span>
                             <a href={`/storage/${snap.weekly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.weekly_img}`} alt="Weekly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1503,7 +1503,7 @@ function AdminBackupsDashboard() {
                           </div>
                         )}
                         {snap.daily_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily outlook chart</span>
                             <a href={`/storage/${snap.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.daily_img}`} alt="Daily Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1511,7 +1511,7 @@ function AdminBackupsDashboard() {
                           </div>
                         )}
                         {snap.monthly_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">monthly outlook chart</span>
                             <a href={`/storage/${snap.monthly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.monthly_img}`} alt="Monthly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1519,7 +1519,7 @@ function AdminBackupsDashboard() {
                           </div>
                         )}
                         {snap.yearly_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">yearly outlook chart</span>
                             <a href={`/storage/${snap.yearly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.yearly_img}`} alt="Yearly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1541,7 +1541,7 @@ function AdminBackupsDashboard() {
                             const bias = typeof val === "string" ? null : val?.bias;
 
                             return (
-                              <div key={sess} className="bg-black/30 border border-border/40 p-4 rounded-xl space-y-3">
+                              <div key={sess} className="bg-muted/40 dark:bg-black/30 border border-border/40 p-4 rounded-xl space-y-3">
                                 <div className="flex items-center justify-between border-b border-border/20 pb-2">
                                   <span className="text-xs font-black uppercase text-primary tracking-widest">{sess} Session</span>
                                   {bias && (
@@ -1571,49 +1571,49 @@ function AdminBackupsDashboard() {
                   <div className="space-y-6">
                     {/* Header Financials banner */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                      <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-center">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Cặp Giao Dịch</span>
                         <span className="font-black text-primary text-sm uppercase block mt-1">{snap.symbol} ({snap.side})</span>
                       </div>
-                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                      <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-center">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Net Profit/Loss</span>
-                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-emerald-400 text-glow-cyan" : "text-rose-400 text-glow-rose"}`}>
+                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-emerald-600 dark:text-emerald-400 text-glow-cyan" : "text-rose-600 dark:text-rose-400 text-glow-rose"}`}>
                           ${snap.net_pnl || "0.00"}
                         </span>
                       </div>
-                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                      <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-center">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Tỷ lệ R:R Đạt được</span>
                         <span className="font-bold text-foreground text-sm block mt-1">{snap.actual_rr || "0.0"}R</span>
                       </div>
-                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 text-center">
+                      <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-center">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Rủi Ro (Risk %)</span>
                         <span className="font-bold text-foreground text-sm block mt-1">{snap.risk_percent || "0.0"}%</span>
                       </div>
                     </div>
 
                     {/* Detailed Metadata Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-black/20 p-4 rounded-xl border border-border/20">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-muted/40 p-4 rounded-xl border border-border/20">
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Trạng thái</span>
-                        <span className="font-semibold text-slate-200 uppercase mt-0.5 block">{snap.status || "—"}</span>
+                        <span className="font-semibold text-foreground uppercase mt-0.5 block">{snap.status || "—"}</span>
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Đánh giá (Grade)</span>
-                        <span className="font-semibold text-slate-200 mt-0.5 block">{snap.grade || "N/A"}</span>
+                        <span className="font-semibold text-foreground mt-0.5 block">{snap.grade || "N/A"}</span>
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Tuân thủ nguyên tắc</span>
-                        <span className={`font-black uppercase text-[10px] mt-1 inline-block px-2 py-0.5 rounded ${snap.compliance_check ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+                        <span className={`font-black uppercase text-[10px] mt-1 inline-block px-2 py-0.5 rounded ${snap.compliance_check ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/10 text-rose-600 dark:text-rose-400"}`}>
                           {snap.compliance_check ? "PASSED" : "FAILED"}
                         </span>
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Thời gian vào lệnh</span>
-                        <span className="font-semibold text-slate-300 mt-0.5 block">{snap.entry_time ? formatDateTime(snap.entry_time) : "—"}</span>
+                        <span className="font-semibold text-foreground/80 mt-0.5 block">{snap.entry_time ? formatDateTime(snap.entry_time) : "—"}</span>
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Thời gian thoát lệnh</span>
-                        <span className="font-semibold text-slate-300 mt-0.5 block">{snap.exit_time ? formatDateTime(snap.exit_time) : "—"}</span>
+                        <span className="font-semibold text-foreground/80 mt-0.5 block">{snap.exit_time ? formatDateTime(snap.exit_time) : "—"}</span>
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">setup_id (Thiết lập)</span>
@@ -1635,7 +1635,7 @@ function AdminBackupsDashboard() {
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Hình ảnh lệnh giao dịch (Trade Charts)</span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {snap.before_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">before entry chart</span>
                             <a href={`/storage/${snap.before_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.before_img}`} alt="Before Entry" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1643,7 +1643,7 @@ function AdminBackupsDashboard() {
                           </div>
                         )}
                         {snap.after_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">after exit chart</span>
                             <a href={`/storage/${snap.after_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.after_img}`} alt="After Exit" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1651,7 +1651,7 @@ function AdminBackupsDashboard() {
                           </div>
                         )}
                         {snap.daily_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily chart</span>
                             <a href={`/storage/${snap.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.daily_img}`} alt="Daily Chart" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1659,7 +1659,7 @@ function AdminBackupsDashboard() {
                           </div>
                         )}
                         {snap.h1_img && (
-                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                          <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
                             <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">H1 chart</span>
                             <a href={`/storage/${snap.h1_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.h1_img}`} alt="H1 Chart" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
@@ -1674,10 +1674,10 @@ function AdminBackupsDashboard() {
                 {/* 3. DYNAMIC LAYOUT: PSYCHOLOGY LOGS */}
                 {tableName === "psychology_logs" && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-black/20 p-4 rounded-xl border border-border/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-muted/40 dark:bg-black/20 p-4 rounded-xl border border-border/20">
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ngày Nhật Ký</span>
-                        <span className="text-sm font-bold text-slate-100 mt-0.5 block">{snap.date}</span>
+                        <span className="text-sm font-bold text-foreground mt-0.5 block">{snap.date}</span>
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Trạng thái tâm trạng buổi sáng (Mood)</span>
@@ -1692,27 +1692,27 @@ function AdminBackupsDashboard() {
                     {snap.morning_notes && (
                       <div className="space-y-2">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Ghi chép đầu ngày (Morning Notes)</span>
-                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap font-semibold">
+                        <div className="bg-muted/40 dark:bg-black/30 border border-border/40 p-4 rounded-xl text-foreground/90 leading-relaxed whitespace-pre-wrap font-semibold">
                           {snap.morning_notes}
                         </div>
                       </div>
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 space-y-2">
+                      <div className="bg-muted/40 dark:bg-black/20 p-4 rounded-xl border border-border/30 space-y-2">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Cảm xúc trước giao dịch (Pre-trade Emotion)</span>
-                        <span className="font-bold text-slate-200 text-xs block">{snap.pre_trade_emotion || "—"}</span>
+                        <span className="font-bold text-foreground text-xs block">{snap.pre_trade_emotion || "—"}</span>
                       </div>
-                      <div className="bg-black/20 p-4 rounded-xl border border-border/30 space-y-2">
+                      <div className="bg-muted/40 dark:bg-black/20 p-4 rounded-xl border border-border/30 space-y-2">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Cảm xúc sau giao dịch (Post-trade Emotion)</span>
-                        <span className="font-bold text-slate-200 text-xs block">{snap.post_trade_emotion || "—"}</span>
+                        <span className="font-bold text-foreground text-xs block">{snap.post_trade_emotion || "—"}</span>
                       </div>
                     </div>
 
                     {snap.entry_rationale && (
                       <div className="space-y-2">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Lý do vào lệnh (Entry Rationale)</span>
-                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        <div className="bg-muted/40 dark:bg-black/30 border border-border/40 p-4 rounded-xl text-foreground/90 leading-relaxed whitespace-pre-wrap">
                           {snap.entry_rationale}
                         </div>
                       </div>
@@ -1721,7 +1721,7 @@ function AdminBackupsDashboard() {
                     {snap.exit_assessment && (
                       <div className="space-y-2">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Đánh giá thoát lệnh (Exit Assessment)</span>
-                        <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed whitespace-pre-wrap">
+                        <div className="bg-muted/40 dark:bg-black/30 border border-border/40 p-4 rounded-xl text-foreground/90 leading-relaxed whitespace-pre-wrap">
                           {snap.exit_assessment}
                         </div>
                       </div>
@@ -1733,7 +1733,7 @@ function AdminBackupsDashboard() {
                 <div className="flex justify-end gap-3 pt-4 border-t border-border/20">
                   <button
                     onClick={() => setSelectedHistoryVersion(null)}
-                    className="inline-flex h-10 px-5 items-center justify-center rounded-xl border border-border/60 text-muted-foreground hover:text-slate-100 hover:bg-muted/30 transition-all active:scale-95 text-xs font-black uppercase tracking-wider"
+                    className="inline-flex h-10 px-5 items-center justify-center rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all active:scale-95 text-xs font-black uppercase tracking-wider"
                   >
                     Đóng
                   </button>

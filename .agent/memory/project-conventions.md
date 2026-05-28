@@ -63,5 +63,18 @@ This document summarizes the architectural and implementation conventions establ
   - **Client-Side Deduplication:** The Admin Dashboard filters and deduplicates real-time logs by `path` (keeping only the newest entry per file) to prevent duplicate starting/success rows and ensure a clean, modern UI.
 - **Configuration Requirement:** Requires adding `RCLONE_CONFIG_ONEDRIVE` as a **Secret Environment Variable** under Settings in the Cloudflare Pages dashboard for live runtime integration.
 
+## 🛡️ Centralized PITR & Immutable Temporal History
+- **Unified JSONB Auditing:** The row-level auditing system for core tables (`journal_entries`, `trades`, `psychology_logs`) is consolidated into `public.system_temporal_history` using `JSONB` to store snapshots (`snapshot_data`), ensuring schema change immunity.
+- **Strict Table Immutability (Accidental Deletion Prevention):**
+  - To prevent AI agents, MCP servers, or automated tools from accidentally deleting or altering historical audit logs, a statement-level trigger `enforce_temporal_history_immutability` blocks all `UPDATE`, `DELETE`, and `TRUNCATE` operations on `system_temporal_history` with a custom Vietnamese error message.
+  - **Manual Maintenance Override:** Admin cleanups or data purging require explicitly disabling and re-enabling the trigger using a Superuser SQL connection:
+    ```sql
+    ALTER TABLE public.system_temporal_history DISABLE TRIGGER enforce_temporal_history_immutability;
+    -- [Execute Purge Operations]
+    ALTER TABLE public.system_temporal_history ENABLE TRIGGER enforce_temporal_history_immutability;
+    ```
+- **Cascade Integrity Restorations:** Rebuilding data from snapshots uses transaction-safe dynamic SQL inside `restore_single_system_version` and `restore_batch_system_versions`. These procedures automatically safeguard foreign key constraints (e.g. verifying `setup_id` or `trade_id` exist in their parent tables before restoring) to prevent database referential integrity crashes.
+
+
 
 
