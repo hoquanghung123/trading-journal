@@ -17,7 +17,13 @@ import {
   ArrowLeft,
   Image as ImageIcon,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  History,
+  Clock,
+  ChevronRight,
+  Check,
+  X,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { createServerFn } from "@tanstack/react-start";
@@ -132,7 +138,72 @@ interface RealtimeSyncLog {
 function AdminBackupsDashboard() {
   const [selectedLog, setSelectedLog] = useState<BackupLog | null>(null);
   const [selectedRealtimeLog, setSelectedRealtimeLog] = useState<RealtimeSyncLog | null>(null);
-  const [activeTab, setActiveTab] = useState<"system" | "realtime">("system");
+  const [activeTab, setActiveTab] = useState<"system" | "realtime" | "history">("system");
+
+  // PITR States
+  const getTodayLocalDate = () => {
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    return new Date(Date.now() - tzOffset).toISOString().split("T")[0];
+  };
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>(getTodayLocalDate());
+  const [selectedHistoryAsset, setSelectedHistoryAsset] = useState<string>("GC1!");
+  const [selectedHistoryVersion, setSelectedHistoryVersion] = useState<any | null>(null);
+
+  // React Query to fetch all unique assets from journal entries
+  const { data: uniqueAssets } = useQuery<string[]>({
+    queryKey: ["journal_assets_list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("journal_entries")
+        .select("asset")
+        .order("asset");
+      if (error) throw error;
+      const assets = Array.from(new Set(data?.map((d) => d.asset) || []));
+      return assets.length > 0 ? assets : ["GC1!", "NQ1!", "ES1!", "BTCUSD", "EURUSD", "GBPUSD"];
+    }
+  });
+
+  // React Query to fetch historical revisions for the selected date and asset
+  const { data: historyRevisions, isLoading: isHistoryLoading, refetch: refetchHistory } = useQuery<any[]>({
+    queryKey: ["journal_history", selectedHistoryDate, selectedHistoryAsset],
+    queryFn: async () => {
+      if (!selectedHistoryDate || !selectedHistoryAsset) return [];
+      const { data, error } = await (supabase as any)
+        .from("journal_entries_history")
+        .select("*")
+        .eq("date", selectedHistoryDate)
+        .eq("asset", selectedHistoryAsset)
+        .order("history_timestamp", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: activeTab === "history" && !!selectedHistoryDate && !!selectedHistoryAsset,
+  });
+
+  // Mutation to restore a specific revision
+  const restoreVersionMutation = useMutation({
+    mutationFn: async (versionId: string) => {
+      const { data, error } = await (supabase as any).rpc("restore_single_journal_version", {
+        target_date: selectedHistoryDate,
+        target_asset: selectedHistoryAsset,
+        version_id: versionId,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Khôi phục nhật ký thành công!", {
+        description: `Đã khôi phục phiên bản của ngày ${selectedHistoryDate} (${selectedHistoryAsset}).`,
+      });
+      refetchHistory();
+      refetch(); // Refetch daily backup logs
+    },
+    onError: (err: any) => {
+      toast.error("Khôi phục phiên bản thất bại", {
+        description: err.message,
+      });
+    },
+  });
 
   // 1. React Query to fetch daily backup logs
   const { data: logs, isLoading, refetch } = useQuery<BackupLog[]>({
@@ -339,6 +410,17 @@ function AdminBackupsDashboard() {
               Làm mới Logs
             </button>
           )}
+
+          {activeTab === "history" && (
+            <button
+              onClick={() => refetchHistory()}
+              disabled={isHistoryLoading}
+              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white border border-primary/30 bg-primary/10 hover:bg-primary/20 active:scale-95 transition-all shrink-0"
+            >
+              <RefreshCw size={14} className={isHistoryLoading ? "animate-spin" : ""} />
+              Làm mới Lịch sử
+            </button>
+          )}
         </div>
 
         {/* Tabs System Navigation */}
@@ -370,6 +452,23 @@ function AdminBackupsDashboard() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             {activeTab === "realtime" && (
+              <span className="absolute bottom-[-2px] left-0 w-full h-[2px] bg-primary blur-[2px]" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`pb-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all relative flex items-center gap-2 ${
+              activeTab === "history"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground/60 hover:text-foreground"
+            }`}
+          >
+            Temporal Rollback Explorer (PITR)
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/45 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            {activeTab === "history" && (
               <span className="absolute bottom-[-2px] left-0 w-full h-[2px] bg-primary blur-[2px]" />
             )}
           </button>
@@ -831,6 +930,195 @@ function AdminBackupsDashboard() {
           </div>
         )}
 
+        {/* TAB 3: TEMPORAL ROLLBACK EXPLORER (PITR) */}
+        {activeTab === "history" && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Filter controls row */}
+            <div className="bg-card/30 p-6 rounded-3xl border border-border/50 backdrop-blur-md flex flex-col md:flex-row gap-6 items-end">
+              <div className="flex-1 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
+                  Chọn Ngày Nhật Ký
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={selectedHistoryDate}
+                    onChange={(e) => setSelectedHistoryDate(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-bold font-mono focus:border-primary/60 focus:outline-none transition-colors animate-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
+                  Chọn Loại Tài Sản
+                </label>
+                <div className="relative flex gap-2">
+                  <select
+                    value={selectedHistoryAsset}
+                    onChange={(e) => setSelectedHistoryAsset(e.target.value)}
+                    className="flex-1 h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-black focus:border-primary/60 focus:outline-none transition-colors appearance-none cursor-pointer"
+                  >
+                    {uniqueAssets?.map((asset) => (
+                      <option key={asset} value={asset} className="bg-[#070b13] font-bold text-xs text-slate-100">
+                        {asset}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Nhập khác..."
+                    value={selectedHistoryAsset}
+                    onChange={(e) => setSelectedHistoryAsset(e.target.value.toUpperCase())}
+                    className="w-32 h-12 px-4 rounded-xl bg-black/40 border border-border/50 text-slate-100 text-xs font-black uppercase placeholder-muted-foreground/30 focus:border-primary/60 focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Revision List Block */}
+            <div className="bg-card/30 rounded-3xl border border-border/50 overflow-hidden backdrop-blur-md">
+              <div className="px-6 py-5 border-b border-border/40 bg-card/10 flex items-center justify-between">
+                <h2 className="text-sm font-black uppercase tracking-widest text-glow-cyan flex items-center gap-2">
+                  <History size={16} className="text-primary animate-pulse" />
+                  Danh sách phiên bản sửa đổi (Temporal Timeline)
+                </h2>
+                <div className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+                  {historyRevisions ? `${historyRevisions.length} Revisions Found` : "0 Revisions"}
+                </div>
+              </div>
+
+              <div className="p-6">
+                {isHistoryLoading ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2">
+                    <Loader2 size={24} className="animate-spin text-primary" />
+                    <span className="text-xs tracking-widest font-black uppercase text-muted-foreground/40">
+                      Đang tìm kiếm lịch sử dữ liệu...
+                    </span>
+                  </div>
+                ) : historyRevisions && historyRevisions.length > 0 ? (
+                  <div className="relative border-l-2 border-border/30 pl-6 ml-4 space-y-8 py-2">
+                    {historyRevisions.map((rev) => {
+                      const hasWeekly = !!rev.weekly_img;
+                      const hasDaily = !!rev.daily_img;
+                      const hasMonthly = !!rev.monthly_img;
+                      const hasYearly = !!rev.yearly_img;
+                      const h4Sessions = rev.h4 ? Object.keys(rev.h4) : [];
+
+                      return (
+                        <div key={rev.history_id} className="relative group/timeline animate-in slide-in-from-left duration-300">
+                          {/* Timeline Dot Indicator */}
+                          <span className="absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#070b13] border-2 border-primary/80 group-hover/timeline:border-primary transition-colors">
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                          </span>
+
+                          <div className="bg-black/30 border border-border/50 hover:border-primary/30 p-5 rounded-2xl transition-all shadow-md hover:shadow-lg flex flex-col md:flex-row justify-between gap-6 items-start md:items-center">
+                            
+                            {/* Left side: revision meta */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-mono font-bold text-foreground">
+                                  {formatDateTime(rev.history_timestamp)}
+                                </span>
+                                {rev.history_action === "UPDATE" ? (
+                                  <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    UPDATE
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                    DELETE
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {hasWeekly && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                                    Weekly
+                                  </span>
+                                )}
+                                {hasDaily && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                                    Daily
+                                  </span>
+                                )}
+                                {hasMonthly && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                                    Monthly
+                                  </span>
+                                )}
+                                {hasYearly && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/30 border border-border/40 text-[9px] font-black uppercase tracking-widest text-slate-300">
+                                    Yearly
+                                  </span>
+                                )}
+                                {h4Sessions.length > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-black uppercase tracking-widest text-primary">
+                                    H4: {h4Sessions.join(", ")}
+                                  </span>
+                                )}
+                              </div>
+
+                              {rev.notes && (
+                                <p className="text-[11px] text-muted-foreground/80 line-clamp-1 italic max-w-xl">
+                                  "{rev.notes}"
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Right side: quick actions */}
+                            <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
+                              <button
+                                onClick={() => setSelectedHistoryVersion(rev)}
+                                className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all text-xs font-black uppercase tracking-wider active:scale-95"
+                              >
+                                <Eye size={12} />
+                                Xem chi tiết
+                              </button>
+                              
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC nhật ký ngày ${selectedHistoryDate} (${selectedHistoryAsset}) về phiên bản lưu lúc ${formatDateTime(rev.history_timestamp)}? Dòng dữ liệu hiện tại sẽ bị thay thế hoàn toàn.`)) {
+                                    restoreVersionMutation.mutate(rev.history_id);
+                                  }
+                                }}
+                                disabled={restoreVersionMutation.isPending}
+                                className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
+                              >
+                                {restoreVersionMutation.isPending ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                  <RefreshCw size={12} />
+                                )}
+                                Rollback
+                              </button>
+                            </div>
+
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="p-3.5 rounded-full bg-muted/20 text-muted-foreground/30 border border-border/30">
+                      <AlertCircle size={28} />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">
+                        Chưa ghi nhận phiên bản sửa đổi nào
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground/60 max-w-sm mx-auto">
+                        Hệ thống PITR tự động tạo revision khi bạn có thay đổi (UPDATE hoặc DELETE) trên biểu đồ ngày {selectedHistoryDate} và tài sản {selectedHistoryAsset}.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* MODAL 1: System Backup detailed log terminal */}
@@ -1007,6 +1295,208 @@ function AdminBackupsDashboard() {
                 >
                   <RefreshCw size={12} className={syncFileMutation.isPending ? "animate-spin" : ""} />
                   Thử đồng bộ lại ngay
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: Detailed History Revision Preview */}
+      {selectedHistoryVersion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setSelectedHistoryVersion(null)}>
+          <div
+            className="w-full max-w-4xl bg-[#0c1220] border border-border/80 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <History size={16} className="text-primary" />
+                <span className="text-xs font-black uppercase tracking-widest text-foreground">
+                  Chi tiết bản lưu lịch sử ({formatDateTime(selectedHistoryVersion.history_timestamp)})
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedHistoryVersion(null)}
+                className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 px-3 py-1.5 rounded-lg border border-border/60 transition-all active:scale-95"
+              >
+                Đóng
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto font-sans text-xs text-slate-300 space-y-6 flex-1">
+              
+              {/* Revision Info Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-muted/10 p-4 rounded-xl border border-border/40">
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                    Hành động
+                  </span>
+                  <span className="font-bold text-foreground text-xs uppercase text-glow-cyan">
+                    {selectedHistoryVersion.history_action}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                    Tài sản & Ngày
+                  </span>
+                  <span className="font-bold text-foreground text-xs uppercase">
+                    {selectedHistoryVersion.asset} · {selectedHistoryVersion.date}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                    Thời gian tạo bản ghi gốc
+                  </span>
+                  <span className="font-bold text-foreground text-xs">
+                    {formatDateTime(selectedHistoryVersion.created_at)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Note details */}
+              {selectedHistoryVersion.notes && (
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                    Ghi chú chi tiết (Notes)
+                  </span>
+                  <div className="bg-black/30 border border-border/40 p-4 rounded-xl text-slate-300 leading-relaxed font-semibold whitespace-pre-wrap">
+                    {selectedHistoryVersion.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Biases Grid */}
+              <div className="space-y-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                  Định hướng phân tích (Biases)
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Weekly Bias</span>
+                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.weekly_bias}</span>
+                  </div>
+                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Daily Bias</span>
+                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.daily_bias}</span>
+                  </div>
+                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Monthly Bias</span>
+                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.monthly_bias || "—"}</span>
+                  </div>
+                  <div className="bg-black/20 p-3 rounded-xl border border-border/30 text-center">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Yearly Bias</span>
+                    <span className="font-bold text-foreground text-xs uppercase block mt-1">{selectedHistoryVersion.yearly_bias || "—"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Charts Images Grid */}
+              <div className="space-y-4">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                  Danh sách biểu đồ đã chụp (Charts)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* Weekly Chart */}
+                  {selectedHistoryVersion.weekly_img && (
+                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">weekly outlook chart</span>
+                      <a href={`/storage/${selectedHistoryVersion.weekly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                        <img src={`/storage/${selectedHistoryVersion.weekly_img}`} alt="Weekly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Daily Chart */}
+                  {selectedHistoryVersion.daily_img && (
+                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily outlook chart</span>
+                      <a href={`/storage/${selectedHistoryVersion.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                        <img src={`/storage/${selectedHistoryVersion.daily_img}`} alt="Daily Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Monthly Chart */}
+                  {selectedHistoryVersion.monthly_img && (
+                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">monthly outlook chart</span>
+                      <a href={`/storage/${selectedHistoryVersion.monthly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                        <img src={`/storage/${selectedHistoryVersion.monthly_img}`} alt="Monthly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Yearly Chart */}
+                  {selectedHistoryVersion.yearly_img && (
+                    <div className="border border-border/40 rounded-2xl overflow-hidden bg-black/40 p-3 space-y-2">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">yearly outlook chart</span>
+                      <a href={`/storage/${selectedHistoryVersion.yearly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
+                        <img src={`/storage/${selectedHistoryVersion.yearly_img}`} alt="Yearly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* H4 Sessions Details */}
+              {selectedHistoryVersion.h4 && Object.keys(selectedHistoryVersion.h4).length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
+                    Chi tiết các phiên H4 (H4 Sessions)
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {Object.entries(selectedHistoryVersion.h4).map(([sess, val]: [string, any]) => {
+                      const img = typeof val === "string" ? val : val?.img;
+                      const bias = typeof val === "string" ? null : val?.bias;
+
+                      return (
+                        <div key={sess} className="bg-black/30 border border-border/40 p-4 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between border-b border-border/20 pb-2">
+                            <span className="text-xs font-black uppercase text-primary tracking-widest">{sess} Session</span>
+                            {bias && (
+                              <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
+                                {bias}
+                              </span>
+                            )}
+                          </div>
+                          {img && (
+                            <div className="rounded-lg overflow-hidden border border-border/20 max-h-[140px]">
+                              <a href={`/storage/${img}`} target="_blank" rel="noreferrer" className="block relative group/h4 cursor-pointer">
+                                <img src={`/storage/${img}`} alt={`${sess} Session`} className="w-full h-full object-cover rounded-lg group-hover/h4:scale-102 transition-transform" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-border/20">
+                <button
+                  onClick={() => setSelectedHistoryVersion(null)}
+                  className="inline-flex h-10 px-5 items-center justify-center rounded-xl border border-border/60 text-muted-foreground hover:text-slate-100 hover:bg-muted/30 transition-all active:scale-95 text-xs font-black uppercase tracking-wider"
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC nhật ký ngày ${selectedHistoryDate} (${selectedHistoryAsset}) về phiên bản lưu lúc ${formatDateTime(selectedHistoryVersion.history_timestamp)}? Dòng dữ liệu hiện tại sẽ bị thay thế hoàn toàn.`)) {
+                      setSelectedHistoryVersion(null);
+                      restoreVersionMutation.mutate(selectedHistoryVersion.history_id);
+                    }
+                  }}
+                  disabled={restoreVersionMutation.isPending}
+                  className="inline-flex h-10 px-5 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all active:scale-95 text-xs font-black uppercase tracking-wider disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={restoreVersionMutation.isPending ? "animate-spin" : ""} />
+                  Khôi phục (Rollback) ngay
                 </button>
               </div>
 
