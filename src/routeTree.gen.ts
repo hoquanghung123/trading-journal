@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as HelloRouteImport } from './routes/hello'
-import { Route as DebugRouteImport } from './routes/debug'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StorageSplatRouteImport } from './routes/storage.$'
@@ -26,11 +25,6 @@ const ProgressRoute = ProgressRouteImport.update({
 const HelloRoute = HelloRouteImport.update({
   id: '/hello',
   path: '/hello',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DebugRoute = DebugRouteImport.update({
-  id: '/debug',
-  path: '/debug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -62,7 +56,6 @@ const AdminBackupsRoute = AdminBackupsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
   '/admin/backups': typeof AdminBackupsRoute
@@ -72,7 +65,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
   '/admin/backups': typeof AdminBackupsRoute
@@ -83,7 +75,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/debug': typeof DebugRoute
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
   '/admin/backups': typeof AdminBackupsRoute
@@ -95,7 +86,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/debug'
     | '/hello'
     | '/progress'
     | '/admin/backups'
@@ -105,7 +95,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
-    | '/debug'
     | '/hello'
     | '/progress'
     | '/admin/backups'
@@ -115,7 +104,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/debug'
     | '/hello'
     | '/progress'
     | '/admin/backups'
@@ -126,7 +114,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  DebugRoute: typeof DebugRoute
   HelloRoute: typeof HelloRoute
   ProgressRoute: typeof ProgressRoute
   StorageSplatRoute: typeof StorageSplatRoute
@@ -146,13 +133,6 @@ declare module '@tanstack/react-router' {
       path: '/hello'
       fullPath: '/hello'
       preLoaderRoute: typeof HelloRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debug': {
-      id: '/debug'
-      path: '/debug'
-      fullPath: '/debug'
-      preLoaderRoute: typeof DebugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -208,7 +188,6 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  DebugRoute: DebugRoute,
   HelloRoute: HelloRoute,
   ProgressRoute: ProgressRoute,
   StorageSplatRoute: StorageSplatRoute,

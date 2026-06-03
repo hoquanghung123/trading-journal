@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { useSymbols, getAssetIconUrl } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
+import { TodaySwissTapes } from "./TodaySwissTapes";
 import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
 import { MonthView } from "./MonthView";
@@ -116,14 +117,11 @@ export function JournalView() {
 
   // Subscribe to real-time updates from Supabase for live reloading
   useEffect(() => {
-    const channel = supabase.channel('journal_entries_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'journal_entries' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
-        }
-      )
+    const channel = supabase
+      .channel("journal_entries_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "journal_entries" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      })
       .subscribe();
 
     return () => {
@@ -405,6 +403,8 @@ export function JournalView() {
           <Empty onAdd={addEntry} />
         ) : viewMode === "month" ? (
           <MonthView entries={filtered} onUpdate={upsert} asset={asset} />
+        ) : asset === "TODAY" ? (
+          <TodaySwissTapes entries={filtered} onUpdate={upsert} onEdit={setEditing} />
         ) : (
           <div ref={scrollerRef} data-slot-root className="overflow-x-auto scrollbar-terminal pb-4">
             <div className="flex gap-3 min-w-min items-start">
