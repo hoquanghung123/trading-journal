@@ -50,8 +50,8 @@ export function PasteSlot({
       const old = image;
       onChange(path);
       if (old) deleteChartImage(old).catch(() => {});
-    } catch (e: any) {
-      toast.error(e.message ?? "Upload failed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
     }
@@ -64,8 +64,8 @@ export function PasteSlot({
       const old = image;
       onChange(path);
       if (old) deleteChartImage(old).catch(() => {});
-    } catch (e: any) {
-      toast.error(e.message ?? "Upload failed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
     }
@@ -136,7 +136,7 @@ export function PasteSlot({
             alt={label}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain bg-muted/5"
           />
         </>
       ) : (

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Edit3, Check, ChevronDown, ChevronUp } from "lucide-react";
 import type { DayEntry, Session, Bias } from "@/lib/journal";
-import { getSessionsForAsset, biasStyle, biasLabel } from "@/lib/journal";
+import { getSessionsForAsset, biasStyle, biasLabel, weekdayOf } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -28,6 +28,10 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
       {entries.map((entry) => {
         const sessions = getSessionsForAsset(entry.asset);
         const isExpanded = !!expandedRows[entry.id];
+
+        const isMonday = weekdayOf(entry.date) === "MON";
+        const isFirstOfMonth = entry.date.endsWith("-01");
+        const showMonthly = isMonday || isFirstOfMonth;
 
         // Determine the H4 summary bias from the sessions
         const getH4SummaryBias = (e: DayEntry): { bias: Bias; session: Session } => {
@@ -112,6 +116,21 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
 
               {/* Timeframe Badges & General Chevron */}
               <div className="flex items-center gap-3">
+                {/* Monthly Badge */}
+                {showMonthly && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                      M:
+                    </span>
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none font-mono tracking-wider shrink-0"
+                      style={biasStyle(entry.monthlyBias)}
+                    >
+                      {biasLabel(entry.monthlyBias)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Weekly Badge */}
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">W:</span>
@@ -174,8 +193,71 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                 className="border-t border-border bg-muted/10 p-6 animate-in slide-in-from-top-4 duration-200 space-y-8"
                 onClick={(e) => e.stopPropagation()} // Prevent clicks inside the drawer from collapsing the row
               >
-                {/* Top Section: Weekly & Daily Charts Side-by-Side */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Top Section: Monthly, Weekly & Daily Charts Side-by-Side */}
+                <div
+                  className={`grid grid-cols-1 ${showMonthly ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"} gap-8`}
+                >
+                  {/* Monthly Panel */}
+                  {showMonthly && (
+                    <div className="space-y-4 bg-card/40 p-4 rounded-xl border border-border/60">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+                          Monthly Timeframe
+                        </h4>
+
+                        {/* Monthly Controls */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            {(["bullish", "bearish", "consolidation"] as Bias[]).map((b) => (
+                              <button
+                                key={b}
+                                onClick={() => onUpdate({ ...entry, monthlyBias: b })}
+                                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
+                                  entry.monthlyBias === b
+                                    ? b === "bullish"
+                                      ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                                      : b === "bearish"
+                                        ? "bg-rose-500 text-white border-rose-500 shadow-sm"
+                                        : "bg-amber-500 text-white border-amber-500 shadow-sm"
+                                    : "bg-card text-muted-foreground border-border hover:bg-muted"
+                                }`}
+                              >
+                                {b === "bullish" ? "Bull" : b === "bearish" ? "Bear" : "Cons"}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pl-3 border-l border-border/60">
+                            <span className="text-[9px] font-bold text-muted-foreground uppercase">
+                              Correct
+                            </span>
+                            <button
+                              onClick={() =>
+                                onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })
+                              }
+                              className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                                entry.monthlyCorrect
+                                  ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                                  : "border-border text-muted-foreground hover:border-primary/50"
+                              }`}
+                            >
+                              {entry.monthlyCorrect && (
+                                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <PasteSlot
+                        label="Monthly Chart"
+                        image={entry.monthlyImg}
+                        onChange={(url) => onUpdate({ ...entry, monthlyImg: url })}
+                        className="w-full aspect-video rounded-xl overflow-hidden border border-border"
+                      />
+                    </div>
+                  )}
+
                   {/* Weekly Panel */}
                   <div className="space-y-4 bg-card/40 p-4 rounded-xl border border-border/60">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
@@ -231,7 +313,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                       label="Weekly Chart"
                       image={entry.weeklyImg}
                       onChange={(url) => onUpdate({ ...entry, weeklyImg: url })}
-                      className="h-64 sm:h-80 w-full rounded-xl overflow-hidden border border-border"
+                      className="w-full aspect-video rounded-xl overflow-hidden border border-border"
                     />
                   </div>
 
@@ -290,7 +372,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                       label="Daily Chart"
                       image={entry.dailyImg}
                       onChange={(url) => onUpdate({ ...entry, dailyImg: url })}
-                      className="h-64 sm:h-80 w-full rounded-xl overflow-hidden border border-border"
+                      className="w-full aspect-video rounded-xl overflow-hidden border border-border"
                     />
                   </div>
                 </div>
@@ -365,7 +447,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                                 },
                               });
                             }}
-                            className="h-48 w-full rounded-lg overflow-hidden border border-border"
+                            className="w-full aspect-video rounded-lg overflow-hidden border border-border"
                           />
                         </div>
                       );
