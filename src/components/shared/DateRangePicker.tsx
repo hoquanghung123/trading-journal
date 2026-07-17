@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/popover"
 
 interface DateRangePickerProps {
-  className?: React.HTMLAttributes<divElement>
+  className?: string
   date: DateRange | undefined
   setDate: (date: DateRange | undefined) => void
 }

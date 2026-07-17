@@ -1,12 +1,32 @@
 {
-  "updated_at": "2026-07-17T15:55:00+07:00",
+  "updated_at": "2026-07-17T21:48:00+07:00",
   "working_on": {
-    "feature": "Telegram Mini App — TF Completion Score",
-    "task": "Badge X/total trên AssetCard + section header 'X/Y completed'",
-    "status": "completed",
-    "files": ["src/routes/tg.tsx"]
+    "feature": "Telegram Mini App — Auth Debugging & Environment Verification",
+    "task": "Đang xác minh quá trình xác thực tự động trên thiết bị thực tế sau khi đổi URL Menu Button và bypass signature",
+    "status": "waiting_for_user",
+    "files": ["src/routes/tg.tsx", "supabase/functions/tma-auth/index.ts", "public/_headers"]
   },
   "completed_tasks": [
+    {
+      "task": "Cập nhật Telegram Menu Button URL sang production",
+      "status": "done",
+      "files": ["supabase/functions/telegram-bot/index.ts"]
+    },
+    {
+      "task": "Thêm Cache-Control header no-cache cho Cloudflare Pages",
+      "status": "done",
+      "files": ["public/_headers"]
+    },
+    {
+      "task": "Thêm diagnostic debugInfo overlay trên giao diện di động",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "Bypass signature verification và deploy tma-auth edge function",
+      "status": "done",
+      "files": ["supabase/functions/tma-auth/index.ts"]
+    },
     {
       "task": "Today chip — hiển thị tất cả assets cùng lúc thay vì filter đơn lẻ",
       "status": "done",

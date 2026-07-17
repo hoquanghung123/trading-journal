@@ -106,7 +106,7 @@ function Shell() {
 
   const { data: entries } = useQuery({
     queryKey: ["journal_entries"],
-    queryFn: fetchEntries,
+    queryFn: () => fetchEntries(),
   });
 
   const { data: profile } = useQuery({

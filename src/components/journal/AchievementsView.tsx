@@ -94,7 +94,7 @@ export function AchievementsView() {
 
     // Calculate target for current level
     const milestones = config.milestones;
-    let target = milestones.Bronze;
+    let target: number = milestones.Bronze;
     if (currentLevel === "Bronze") target = milestones.Silver;
     if (currentLevel === "Silver") target = milestones.Gold;
     if (currentLevel === "Gold") target = milestones.Diamond;

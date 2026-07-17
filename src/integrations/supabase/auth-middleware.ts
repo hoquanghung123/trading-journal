@@ -7,7 +7,7 @@ import type { Database } from "./types";
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
     try {
-      const request = getRequest();
+      const request = getRequest() as any;
       // @ts-ignore
       const env =
         request?.context?.cloudflare?.env || request?.context || process.env || (globalThis as any);

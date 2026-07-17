@@ -490,5 +490,5 @@ export interface WeeklyActivity {
 export async function fetchWeeklyActivity(): Promise<WeeklyActivity[]> {
   const { data, error } = await supabase.rpc("get_leaderboard_activity");
   if (error) throw error;
-  return data as WeeklyActivity[];
+  return (data as unknown) as WeeklyActivity[];
 }

@@ -56,7 +56,7 @@ export function JournalView() {
 
   const { data: entries = [] } = useQuery({
     queryKey: ["journal_entries"],
-    queryFn: fetchEntries,
+    queryFn: () => fetchEntries(),
   });
   const [asset, setAsset] = useState<string>(() => {
     return localStorage.getItem("journal-filter-asset") || "TODAY";

@@ -792,7 +792,7 @@ export function StrategyDetail({
                         <div className="space-y-3">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Entry Confirmation</p>
                           <p className="text-lg font-bold text-foreground leading-relaxed">
-                            {model.executionRules.entrySignal || "NOT_DEFINED"}
+                            {model.executionRules.entry || "NOT_DEFINED"}
                           </p>
                         </div>
                         <div className="space-y-3">

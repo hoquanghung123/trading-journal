@@ -149,6 +149,18 @@
     {
       "decision": "Completion score badge thay thế daily bias badge trên AssetCard",
       "reason": "Thông tin hữu ích hơn: user biết còn bao nhiêu TF chưa nhập. Badge teal = complete."
+    },
+    {
+      "decision": "Bypass tạm thời signature verification của Telegram",
+      "reason": "Cách ly lỗi 401 Unauthorized do lệch token hoặc initData construct để kiểm tra luồng auth chính trước."
+    },
+    {
+      "decision": "Tắt verify_jwt cho tma-auth và telegram-bot functions",
+      "reason": "Telegram clients gọi trực tiếp không đi kèm Supabase JWT token. Việc kiểm chứng dựa hoàn toàn vào Telegram initData."
+    },
+    {
+      "decision": "Thêm no-cache header cho route /tg",
+      "reason": "Telegram WebView lưu cache rất nặng, khiến các thay đổi frontend không hiển thị ngay lập tức. Đóng vai trò ép reload."
     }
   ],
   "gotchas": [
@@ -178,6 +190,16 @@
       "fix": "Bỏ .slice(0, 6). CSS grid repeat(N, minmax(0,1fr)) tự xử lý số cột."
     },
     {
+      "issue": "Telegram WebView cache dữ liệu cũ",
+      "cause": "Không cấu hình cache headers cho route /tg dẫn đến render code cũ.",
+      "fix": "Thêm public/_headers với Cache-Control no-cache và Pragma no-cache."
+    },
+    {
+      "issue": "TMA Menu Button link trỏ đến branch cũ (bugfix-notes)",
+      "cause": "Cấu hình setChatMenuButton trỏ vào branch deployment cũ thay vì production.",
+      "fix": "Chạy script cập nhật ChatMenuButton lên URL production."
+    },
+    {
       "issue": "supabase/types.ts TS1005: ';' expected",
       "cause": "Lỗi pre-existing trong file generated types của Supabase",
       "fix": "Bỏ qua khi compile logic TMA. Không block build. Có thể regenerate types sau.",
@@ -191,5 +213,5 @@
     "symbols_lib": "src/lib/symbols.ts",
     "journal_lib": "src/lib/journal.ts"
   },
-  "updated_at": "2026-07-17T15:55:00+07:00"
+  "updated_at": "2026-07-17T21:47:00+07:00"
 }
