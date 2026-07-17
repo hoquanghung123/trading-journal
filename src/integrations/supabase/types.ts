@@ -1,1 +1,817 @@
-{"types":"export type Json =\n  | string\n  | number\n  | boolean\n  | null\n  | { [key: string]: Json | undefined }\n  | Json[]\n\nexport type Database = {\n  // Allows to automatically instantiate createClient with right options\n  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)\n  __InternalSupabase: {\n    PostgrestVersion: \"14.5\"\n  }\n  public: {\n    Tables: {\n      backup_logs: {\n        Row: {\n          created_at: string\n          date: string\n          db_size_bytes: number | null\n          db_status: string\n          id: string\n          log_message: string | null\n          r2_files_count: number | null\n          r2_size_bytes: number | null\n          r2_status: string\n          updated_at: string\n        }\n        Insert: {\n          created_at?: string\n          date?: string\n          db_size_bytes?: number | null\n          db_status: string\n          id?: string\n          log_message?: string | null\n          r2_files_count?: number | null\n          r2_size_bytes?: number | null\n          r2_status: string\n          updated_at?: string\n        }\n        Update: {\n          created_at?: string\n          date?: string\n          db_size_bytes?: number | null\n          db_status?: string\n          id?: string\n          log_message?: string | null\n          r2_files_count?: number | null\n          r2_size_bytes?: number | null\n          r2_status?: string\n          updated_at?: string\n        }\n        Relationships: []\n      }\n      journal_entries: {\n        Row: {\n          asset: string\n          created_at: string\n          daily_bias: Database[\"public\"][\"Enums\"][\"bias_type\"]\n          daily_correct: boolean\n          daily_img: string | null\n          date: string\n          h4: Json\n          id: string\n          monthly_bias: Database[\"public\"][\"Enums\"][\"bias_type\"] | null\n          monthly_correct: boolean | null\n          monthly_img: string | null\n          notes: string | null\n          updated_at: string\n          user_id: string\n          weekly_bias: Database[\"public\"][\"Enums\"][\"bias_type\"]\n          weekly_correct: boolean\n          weekly_img: string | null\n          yearly_bias: string\n          yearly_img: string | null\n        }\n        Insert: {\n          asset: string\n          created_at?: string\n          daily_bias?: Database[\"public\"][\"Enums\"][\"bias_type\"]\n          daily_correct?: boolean\n          daily_img?: string | null\n          date: string\n          h4?: Json\n          id?: string\n          monthly_bias?: Database[\"public\"][\"Enums\"][\"bias_type\"] | null\n          monthly_correct?: boolean | null\n          monthly_img?: string | null\n          notes?: string | null\n          updated_at?: string\n          user_id: string\n          weekly_bias?: Database[\"public\"][\"Enums\"][\"bias_type\"]\n          weekly_correct?: boolean\n          weekly_img?: string | null\n          yearly_bias?: string\n          yearly_img?: string | null\n        }\n        Update: {\n          asset?: string\n          created_at?: string\n          daily_bias?: Database[\"public\"][\"Enums\"][\"bias_type\"]\n          daily_correct?: boolean\n          daily_img?: string | null\n          date?: string\n          h4?: Json\n          id?: string\n          monthly_bias?: Database[\"public\"][\"Enums\"][\"bias_type\"] | null\n          monthly_correct?: boolean | null\n          monthly_img?: string | null\n          notes?: string | null\n          updated_at?: string\n          user_id?: string\n          weekly_bias?: Database[\"public\"][\"Enums\"][\"bias_type\"]\n          weekly_correct?: boolean\n          weekly_img?: string | null\n          yearly_bias?: string\n          yearly_img?: string | null\n        }\n        Relationships: []\n      }\n      monthly_funding: {\n        Row: {\n          amount: number\n          created_at: string | null\n          id: string\n          month_key: string\n          updated_at: string | null\n          user_id: string\n        }\n        Insert: {\n          amount?: number\n          created_at?: string | null\n          id?: string\n          month_key: string\n          updated_at?: string | null\n          user_id: string\n        }\n        Update: {\n          amount?: number\n          created_at?: string | null\n          id?: string\n          month_key?: string\n          updated_at?: string | null\n          user_id?: string\n        }\n        Relationships: []\n      }\n      playbook_setups: {\n        Row: {\n          confluence_order: Json | null\n          created_at: string | null\n          definition: string | null\n          execution_rules: Json | null\n          id: string\n          images: Json | null\n          killzones: string | null\n          lab_notes: Json | null\n          market_condition: string | null\n          moodle_resources: Json | null\n          name: string\n          setup_confluences: Json | null\n          status: string | null\n          timeframe: string | null\n          updated_at: string | null\n          user_id: string\n        }\n        Insert: {\n          confluence_order?: Json | null\n          created_at?: string | null\n          definition?: string | null\n          execution_rules?: Json | null\n          id?: string\n          images?: Json | null\n          killzones?: string | null\n          lab_notes?: Json | null\n          market_condition?: string | null\n          moodle_resources?: Json | null\n          name: string\n          setup_confluences?: Json | null\n          status?: string | null\n          timeframe?: string | null\n          updated_at?: string | null\n          user_id: string\n        }\n        Update: {\n          confluence_order?: Json | null\n          created_at?: string | null\n          definition?: string | null\n          execution_rules?: Json | null\n          id?: string\n          images?: Json | null\n          killzones?: string | null\n          lab_notes?: Json | null\n          market_condition?: string | null\n          moodle_resources?: Json | null\n          name?: string\n          setup_confluences?: Json | null\n          status?: string | null\n          timeframe?: string | null\n          updated_at?: string | null\n          user_id?: string\n        }\n        Relationships: []\n      }\n      profiles: {\n        Row: {\n          active_title: string | null\n          avatar_url: string | null\n          current_streak: number | null\n          display_name: string | null\n          id: string\n          last_streak_update: string | null\n          longest_streak: number | null\n          role: string | null\n          updated_at: string | null\n        }\n        Insert: {\n          active_title?: string | null\n          avatar_url?: string | null\n          current_streak?: number | null\n          display_name?: string | null\n          id: string\n          last_streak_update?: string | null\n          longest_streak?: number | null\n          role?: string | null\n          updated_at?: string | null\n        }\n        Update: {\n          active_title?: string | null\n          avatar_url?: string | null\n          current_streak?: number | null\n          display_name?: string | null\n          id?: string\n          last_streak_update?: string | null\n          longest_streak?: number | null\n          role?: string | null\n          updated_at?: string | null\n        }\n        Relationships: []\n      }\n      psychology_logs: {\n        Row: {\n          created_at: string\n          date: string\n          entry_rationale: string | null\n          exit_assessment: string | null\n          id: string\n          morning_mood: string | null\n          morning_notes: string | null\n          post_trade_emotion: string | null\n          pre_trade_emotion: string | null\n          trade_id: string | null\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          created_at?: string\n          date: string\n          entry_rationale?: string | null\n          exit_assessment?: string | null\n          id?: string\n          morning_mood?: string | null\n          morning_notes?: string | null\n          post_trade_emotion?: string | null\n          pre_trade_emotion?: string | null\n          trade_id?: string | null\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          created_at?: string\n          date?: string\n          entry_rationale?: string | null\n          exit_assessment?: string | null\n          id?: string\n          morning_mood?: string | null\n          morning_notes?: string | null\n          post_trade_emotion?: string | null\n          pre_trade_emotion?: string | null\n          trade_id?: string | null\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"psychology_logs_trade_id_fkey\"\n            columns: [\"trade_id\"]\n            isOneToOne: false\n            referencedRelation: \"trades\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      realtime_sync_logs: {\n        Row: {\n          created_at: string | null\n          error_message: string | null\n          id: string\n          path: string | null\n          status: string | null\n        }\n        Insert: {\n          created_at?: string | null\n          error_message?: string | null\n          id?: string\n          path?: string | null\n          status?: string | null\n        }\n        Update: {\n          created_at?: string | null\n          error_message?: string | null\n          id?: string\n          path?: string | null\n          status?: string | null\n        }\n        Relationships: []\n      }\n      symbols: {\n        Row: {\n          created_at: string\n          id: string\n          is_forex: boolean\n          name: string\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          created_at?: string\n          id?: string\n          is_forex?: boolean\n          name: string\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          created_at?: string\n          id?: string\n          is_forex?: boolean\n          name?: string\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      system_temporal_history: {\n        Row: {\n          history_action: string\n          history_id: string\n          history_timestamp: string\n          row_id: string\n          snapshot_data: Json\n          table_name: string\n          user_id: string\n        }\n        Insert: {\n          history_action: string\n          history_id?: string\n          history_timestamp?: string\n          row_id: string\n          snapshot_data: Json\n          table_name: string\n          user_id: string\n        }\n        Update: {\n          history_action?: string\n          history_id?: string\n          history_timestamp?: string\n          row_id?: string\n          snapshot_data?: Json\n          table_name?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      telegram_users: {\n        Row: {\n          created_at: string\n          telegram_id: string\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          created_at?: string\n          telegram_id: string\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          created_at?: string\n          telegram_id?: string\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      trades: {\n        Row: {\n          actual_rr: number\n          after_img: string | null\n          before_img: string | null\n          bias_entry_id: string | null\n          compliance_check: boolean | null\n          created_at: string\n          daily_img: string | null\n          entry_time: string\n          exit_time: string | null\n          experimental_args: Json | null\n          fees: number\n          grade: string | null\n          gross_pnl: number\n          h1_img: string | null\n          h4_img: string | null\n          id: string\n          m15_img: string | null\n          m5_img: string | null\n          max_rr: number\n          missed_confluences: Json | null\n          monthly_img: string | null\n          net_pnl: number\n          notes: string | null\n          risk_percent: number | null\n          setup_id: string | null\n          side: Database[\"public\"][\"Enums\"][\"trade_side\"]\n          status: string | null\n          symbol: string\n          updated_at: string\n          user_id: string\n          weekly_img: string | null\n        }\n        Insert: {\n          actual_rr?: number\n          after_img?: string | null\n          before_img?: string | null\n          bias_entry_id?: string | null\n          compliance_check?: boolean | null\n          created_at?: string\n          daily_img?: string | null\n          entry_time?: string\n          exit_time?: string | null\n          experimental_args?: Json | null\n          fees?: number\n          grade?: string | null\n          gross_pnl?: number\n          h1_img?: string | null\n          h4_img?: string | null\n          id?: string\n          m15_img?: string | null\n          m5_img?: string | null\n          max_rr?: number\n          missed_confluences?: Json | null\n          monthly_img?: string | null\n          net_pnl?: number\n          notes?: string | null\n          risk_percent?: number | null\n          setup_id?: string | null\n          side?: Database[\"public\"][\"Enums\"][\"trade_side\"]\n          status?: string | null\n          symbol: string\n          updated_at?: string\n          user_id: string\n          weekly_img?: string | null\n        }\n        Update: {\n          actual_rr?: number\n          after_img?: string | null\n          before_img?: string | null\n          bias_entry_id?: string | null\n          compliance_check?: boolean | null\n          created_at?: string\n          daily_img?: string | null\n          entry_time?: string\n          exit_time?: string | null\n          experimental_args?: Json | null\n          fees?: number\n          grade?: string | null\n          gross_pnl?: number\n          h1_img?: string | null\n          h4_img?: string | null\n          id?: string\n          m15_img?: string | null\n          m5_img?: string | null\n          max_rr?: number\n          missed_confluences?: Json | null\n          monthly_img?: string | null\n          net_pnl?: number\n          notes?: string | null\n          risk_percent?: number | null\n          setup_id?: string | null\n          side?: Database[\"public\"][\"Enums\"][\"trade_side\"]\n          status?: string | null\n          symbol?: string\n          updated_at?: string\n          user_id?: string\n          weekly_img?: string | null\n        }\n        Relationships: [\n          {\n            foreignKeyName: \"trades_setup_id_fkey\"\n            columns: [\"setup_id\"]\n            isOneToOne: false\n            referencedRelation: \"playbook_setups\"\n            referencedColumns: [\"id\"]\n          },\n        ]\n      }\n      trading_reviews: {\n        Row: {\n          action_plan: Json\n          created_at: string\n          environmental_reflection: string | null\n          id: string\n          period: string\n          psychological_reflection: string | null\n          technical_reflection: string | null\n          top_mistakes: Json\n          type: string\n          updated_at: string\n          user_id: string\n        }\n        Insert: {\n          action_plan?: Json\n          created_at?: string\n          environmental_reflection?: string | null\n          id?: string\n          period: string\n          psychological_reflection?: string | null\n          technical_reflection?: string | null\n          top_mistakes?: Json\n          type: string\n          updated_at?: string\n          user_id: string\n        }\n        Update: {\n          action_plan?: Json\n          created_at?: string\n          environmental_reflection?: string | null\n          id?: string\n          period?: string\n          psychological_reflection?: string | null\n          technical_reflection?: string | null\n          top_mistakes?: Json\n          type?: string\n          updated_at?: string\n          user_id?: string\n        }\n        Relationships: []\n      }\n      user_achievements: {\n        Row: {\n          achievement_key: string\n          current_value: number | null\n          highest_level: string | null\n          id: string\n          updated_at: string | null\n          user_id: string\n        }\n        Insert: {\n          achievement_key: string\n          current_value?: number | null\n          highest_level?: string | null\n          id?: string\n          updated_at?: string | null\n          user_id: string\n        }\n        Update: {\n          achievement_key?: string\n          current_value?: number | null\n          highest_level?: string | null\n          id?: string\n          updated_at?: string | null\n          user_id?: string\n        }\n        Relationships: []\n      }\n      user_settings: {\n        Row: {\n          asian_reminder: boolean | null\n          asian_time: string | null\n          created_at: string | null\n          daily_reminder: boolean | null\n          daily_reminder_time: string | null\n          execution_schema: Json | null\n          experimental_args_config: Json | null\n          forex_news_currencies: string[] | null\n          forex_news_impacts: string[] | null\n          forex_news_reminder: boolean | null\n          forex_news_time_daily: string | null\n          forex_news_time_weekly: string | null\n          london_reminder: boolean | null\n          london_time: string | null\n          ny_reminder: boolean | null\n          ny_time: string | null\n          primary_color: string | null\n          reminder_time: string | null\n          show_trade_grade: boolean | null\n          telegram_chat_id: string | null\n          trade_log_view: string | null\n          updated_at: string | null\n          user_id: string\n          weekly_reminder: boolean | null\n          weekly_reminder_time: string | null\n        }\n        Insert: {\n          asian_reminder?: boolean | null\n          asian_time?: string | null\n          created_at?: string | null\n          daily_reminder?: boolean | null\n          daily_reminder_time?: string | null\n          execution_schema?: Json | null\n          experimental_args_config?: Json | null\n          forex_news_currencies?: string[] | null\n          forex_news_impacts?: string[] | null\n          forex_news_reminder?: boolean | null\n          forex_news_time_daily?: string | null\n          forex_news_time_weekly?: string | null\n          london_reminder?: boolean | null\n          london_time?: string | null\n          ny_reminder?: boolean | null\n          ny_time?: string | null\n          primary_color?: string | null\n          reminder_time?: string | null\n          show_trade_grade?: boolean | null\n          telegram_chat_id?: string | null\n          trade_log_view?: string | null\n          updated_at?: string | null\n          user_id: string\n          weekly_reminder?: boolean | null\n          weekly_reminder_time?: string | null\n        }\n        Update: {\n          asian_reminder?: boolean | null\n          asian_time?: string | null\n          created_at?: string | null\n          daily_reminder?: boolean | null\n          daily_reminder_time?: string | null\n          execution_schema?: Json | null\n          experimental_args_config?: Json | null\n          forex_news_currencies?: string[] | null\n          forex_news_impacts?: string[] | null\n          forex_news_reminder?: boolean | null\n          forex_news_time_daily?: string | null\n          forex_news_time_weekly?: string | null\n          london_reminder?: boolean | null\n          london_time?: string | null\n          ny_reminder?: boolean | null\n          ny_time?: string | null\n          primary_color?: string | null\n          reminder_time?: string | null\n          show_trade_grade?: boolean | null\n          telegram_chat_id?: string | null\n          trade_log_view?: string | null\n          updated_at?: string | null\n          user_id?: string\n          weekly_reminder?: boolean | null\n          weekly_reminder_time?: string | null\n        }\n        Relationships: []\n      }\n    }\n    Views: {\n      [_ in never]: never\n    }\n    Functions: {\n      calculate_user_streak: {\n        Args: { target_user_id: string }\n        Returns: undefined\n      }\n      get_leaderboard_activity: { Args: { days_back?: number }; Returns: Json }\n      restore_batch_system_versions: {\n        Args: { batch_timestamp: string; target_table: string }\n        Returns: boolean\n      }\n      restore_single_journal_version: {\n        Args: { target_asset: string; target_date: string; version_id: string }\n        Returns: boolean\n      }\n      restore_single_system_version: {\n        Args: { version_id: string }\n        Returns: boolean\n      }\n    }\n    Enums: {\n      bias_type: \"bullish\" | \"bearish\" | \"consolidation\"\n      trade_side: \"buy\" | \"sell\"\n    }\n    CompositeTypes: {\n      [_ in never]: never\n    }\n  }\n}\n\ntype DatabaseWithoutInternals = Omit<Database, \"__InternalSupabase\">\n\ntype DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, \"public\">]\n\nexport type Tables<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof (DefaultSchema[\"Tables\"] & DefaultSchema[\"Views\"])\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"] &\n        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Views\"])\n    : never = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"] &\n      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Views\"])[TableName] extends {\n      Row: infer R\n    }\n    ? R\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema[\"Tables\"] &\n        DefaultSchema[\"Views\"])\n    ? (DefaultSchema[\"Tables\"] &\n        DefaultSchema[\"Views\"])[DefaultSchemaTableNameOrOptions] extends {\n        Row: infer R\n      }\n      ? R\n      : never\n    : never\n\nexport type TablesInsert<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof DefaultSchema[\"Tables\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"]\n    : never = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"][TableName] extends {\n      Insert: infer I\n    }\n    ? I\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema[\"Tables\"]\n    ? DefaultSchema[\"Tables\"][DefaultSchemaTableNameOrOptions] extends {\n        Insert: infer I\n      }\n      ? I\n      : never\n    : never\n\nexport type TablesUpdate<\n  DefaultSchemaTableNameOrOptions extends\n    | keyof DefaultSchema[\"Tables\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  TableName extends DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"]\n    : never = never,\n> = DefaultSchemaTableNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions[\"schema\"]][\"Tables\"][TableName] extends {\n      Update: infer U\n    }\n    ? U\n    : never\n  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema[\"Tables\"]\n    ? DefaultSchema[\"Tables\"][DefaultSchemaTableNameOrOptions] extends {\n        Update: infer U\n      }\n      ? U\n      : never\n    : never\n\nexport type Enums<\n  DefaultSchemaEnumNameOrOptions extends\n    | keyof DefaultSchema[\"Enums\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  EnumName extends DefaultSchemaEnumNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions[\"schema\"]][\"Enums\"]\n    : never = never,\n> = DefaultSchemaEnumNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions[\"schema\"]][\"Enums\"][EnumName]\n  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema[\"Enums\"]\n    ? DefaultSchema[\"Enums\"][DefaultSchemaEnumNameOrOptions]\n    : never\n\nexport type CompositeTypes<\n  PublicCompositeTypeNameOrOptions extends\n    | keyof DefaultSchema[\"CompositeTypes\"]\n    | { schema: keyof DatabaseWithoutInternals },\n  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals\n  }\n    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions[\"schema\"]][\"CompositeTypes\"]\n    : never = never,\n> = PublicCompositeTypeNameOrOptions extends {\n  schema: keyof DatabaseWithoutInternals\n}\n  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions[\"schema\"]][\"CompositeTypes\"][CompositeTypeName]\n  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema[\"CompositeTypes\"]\n    ? DefaultSchema[\"CompositeTypes\"][PublicCompositeTypeNameOrOptions]\n    : never\n\nexport const Constants = {\n  public: {\n    Enums: {\n      bias_type: [\"bullish\", \"bearish\", \"consolidation\"],\n      trade_side: [\"buy\", \"sell\"],\n    },\n  },\n} as const\n"}
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      backup_logs: {
+        Row: {
+          created_at: string
+          date: string
+          db_size_bytes: number | null
+          db_status: string
+          id: string
+          log_message: string | null
+          r2_files_count: number | null
+          r2_size_bytes: number | null
+          r2_status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          db_size_bytes?: number | null
+          db_status: string
+          id?: string
+          log_message?: string | null
+          r2_files_count?: number | null
+          r2_size_bytes?: number | null
+          r2_status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          db_size_bytes?: number | null
+          db_status?: string
+          id?: string
+          log_message?: string | null
+          r2_files_count?: number | null
+          r2_size_bytes?: number | null
+          r2_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          asset: string
+          created_at: string
+          daily_bias: Database["public"]["Enums"]["bias_type"]
+          daily_correct: boolean
+          daily_img: string | null
+          date: string
+          h4: Json
+          id: string
+          monthly_bias: Database["public"]["Enums"]["bias_type"] | null
+          monthly_correct: boolean | null
+          monthly_img: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+          weekly_bias: Database["public"]["Enums"]["bias_type"]
+          weekly_correct: boolean
+          weekly_img: string | null
+          yearly_bias: string
+          yearly_img: string | null
+        }
+        Insert: {
+          asset: string
+          created_at?: string
+          daily_bias?: Database["public"]["Enums"]["bias_type"]
+          daily_correct?: boolean
+          daily_img?: string | null
+          date: string
+          h4?: Json
+          id?: string
+          monthly_bias?: Database["public"]["Enums"]["bias_type"] | null
+          monthly_correct?: boolean | null
+          monthly_img?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          weekly_bias?: Database["public"]["Enums"]["bias_type"]
+          weekly_correct?: boolean
+          weekly_img?: string | null
+          yearly_bias?: string
+          yearly_img?: string | null
+        }
+        Update: {
+          asset?: string
+          created_at?: string
+          daily_bias?: Database["public"]["Enums"]["bias_type"]
+          daily_correct?: boolean
+          daily_img?: string | null
+          date?: string
+          h4?: Json
+          id?: string
+          monthly_bias?: Database["public"]["Enums"]["bias_type"] | null
+          monthly_correct?: boolean | null
+          monthly_img?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          weekly_bias?: Database["public"]["Enums"]["bias_type"]
+          weekly_correct?: boolean
+          weekly_img?: string | null
+          yearly_bias?: string
+          yearly_img?: string | null
+        }
+        Relationships: []
+      }
+      monthly_funding: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          month_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          month_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          month_key?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      playbook_setups: {
+        Row: {
+          confluence_order: Json | null
+          created_at: string | null
+          definition: string | null
+          execution_rules: Json | null
+          id: string
+          images: Json | null
+          killzones: string | null
+          lab_notes: Json | null
+          market_condition: string | null
+          moodle_resources: Json | null
+          name: string
+          setup_confluences: Json | null
+          status: string | null
+          timeframe: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          confluence_order?: Json | null
+          created_at?: string | null
+          definition?: string | null
+          execution_rules?: Json | null
+          id?: string
+          images?: Json | null
+          killzones?: string | null
+          lab_notes?: Json | null
+          market_condition?: string | null
+          moodle_resources?: Json | null
+          name: string
+          setup_confluences?: Json | null
+          status?: string | null
+          timeframe?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          confluence_order?: Json | null
+          created_at?: string | null
+          definition?: string | null
+          execution_rules?: Json | null
+          id?: string
+          images?: Json | null
+          killzones?: string | null
+          lab_notes?: Json | null
+          market_condition?: string | null
+          moodle_resources?: Json | null
+          name?: string
+          setup_confluences?: Json | null
+          status?: string | null
+          timeframe?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          active_title: string | null
+          avatar_url: string | null
+          current_streak: number | null
+          display_name: string | null
+          id: string
+          last_streak_update: string | null
+          longest_streak: number | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_title?: string | null
+          avatar_url?: string | null
+          current_streak?: number | null
+          display_name?: string | null
+          id: string
+          last_streak_update?: string | null
+          longest_streak?: number | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_title?: string | null
+          avatar_url?: string | null
+          current_streak?: number | null
+          display_name?: string | null
+          id?: string
+          last_streak_update?: string | null
+          longest_streak?: number | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      psychology_logs: {
+        Row: {
+          created_at: string
+          date: string
+          entry_rationale: string | null
+          exit_assessment: string | null
+          id: string
+          morning_mood: string | null
+          morning_notes: string | null
+          post_trade_emotion: string | null
+          pre_trade_emotion: string | null
+          trade_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          entry_rationale?: string | null
+          exit_assessment?: string | null
+          id?: string
+          morning_mood?: string | null
+          morning_notes?: string | null
+          post_trade_emotion?: string | null
+          pre_trade_emotion?: string | null
+          trade_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          entry_rationale?: string | null
+          exit_assessment?: string | null
+          id?: string
+          morning_mood?: string | null
+          morning_notes?: string | null
+          post_trade_emotion?: string | null
+          pre_trade_emotion?: string | null
+          trade_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "psychology_logs_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      realtime_sync_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          path: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          path?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          path?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      symbols: {
+        Row: {
+          created_at: string
+          id: string
+          is_forex: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_forex?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_forex?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      system_temporal_history: {
+        Row: {
+          history_action: string
+          history_id: string
+          history_timestamp: string
+          row_id: string
+          snapshot_data: Json
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          history_action: string
+          history_id?: string
+          history_timestamp?: string
+          row_id: string
+          snapshot_data: Json
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          history_action?: string
+          history_id?: string
+          history_timestamp?: string
+          row_id?: string
+          snapshot_data?: Json
+          table_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      telegram_users: {
+        Row: {
+          created_at: string
+          telegram_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          telegram_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          telegram_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          actual_rr: number
+          after_img: string | null
+          before_img: string | null
+          bias_entry_id: string | null
+          compliance_check: boolean | null
+          created_at: string
+          daily_img: string | null
+          entry_time: string
+          exit_time: string | null
+          experimental_args: Json | null
+          fees: number
+          grade: string | null
+          gross_pnl: number
+          h1_img: string | null
+          h4_img: string | null
+          id: string
+          m15_img: string | null
+          m5_img: string | null
+          max_rr: number
+          missed_confluences: Json | null
+          monthly_img: string | null
+          net_pnl: number
+          notes: string | null
+          risk_percent: number | null
+          setup_id: string | null
+          side: Database["public"]["Enums"]["trade_side"]
+          status: string | null
+          symbol: string
+          updated_at: string
+          user_id: string
+          weekly_img: string | null
+        }
+        Insert: {
+          actual_rr?: number
+          after_img?: string | null
+          before_img?: string | null
+          bias_entry_id?: string | null
+          compliance_check?: boolean | null
+          created_at?: string
+          daily_img?: string | null
+          entry_time?: string
+          exit_time?: string | null
+          experimental_args?: Json | null
+          fees?: number
+          grade?: string | null
+          gross_pnl?: number
+          h1_img?: string | null
+          h4_img?: string | null
+          id?: string
+          m15_img?: string | null
+          m5_img?: string | null
+          max_rr?: number
+          missed_confluences?: Json | null
+          monthly_img?: string | null
+          net_pnl?: number
+          notes?: string | null
+          risk_percent?: number | null
+          setup_id?: string | null
+          side?: Database["public"]["Enums"]["trade_side"]
+          status?: string | null
+          symbol: string
+          updated_at?: string
+          user_id: string
+          weekly_img?: string | null
+        }
+        Update: {
+          actual_rr?: number
+          after_img?: string | null
+          before_img?: string | null
+          bias_entry_id?: string | null
+          compliance_check?: boolean | null
+          created_at?: string
+          daily_img?: string | null
+          entry_time?: string
+          exit_time?: string | null
+          experimental_args?: Json | null
+          fees?: number
+          grade?: string | null
+          gross_pnl?: number
+          h1_img?: string | null
+          h4_img?: string | null
+          id?: string
+          m15_img?: string | null
+          m5_img?: string | null
+          max_rr?: number
+          missed_confluences?: Json | null
+          monthly_img?: string | null
+          net_pnl?: number
+          notes?: string | null
+          risk_percent?: number | null
+          setup_id?: string | null
+          side?: Database["public"]["Enums"]["trade_side"]
+          status?: string | null
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+          weekly_img?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_setup_id_fkey"
+            columns: ["setup_id"]
+            isOneToOne: false
+            referencedRelation: "playbook_setups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_reviews: {
+        Row: {
+          action_plan: Json
+          created_at: string
+          environmental_reflection: string | null
+          id: string
+          period: string
+          psychological_reflection: string | null
+          technical_reflection: string | null
+          top_mistakes: Json
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_plan?: Json
+          created_at?: string
+          environmental_reflection?: string | null
+          id?: string
+          period: string
+          psychological_reflection?: string | null
+          technical_reflection?: string | null
+          top_mistakes?: Json
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_plan?: Json
+          created_at?: string
+          environmental_reflection?: string | null
+          id?: string
+          period?: string
+          psychological_reflection?: string | null
+          technical_reflection?: string | null
+          top_mistakes?: Json
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_key: string
+          current_value: number | null
+          highest_level: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          current_value?: number | null
+          highest_level?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          current_value?: number | null
+          highest_level?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          asian_reminder: boolean | null
+          asian_time: string | null
+          created_at: string | null
+          daily_reminder: boolean | null
+          daily_reminder_time: string | null
+          execution_schema: Json | null
+          experimental_args_config: Json | null
+          forex_news_currencies: string[] | null
+          forex_news_impacts: string[] | null
+          forex_news_reminder: boolean | null
+          forex_news_time_daily: string | null
+          forex_news_time_weekly: string | null
+          london_reminder: boolean | null
+          london_time: string | null
+          ny_reminder: boolean | null
+          ny_time: string | null
+          primary_color: string | null
+          reminder_time: string | null
+          show_trade_grade: boolean | null
+          telegram_chat_id: string | null
+          trade_log_view: string | null
+          updated_at: string | null
+          user_id: string
+          weekly_reminder: boolean | null
+          weekly_reminder_time: string | null
+        }
+        Insert: {
+          asian_reminder?: boolean | null
+          asian_time?: string | null
+          created_at?: string | null
+          daily_reminder?: boolean | null
+          daily_reminder_time?: string | null
+          execution_schema?: Json | null
+          experimental_args_config?: Json | null
+          forex_news_currencies?: string[] | null
+          forex_news_impacts?: string[] | null
+          forex_news_reminder?: boolean | null
+          forex_news_time_daily?: string | null
+          forex_news_time_weekly?: string | null
+          london_reminder?: boolean | null
+          london_time?: string | null
+          ny_reminder?: boolean | null
+          ny_time?: string | null
+          primary_color?: string | null
+          reminder_time?: string | null
+          show_trade_grade?: boolean | null
+          telegram_chat_id?: string | null
+          trade_log_view?: string | null
+          updated_at?: string | null
+          user_id: string
+          weekly_reminder?: boolean | null
+          weekly_reminder_time?: string | null
+        }
+        Update: {
+          asian_reminder?: boolean | null
+          asian_time?: string | null
+          created_at?: string | null
+          daily_reminder?: boolean | null
+          daily_reminder_time?: string | null
+          execution_schema?: Json | null
+          experimental_args_config?: Json | null
+          forex_news_currencies?: string[] | null
+          forex_news_impacts?: string[] | null
+          forex_news_reminder?: boolean | null
+          forex_news_time_daily?: string | null
+          forex_news_time_weekly?: string | null
+          london_reminder?: boolean | null
+          london_time?: string | null
+          ny_reminder?: boolean | null
+          ny_time?: string | null
+          primary_color?: string | null
+          reminder_time?: string | null
+          show_trade_grade?: boolean | null
+          telegram_chat_id?: string | null
+          trade_log_view?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weekly_reminder?: boolean | null
+          weekly_reminder_time?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      calculate_user_streak: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      get_leaderboard_activity: { Args: { days_back?: number }; Returns: Json }
+      restore_batch_system_versions: {
+        Args: { batch_timestamp: string; target_table: string }
+        Returns: boolean
+      }
+      restore_single_journal_version: {
+        Args: { target_asset: string; target_date: string; version_id: string }
+        Returns: boolean
+      }
+      restore_single_system_version: {
+        Args: { version_id: string }
+        Returns: boolean
+      }
+    }
+    Enums: {
+      bias_type: "bullish" | "bearish" | "consolidation"
+      trade_side: "buy" | "sell"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      bias_type: ["bullish", "bearish", "consolidation"],
+      trade_side: ["buy", "sell"],
+    },
+  },
+} as const

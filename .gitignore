@@ -45,3 +45,7 @@ supabase/.env.local
 
 .agent/
 .gemini/
+
+# Scratch & Temporary local files
+supabase/.temp/
+test_db.ts

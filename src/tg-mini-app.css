@@ -15,6 +15,12 @@ body {
   padding: 24px 12px;
 }
 
+@media (max-width: 480px) {
+  body {
+    padding: 0;
+  }
+}
+
 button {
   font: inherit;
   cursor: pointer;
@@ -27,10 +33,19 @@ button {
   background: linear-gradient(180deg, #050a10 0%, #071017 100%);
   border: 1px solid #303439;
   border-radius: 34px;
-  padding: 16px;
+  padding: 16px 16px calc(85px + env(safe-area-inset-bottom));
   box-shadow: 0 28px 80px #000, 0 0 0 1px #ffffff08 inset;
   overflow: hidden;
   position: relative;
+}
+
+@media (max-width: 480px) {
+  .phone {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 12px 12px calc(85px + env(safe-area-inset-bottom));
+  }
 }
 
 /* Glow decoration */
@@ -625,20 +640,25 @@ button {
   box-shadow: 0 8px 22px #12b6a13d;
 }
 
-/* Sticky dock bottom navigation */
+/* Fixed dock bottom navigation */
 .bottom {
-  position: sticky;
-  bottom: 6px;
-  z-index: 4;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 390px;
+  z-index: 80;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
-  margin: 16px 0 0;
-  padding: 10px 8px 9px;
+  margin: 0;
+  padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
   background: linear-gradient(145deg, #171d22f5, #0d1318f8);
   border: 1px solid #222b31;
-  border-radius: 22px;
-  box-shadow: 0 14px 32px #000c, 0 1px 0 #ffffff0a inset;
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7), 0 1px 0 #ffffff0a inset;
   backdrop-filter: blur(20px);
 }
 

@@ -1,1 +1,7 @@
 project_id = "mlyowmvrpjtqruramrhp"
+
+[functions.tma-auth]
+verify_jwt = false
+
+[functions.telegram-bot]
+verify_jwt = false

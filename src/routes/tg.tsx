@@ -527,6 +527,8 @@ function TgMiniApp() {
   const [addingAsset, setAddingAsset] = useState<string | null>(null);
   const tradingDate = getTradingDate();
 
+  const [debugInfo, setDebugInfo] = useState<string>("init...");
+
   // ── Auth ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     async function initAuth() {
@@ -537,8 +539,13 @@ function TgMiniApp() {
       const tg = (window as any).Telegram?.WebApp;
       const hasRealTg = tg?.initData && tg.initData.length > 0;
 
+      const dbg = `TG obj: ${!!tg} | initData len: ${tg?.initData?.length ?? 0} | hasRealTg: ${hasRealTg} | isLocalhost: ${isLocalhost} | platform: ${tg?.platform ?? 'n/a'} | version: ${tg?.version ?? 'n/a'}`;
+      setDebugInfo(dbg);
+      console.log('[TMA-DEBUG]', dbg);
+
       try {
         if (hasRealTg) {
+          setDebugInfo(prev => prev + ' | BRANCH: tma-auth');
           // Production: gọi Edge Function tma-auth để verify Telegram initData
           // và nhận JWT để set Supabase session (vượt qua RLS bình thường)
           const supabaseUrl: string = (supabase as any).supabaseUrl
@@ -554,6 +561,7 @@ function TgMiniApp() {
           });
 
           const json = await res.json();
+          setDebugInfo(prev => prev + ` | tma-auth: ${res.status} ${JSON.stringify(json).slice(0, 80)}`);
 
           if (res.status === 404 || json.error === "unlinked") {
             setAuthState("unlinked");
@@ -574,6 +582,7 @@ function TgMiniApp() {
 
           if (otpError) {
             console.error("verifyOtp error:", otpError.message);
+            setDebugInfo(prev => prev + ` | otpError: ${otpError.message}`);
             setAuthState("error");
             return;
           }
@@ -581,6 +590,7 @@ function TgMiniApp() {
           setLinkedUserId(json.user_id);
           setAuthState("ok");
         } else if (isLocalhost) {
+          setDebugInfo(prev => prev + ' | BRANCH: localhost');
           // Dev: dùng session đang đăng nhập trên browser
           const { data: existing } = await supabase.auth.getSession();
           if (existing.session) {
@@ -589,6 +599,7 @@ function TgMiniApp() {
             setAuthState("ok"); // Render app, upsertEntry sẽ fail gracefully nếu chưa auth
           }
         } else {
+          setDebugInfo(prev => prev + ' | BRANCH: fallback (no TG)');
           const { data: existing } = await supabase.auth.getSession();
           if (existing.session) {
             setAuthState("ok");
@@ -596,7 +607,8 @@ function TgMiniApp() {
             setAuthState("unlinked");
           }
         }
-      } catch {
+      } catch (e: any) {
+        setDebugInfo(prev => prev + ` | CATCH: ${e?.message}`);
         setAuthState("error");
       }
     }
@@ -619,7 +631,11 @@ function TgMiniApp() {
       .from("symbols")
       .select("name, is_forex")
       .order("name", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching symbols:", error);
+          return;
+        }
         if (data && data.length > 0) {
           // Filter out forex symbols, same as web app Bias tab
           const nonForex = data
@@ -627,8 +643,7 @@ function TgMiniApp() {
             .map((s: any) => s.name as string);
           setUserAssets(nonForex);
         }
-      })
-      .catch(() => {});
+      });
   }, [authState, linkedUserId]);
 
   // ── Countdown timer ──────────────────────────────────────────────────────────
@@ -677,6 +692,9 @@ function TgMiniApp() {
       <div className="phone">
         <div className="glow" />
         <NotLinkedScreen />
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#000', color: '#0f0', fontSize: 9, padding: 6, wordBreak: 'break-all', zIndex: 9999, maxHeight: 120, overflow: 'auto' }}>
+          DEBUG: {debugInfo}
+        </div>
       </div>
     );
   }
@@ -688,6 +706,9 @@ function TgMiniApp() {
         <div style={{ padding: "40px 20px", textAlign: "center" }}>
           <div style={{ fontSize: 40 }}>⚠️</div>
           <p style={{ color: "#778792" }}>Có lỗi kết nối. Thử lại sau.</p>
+        </div>
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#000', color: '#f00', fontSize: 9, padding: 6, wordBreak: 'break-all', zIndex: 9999, maxHeight: 120, overflow: 'auto' }}>
+          DEBUG: {debugInfo}
         </div>
       </div>
     );
