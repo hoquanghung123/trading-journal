@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "schema_version": "1.1.0",
+    "awf_version": "4.0.2",
+    "created_at": "2026-07-16T15:24:48+07:00"
+  },
+  "project": {
+    "name": "trading-journal",
+    "description": "Hệ thống trading journal giúp ghi chú, lưu lại toàn bộ thông tin liên quan đến trading: tâm lý, số liệu, hình ảnh, bias tracking theo khung thời gian.",
+    "type": "web + telegram-mini-app",
+    "status": "in_progress",
+    "created_at": "2026-07-16T15:24:48+07:00"
+  },
+  "tech_stack": {
+    "frontend": "React, TanStack Start, Vite, Tailwind CSS",
+    "backend": "Supabase (PostgreSQL), Cloudflare R2",
+    "database": "PostgreSQL (Supabase)",
+    "telegram": "Telegram Web App SDK (window.Telegram.WebApp.initData)"
+  },
+  "database_schema": {
+    "summary": "Lưu user settings (telegram_chat_id), entries (bias theo khung thời gian), symbols (danh sách tài sản giao dịch)",
+    "key_tables": [
+      {
+        "name": "user_settings",
+        "key_columns": ["user_id", "telegram_chat_id"],
+        "note": "Dùng telegram_chat_id để map Telegram user → Supabase user. KHÔNG có bảng telegram_users riêng (đã xoá)."
+      },
+      {
+        "name": "symbols",
+        "key_columns": ["symbol", "is_forex", "exchange"],
+        "note": "is_forex=false → hiển thị trên TMA. is_forex=true → ẩn trên TMA."
+      },
+      {
+        "name": "journal_entries",
+        "key_columns": ["user_id", "date", "asset", "monthly_bias", "weekly_bias", "daily_bias", "h4"],
+        "unique_constraint": "UNIQUE (user_id, date, asset)",
+        "note": "Bảng chính lưu bias theo từng ngày, từng asset. Unique constraint cho phép upsert đúng: { onConflict: 'user_id,date,asset' }."
+      }
+    ]
+  },
+  "features": [
+    {
+      "name": "ICT Trading Journal Terminal",
+      "status": "implemented",
+      "description": "Deep-navy terminal-style trading journal với timeline, sessions, clipboard paste. DayColumn.tsx quản lý monthly/weekly/daily/4H bias."
+    },
+    {
+      "name": "Telegram Mini App (TMA)",
+      "status": "implemented",
+      "description": "Mobile-first view tại /tg route. Isolated CSS (tg-mini-app.css). Auth qua user_settings.telegram_chat_id. Dynamic asset loading từ Supabase symbols table.",
+      "file": "src/routes/tg.tsx",
+      "key_components": [
+        "AssetCard — card hiển thị bias tổng quan (tfGrid chips). Badge X/total TF (teal nếu complete).",
+        "AssetEditor — editor mở rộng để nhập bias + hình ảnh. Tabs: W, D, h4 (ASIA/LDN/NY). Monthly tab chỉ hiện T2/ngày 1.",
+        "Countdown — đếm ngược đến 11:00 AM VN (NY Cutoff)",
+        "FAB (+) — nút teal fixed trong section header 'All biases today'. Mở Bottom Sheet để chọn asset chưa có entry."
+      ]
+    },
+    {
+      "name": "Bidirectional Sync (Web ↔ TMA)",
+      "status": "implemented",
+      "description": "Cả web và TMA ghi dữ liệu vào cùng 1 row trong journal_entries nhờ upsertEntry với onConflict: 'user_id,date,asset'. Không còn tạo duplicate rows."
+    },
+    {
+      "name": "Demand-driven Asset Cards",
+      "status": "implemented",
+      "description": "Cards chỉ hiện nếu có entry trong DB cho ngày giao dịch. User bấm FAB (+) để chủ động tạo entry cho một cặp cụ thể. Không còn phantom cards trống."
+    },
+    {
+      "name": "TF Completion Score",
+      "status": "implemented",
+      "description": "Badge X/total trong header mỗi AssetCard. Section header hiện 'X/Y completed' tổng toàn bộ. Logic: đếm TF có bias !== undefined. Không dùng .slice(0,6) để đảm bảo cặp split NY (NQ1!/YM1!/ES1!) có đủ 6-7 TF slots."
+    }
+  ],
+  "business_rules": [
+    {
+      "rule": "Monthly Outlook chỉ hiển thị vào Thứ 2 hoặc ngày 1 đầu tháng",
+      "logic": "const showMonthly = isMonday || isFirstOfMonth",
+      "applies_to": ["DayColumn.tsx (web)", "AssetCard tfGrid (TMA)", "AssetEditor tabs (TMA)"],
+      "implemented": true
+    },
+    {
+      "rule": "Symbols hiển thị trên TMA: chỉ lấy is_forex=false",
+      "logic": "supabase.from('symbols').select('symbol').eq('is_forex', false)",
+      "applies_to": ["src/routes/tg.tsx — loadAssets()"],
+      "implemented": true
+    },
+    {
+      "rule": "TradingView asset icons lấy từ getAssetIconUrl()",
+      "logic": "src/lib/symbols.ts → getAssetIconUrl(symbol) → fallback text nếu lỗi",
+      "applies_to": ["AssetCard header", "DayColumn.tsx header"],
+      "implemented": true
+    },
+    {
+      "rule": "Telegram auth mapping",
+      "logic": "initData.user.id → query user_settings WHERE telegram_chat_id = id",
+      "note": "Không có bảng telegram_users. Dùng user_settings.telegram_chat_id làm bridge duy nhất.",
+      "implemented": true
+    },
+    {
+      "rule": "Cặp NQ1!/YM1!/ES1! có NY split thành NY AM + NY PM",
+      "logic": "isSplitNy = getSessionsForAsset(asset).includes('NY AM')",
+      "note": "Tổng TF: non-split = W D ASIA LDN NY = 5 (6 với M). Split = W D ASIA LDN NY-AM NY-PM = 6 (7 với M). KHÔNG dùng .slice(0,6) vì sẽ cắt mất NY PM vào T2.",
+      "applies_to": ["AssetCard tfGrid", "AssetEditor h4 sessions", "completion score badge"],
+      "implemented": true
+    },
+    {
+      "rule": "Demand-driven workflow: chỉ hiện card nếu entry tồn tại trong DB",
+      "logic": "todayAssets = userAssets.filter(a => entries.some(e => e.date === tradingDate && e.asset === a))",
+      "note": "User phải bấm FAB (+) để tạo mới entry cho một cặp. Tránh phantom cards trống.",
+      "implemented": true
+    },
+    {
+      "rule": "Upsert logic để sync 2 chiều Web ↔ TMA",
+      "logic": "supabase.from('journal_entries').upsert(data, { onConflict: 'user_id,date,asset' })",
+      "note": "DB phải có UNIQUE constraint trên (user_id, date, asset). Đã apply migration.",
+      "implemented": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Isolated stylesheet cho /tg route",
+      "reason": "Không để global dark terminal theme ảnh hưởng mobile UI. CSS riêng: src/tg-mini-app.css."
+    },
+    {
+      "decision": "Xoá bảng telegram_users",
+      "reason": "Thừa. user_settings.telegram_chat_id đủ để map Telegram → Supabase user. Giảm độ phức tạp."
+    },
+    {
+      "decision": "Dynamic asset loading từ DB thay vì hardcode ASSETS[]",
+      "reason": "Đảm bảo TMA luôn đồng bộ với cấu hình asset trên web app. Khi user thêm/xóa cặp trên web → TMA tự cập nhật."
+    },
+    {
+      "decision": "Monthly chip M: ẩn khi không phải T2 hoặc ngày 1",
+      "reason": "Nhất quán với logic DayColumn.tsx trên web. Tránh user nhập monthly bias sai ngày."
+    },
+    {
+      "decision": "Default activeTab trong AssetEditor là 'W' thay vì 'M'",
+      "reason": "M không luôn hiển thị. Nếu default là M và hôm nay không phải T2, tab sẽ chọn vào tab không tồn tại → UX broken."
+    },
+    {
+      "decision": "Bỏ .slice(0, 6) khỏi tfGrid và completion score",
+      "reason": "CSS grid dùng repeat(N, minmax(0,1fr)) tự co giãn. Slice gây mất NY PM cho NQ1!/YM1!/ES1! vào T2/ngày 1."
+    },
+    {
+      "decision": "FAB (+) nằm cố định trong section header 'All biases today'",
+      "reason": "Khớp với thiết kế gốc giaodienappmobile. Mở Bottom Sheet để chọn asset chưa có entry."
+    },
+    {
+      "decision": "Completion score badge thay thế daily bias badge trên AssetCard",
+      "reason": "Thông tin hữu ích hơn: user biết còn bao nhiêu TF chưa nhập. Badge teal = complete."
+    }
+  ],
+  "gotchas": [
+    {
+      "issue": "TMA hiển thị tất cả assets kể cả forex",
+      "cause": "Load từ hardcoded ASSETS[] trong journal.ts thay vì query DB",
+      "fix": "loadAssets() fetch symbols WHERE is_forex=false"
+    },
+    {
+      "issue": "Icon tài sản không hiển thị trên /tg",
+      "cause": "AssetCard chưa dùng getAssetIconUrl()",
+      "fix": "Import và dùng getAssetIconUrl(asset) trong header của AssetCard"
+    },
+    {
+      "issue": "Monthly tab/chip luôn hiển thị trên TMA",
+      "cause": "tabs[] và tfGrid[] hardcode M không có điều kiện",
+      "fix": "Thêm showMonthly = isMonday || isFirstOfMonth, conditional spread vào array"
+    },
+    {
+      "issue": "Web và TMA tạo duplicate rows trong journal_entries",
+      "cause": "TMA dùng emptyEntry() tạo random id mỗi lần → insert tạo row mới thay vì update",
+      "fix": "Thêm UNIQUE (user_id, date, asset) constraint + upsert với { onConflict: 'user_id,date,asset' }"
+    },
+    {
+      "issue": "NY PM bị cắt cho NQ1!/YM1!/ES1! vào Thứ 2",
+      "cause": ".slice(0, 6) trong tfGrid cắt mất NY PM khi có Monthly (7 phần tử)",
+      "fix": "Bỏ .slice(0, 6). CSS grid repeat(N, minmax(0,1fr)) tự xử lý số cột."
+    },
+    {
+      "issue": "supabase/types.ts TS1005: ';' expected",
+      "cause": "Lỗi pre-existing trong file generated types của Supabase",
+      "fix": "Bỏ qua khi compile logic TMA. Không block build. Có thể regenerate types sau.",
+      "resolved": false
+    }
+  ],
+  "key_files": {
+    "tma_main": "src/routes/tg.tsx",
+    "tma_css": "src/tg-mini-app.css",
+    "web_day_column": "src/components/journal/DayColumn.tsx",
+    "symbols_lib": "src/lib/symbols.ts",
+    "journal_lib": "src/lib/journal.ts"
+  },
+  "updated_at": "2026-07-17T15:55:00+07:00"
+}

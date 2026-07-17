@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       if (data.startsWith("select_asset:")) {
         // Select asset and show main dashboard
         const asset = data.split(":")[1];
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const todayStr = todayNyDateStr();
         const entry = await getOrCreateJournalEntry(userId, asset, todayStr);
 
         await editTelegramMessage(
@@ -104,11 +104,21 @@ Deno.serve(async (req) => {
       }
       else if (data.startsWith("menuh4:")) {
         const entryId = data.split(":")[1];
-        const { data: entry } = await supabase
+        const { data: entry, error } = await supabase
           .from("journal_entries")
           .select("asset")
           .eq("id", entryId)
           .single();
+
+        if (error || !entry) {
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!"
+          );
+          await answerCallbackQuery(callback_query.id, "❌ Không tìm thấy dữ liệu!");
+          return new Response("OK");
+        }
 
         await editTelegramMessage(
           chatId,
@@ -130,13 +140,23 @@ Deno.serve(async (req) => {
           const biasValue = shortBias === "bull" ? "bullish" : shortBias === "bear" ? "bearish" : shortBias === "cons" ? "consolidation" : shortBias;
           entryId = parts[4];
 
-          const { data: entry } = await supabase
+          const { data: entry, error: fetchErr } = await supabase
             .from("journal_entries")
             .select("h4")
             .eq("id", entryId)
             .single();
 
-          const h4 = entry?.h4 || {};
+          if (fetchErr || !entry) {
+            await editTelegramMessage(
+              chatId,
+              messageId,
+              "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!"
+            );
+            await answerCallbackQuery(callback_query.id, "❌ Không tìm thấy dữ liệu!");
+            return new Response("OK");
+          }
+
+          const h4 = entry.h4 || {};
           h4[sessionName] = { ...h4[sessionName], bias: biasValue };
           updateData.h4 = h4;
         } else {
@@ -150,11 +170,21 @@ Deno.serve(async (req) => {
 
         await supabase.from("journal_entries").update(updateData).eq("id", entryId);
 
-        const { data: updated } = await supabase
+        const { data: updated, error: updateErr } = await supabase
           .from("journal_entries")
           .select("*")
           .eq("id", entryId)
           .single();
+
+        if (updateErr || !updated) {
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!"
+          );
+          await answerCallbackQuery(callback_query.id, "❌ Không tìm thấy dữ liệu!");
+          return new Response("OK");
+        }
 
         await editTelegramMessage(
           chatId,
@@ -201,11 +231,21 @@ Deno.serve(async (req) => {
       else if (data.startsWith("backm:")) {
         // Go back to main dashboard
         const entryId = data.split(":")[1];
-        const { data: entry } = await supabase
+        const { data: entry, error } = await supabase
           .from("journal_entries")
           .select("*")
           .eq("id", entryId)
           .single();
+
+        if (error || !entry) {
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!"
+          );
+          await answerCallbackQuery(callback_query.id, "❌ Không tìm thấy dữ liệu!");
+          return new Response("OK");
+        }
 
         await editTelegramMessage(
           chatId,
@@ -218,11 +258,21 @@ Deno.serve(async (req) => {
       else if (data.startsWith("finb:")) {
         // Lock and finish draft
         const entryId = data.split(":")[1];
-        const { data: entry } = await supabase
+        const { data: entry, error } = await supabase
           .from("journal_entries")
           .select("*")
           .eq("id", entryId)
           .single();
+
+        if (error || !entry) {
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!"
+          );
+          await answerCallbackQuery(callback_query.id, "❌ Không tìm thấy dữ liệu!");
+          return new Response("OK");
+        }
 
         await editTelegramMessage(
           chatId,
@@ -433,13 +483,18 @@ Deno.serve(async (req) => {
           else if (fieldLabel === "Daily") updateData.daily_img = imageUrl;
           else if (fieldLabel.startsWith("H4 ")) {
             const sessionName = fieldLabel.split(" ")[1];
-            const { data: entry } = await supabase
+            const { data: entry, error: fetchErr } = await supabase
               .from("journal_entries")
               .select("h4")
               .eq("id", entryId)
               .single();
 
-            const h4 = entry?.h4 || {};
+            if (fetchErr || !entry) {
+              await sendTelegramMessage(chatId, "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!");
+              return new Response("OK");
+            }
+
+            const h4 = entry.h4 || {};
             h4[sessionName] = { ...h4[sessionName], img: imageUrl };
             updateData.h4 = h4;
           }
@@ -451,11 +506,16 @@ Deno.serve(async (req) => {
         }
 
         // Return to main menu
-        const { data: updated } = await supabase
+        const { data: updated, error: updateErr } = await supabase
           .from("journal_entries")
           .select("*")
           .eq("id", entryId)
           .single();
+
+        if (updateErr || !updated) {
+          await sendTelegramMessage(chatId, "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!");
+          return new Response("OK");
+        }
 
         await sendTelegramMessage(
           chatId,
@@ -468,11 +528,16 @@ Deno.serve(async (req) => {
         await supabase.from("journal_entries").update({ notes: text }).eq("id", entryId);
         await sendTelegramMessage(chatId, "✅ Đã ghi nhận Notes thành công!");
 
-        const { data: updated } = await supabase
+        const { data: updated, error: updateErr } = await supabase
           .from("journal_entries")
           .select("*")
           .eq("id", entryId)
           .single();
+
+        if (updateErr || !updated) {
+          await sendTelegramMessage(chatId, "❌ Không tìm thấy dữ liệu nhật ký giao dịch cho ngày hôm nay!");
+          return new Response("OK");
+        }
 
         await sendTelegramMessage(
           chatId,
@@ -516,6 +581,22 @@ async function fetchCalendarEvents(): Promise<any[]> {
     console.error("Error fetching Forex calendar:", err);
     return cachedCalendar || [];
   }
+}
+
+const NY_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function toNyDateStr(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return NY_DATE_FMT.format(date);
+}
+
+function todayNyDateStr(): string {
+  return toNyDateStr(new Date());
 }
 
 const getVNTimezoneDay = (date: Date) => {
@@ -720,7 +801,9 @@ async function getOrCreateJournalEntry(userId: string, asset: string, dateStr: s
     .select()
     .single();
 
-  if (insertError) throw insertError;
+  if (insertError || !inserted) {
+    throw insertError || new Error("Failed to create journal entry");
+  }
   return inserted;
 }
 

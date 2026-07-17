@@ -5,8 +5,10 @@ import {
   HeadContent,
   Scripts,
   useRouter,
+  useLocation,
 } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
+import tgCss from "../tg-mini-app.css?url";
 import { useEffect } from "react";
 import { toast, Toaster } from "sonner";
 import {
@@ -55,7 +57,7 @@ export const Route = createRootRoute({
       { title: "ICT Trading Journal" },
       { name: "description", content: "A trading journal app for ICT traders." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -101,6 +103,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const router = useRouter();
+  const location = useLocation();
+  const isTg = location.pathname.startsWith("/tg");
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       // Listen for our specific extension message
@@ -245,7 +249,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ImpersonationBanner />
+      {isTg ? (
+        <link rel="stylesheet" href={tgCss} />
+      ) : (
+        <>
+          <link rel="stylesheet" href={appCss} />
+          <ImpersonationBanner />
+        </>
+      )}
       <Outlet />
       <Toaster position="top-right" richColors />
     </QueryClientProvider>

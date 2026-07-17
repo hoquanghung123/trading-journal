@@ -1,0 +1,18 @@
+{
+  "projectId": "4642754267403310535",
+  "title": "Trading Journal TMA",
+  "screens": [
+    {
+      "screenId": "2340125122917333445",
+      "title": "DESIGN.md",
+      "deviceType": "MOBILE"
+    }
+  ],
+  "designSystem": {
+    "assetId": "eda7ffd5d5fa47969ee65a4e10cfc9e0",
+    "primaryColor": "#0A0A0C",
+    "secondaryColor": "#111115",
+    "backgroundColor": "#0A0A0C",
+    "fontFamily": "GEIST"
+  }
+}

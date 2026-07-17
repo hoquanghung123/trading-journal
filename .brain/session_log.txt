@@ -1,0 +1,5 @@
+[2026-07-16 15:24] ONBOARDING COMPLETE
+[2026-07-16 15:24] Technical level: basic
+[2026-07-16 15:24] Ready for first project
+[2026-07-17 14:40] Start Phase 1 & 2 of Telegram Mini App integration. CSS isolation done. tsconfig.json updated.
+[2026-07-17 14:51] DONE tasks 2-6: Created src/routes/tg.tsx - Auth (silent+real), NY Cutoff countdown, AssetCard+Editor, StreakScreen, TradesScreen. TypeScript clean.

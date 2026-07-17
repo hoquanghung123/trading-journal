@@ -1,0 +1,13 @@
+{
+  "communication": {
+    "tone": "friendly",
+    "personality": "assistant"
+  },
+  "technical": {
+    "technical_level": "basic",
+    "detail_level": "simple",
+    "autonomy_level": "ask_often"
+  },
+  "onboarding_completed": true,
+  "onboarding_date": "2026-07-16T15:24:48+07:00"
+}

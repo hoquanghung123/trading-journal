@@ -1,6 +1,10 @@
-import { supabase } from "./src/integrations/supabase/client";
+import { createRootRoute } from "@tanstack/react-router";
 
-async function test() {
-  const query = supabase.from("trading_reviews");
-  const x: string = query;
-}
+export const Route = createRootRoute({
+  head: (ctx) => {
+    const isTg = ctx.matches.some(m => m.pathname.startsWith('/tg'));
+    return {
+      links: [{ rel: "stylesheet", href: isTg ? "tg.css" : "app.css" }]
+    };
+  }
+});

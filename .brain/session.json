@@ -1,0 +1,133 @@
+{
+  "updated_at": "2026-07-17T15:55:00+07:00",
+  "working_on": {
+    "feature": "Telegram Mini App — TF Completion Score",
+    "task": "Badge X/total trên AssetCard + section header 'X/Y completed'",
+    "status": "completed",
+    "files": ["src/routes/tg.tsx"]
+  },
+  "completed_tasks": [
+    {
+      "task": "Today chip — hiển thị tất cả assets cùng lúc thay vì filter đơn lẻ",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "Dynamic asset loading — fetch symbols từ Supabase (is_forex=false)",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "TradingView icons trong AssetCard — dùng getAssetIconUrl() với fallback text",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "Monthly chip M trong tfGrid — ẩn khi không phải T2/ngày 1",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "Monthly tab trong AssetEditor — ẩn khi không phải T2/ngày 1. Default tab = W.",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "Xoá bảng telegram_users — dùng user_settings.telegram_chat_id thay thế",
+      "status": "done",
+      "files": ["supabase/migrations/"]
+    },
+    {
+      "task": "Bidirectional sync Web ↔ TMA — UNIQUE constraint + upsert onConflict",
+      "status": "done",
+      "files": ["src/lib/journal.ts", "supabase migrations"],
+      "notes": "onConflict: 'user_id,date,asset'"
+    },
+    {
+      "task": "Demand-driven cards — chỉ hiện nếu entry tồn tại trong DB",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"],
+      "notes": "todayAssets filter + FAB (+) Bottom Sheet để thêm mới"
+    },
+    {
+      "task": "FAB (+) cố định trong section header — khớp thiết kế giaodienappmobile",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "task": "TF Completion score badge X/total trên AssetCard header",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"],
+      "notes": "Teal nếu filledTF === totalTF. Thay thế daily bias badge."
+    },
+    {
+      "task": "Section header 'X/Y completed' — tổng TF filled / tổng TF expected",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"],
+      "notes": "completedTFAll / totalTFAll tính trong IIFE scope của bias tab"
+    },
+    {
+      "task": "Fix .slice(0,6) bug — NQ1!/YM1!/ES1! bị cắt NY PM vào T2",
+      "status": "done",
+      "files": ["src/routes/tg.tsx"],
+      "notes": "Bỏ .slice() ở cả tfGrid (AssetCard) và tfCount (section header). CSS grid tự co giãn."
+    }
+  ],
+  "pending_tasks": [
+    {
+      "task": "Deploy lên Production (Vercel + Supabase)",
+      "priority": "high",
+      "notes": "TMA cần HTTPS để Telegram WebApp SDK hoạt động"
+    },
+    {
+      "task": "Test trên thiết bị di động thực (Telegram App)",
+      "priority": "high",
+      "notes": "Kiểm chứng initData auth, smooth scrolling, Bottom Sheet UX"
+    }
+  ],
+  "recent_changes": [
+    {
+      "timestamp": "2026-07-17T15:10:00+07:00",
+      "type": "fix",
+      "description": "Monthly logic nhất quán: showMonthly = isMonday || isFirstOfMonth. Áp dụng cho AssetCard tfGrid và AssetEditor tabs.",
+      "files": ["src/routes/tg.tsx"]
+    },
+    {
+      "timestamp": "2026-07-17T15:30:00+07:00",
+      "type": "feature",
+      "description": "Bidirectional sync: UNIQUE constraint (user_id,date,asset) + upsertEntry onConflict. Demand-driven cards + FAB Bottom Sheet.",
+      "files": ["src/lib/journal.ts", "src/routes/tg.tsx"]
+    },
+    {
+      "timestamp": "2026-07-17T15:48:00+07:00",
+      "type": "feature",
+      "description": "TF Completion score badge X/total trên AssetCard. Section header 'X/Y completed'. Bỏ .slice(0,6) để fix NQ1!/YM1!/ES1! ny split.",
+      "files": ["src/routes/tg.tsx"]
+    }
+  ],
+  "errors_encountered": [
+    {
+      "error": "supabase/types.ts TS1005: ';' expected",
+      "solution": "Lỗi có sẵn trong types.ts không liên quan đến TMA. Bỏ qua, không block build.",
+      "resolved": false,
+      "notes": "Lỗi pre-existing, không phải do session này tạo ra."
+    }
+  ],
+  "decisions_made": [
+    {
+      "decision": "Monthly logic nhất quán: showMonthly = isMonday || isFirstOfMonth",
+      "reason": "Copy y chang từ DayColumn.tsx line 25. Áp dụng cho cả AssetCard chips lẫn AssetEditor tabs.",
+      "timestamp": "2026-07-17T15:10:00+07:00"
+    },
+    {
+      "decision": "Default activeTab trong AssetEditor là 'W' (Weekly) thay vì 'M' (Monthly)",
+      "reason": "M không phải lúc nào cũng hiển thị. Nếu default là M và hôm nay không phải T2, tab sẽ chọn vào tab không tồn tại.",
+      "timestamp": "2026-07-17T15:28:00+07:00"
+    },
+    {
+      "decision": "Bỏ .slice(0, 6) khỏi tfGrid và completion stats",
+      "reason": "Với NQ1!/YM1!/ES1! (split NY), thứ 2 có 7 TF slots. Slice cắt mất NY PM. CSS grid repeat(N, minmax(0,1fr)) tự co giãn, không cần cap.",
+      "timestamp": "2026-07-17T15:55:00+07:00"
+    }
+  ]
+}

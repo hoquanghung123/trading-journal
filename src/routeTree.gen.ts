@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TgRouteImport } from './routes/tg'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as HelloRouteImport } from './routes/hello'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -17,6 +18,11 @@ import { Route as StorageSplatRouteImport } from './routes/storage.$'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminBackupsRouteImport } from './routes/admin/backups'
 
+const TgRoute = TgRouteImport.update({
+  id: '/tg',
+  path: '/tg',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
+  '/tg': typeof TgRoute
   '/admin/backups': typeof AdminBackupsRoute
   '/admin/users': typeof AdminUsersRoute
   '/storage/$': typeof StorageSplatRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
+  '/tg': typeof TgRoute
   '/admin/backups': typeof AdminBackupsRoute
   '/admin/users': typeof AdminUsersRoute
   '/storage/$': typeof StorageSplatRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/hello': typeof HelloRoute
   '/progress': typeof ProgressRoute
+  '/tg': typeof TgRoute
   '/admin/backups': typeof AdminBackupsRoute
   '/admin/users': typeof AdminUsersRoute
   '/storage/$': typeof StorageSplatRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hello'
     | '/progress'
+    | '/tg'
     | '/admin/backups'
     | '/admin/users'
     | '/storage/$'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hello'
     | '/progress'
+    | '/tg'
     | '/admin/backups'
     | '/admin/users'
     | '/storage/$'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/hello'
     | '/progress'
+    | '/tg'
     | '/admin/backups'
     | '/admin/users'
     | '/storage/$'
@@ -116,11 +128,19 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   HelloRoute: typeof HelloRoute
   ProgressRoute: typeof ProgressRoute
+  TgRoute: typeof TgRoute
   StorageSplatRoute: typeof StorageSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tg': {
+      id: '/tg'
+      path: '/tg'
+      fullPath: '/tg'
+      preLoaderRoute: typeof TgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progress': {
       id: '/progress'
       path: '/progress'
@@ -190,6 +210,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   HelloRoute: HelloRoute,
   ProgressRoute: ProgressRoute,
+  TgRoute: TgRoute,
   StorageSplatRoute: StorageSplatRoute,
 }
 export const routeTree = rootRouteImport

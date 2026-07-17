@@ -135,19 +135,32 @@ const fromProfileRow = (r: any): Profile => ({
   role: r.role ?? "member",
 });
 
-export async function fetchEntries(): Promise<DayEntry[]> {
-  const { data, error } = await supabase
+export async function fetchEntries(userId?: string): Promise<DayEntry[]> {
+  let query = supabase
     .from("journal_entries")
     .select("*")
     .order("date", { ascending: true });
+
+  // If userId provided explicitly (e.g. TMA), filter by it
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data as Row[]).map(fromRow);
 }
 
-export async function upsertEntry(e: DayEntry): Promise<void> {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u.user) throw new Error("Not authenticated");
-  const { error } = await supabase.from("journal_entries").upsert(toRow(e, u.user.id));
+export async function upsertEntry(e: DayEntry, explicitUserId?: string): Promise<void> {
+  let uid = explicitUserId;
+  if (!uid) {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) throw new Error("Not authenticated");
+    uid = u.user.id;
+  }
+  const { error } = await supabase
+    .from("journal_entries")
+    .upsert(toRow(e, uid), { onConflict: "user_id,date,asset" });
   if (error) throw error;
 }
 

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Obsidian Ledger Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap');
+        
+        body {
+            background-color: #0A0A0C;
+            color: #e5e1e4;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            font-family: 'Geist', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .streak-scale-pulse {
+            animation: streakPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes streakPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .card-spring {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+        }
+
+        .swipe-out {
+            transform: translateX(120%) rotate(15deg) !important;
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        .geist-mono { font-family: 'Geist Mono', monospace; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0A0A0C; }
+        ::-webkit-scrollbar-thumb { background: #222226; border-radius: 0px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#ffffff",
+                      "background": "#0A0A0C",
+                      "surface": "#111115",
+                      "outline-variant": "#222226",
+                      "zinc-muted": "#71717A",
+                      "bullish-green": "#22C55E",
+                      "bearish-red": "#EF4444",
+                      "consolidation-orange": "#F59E0B",
+                      "on-surface-variant": "#c4c7c9",
+                      "surface-container-lowest": "#0e0e10"
+              },
+              "borderRadius": {
+                      "DEFAULT": "2px",
+                      "sm": "2px",
+                      "lg": "2px",
+                      "xl": "2px",
+                      "full": "2px"
+              },
+              "spacing": {
+                      "container-max": "480px",
+                      "base": "8px",
+                      "stack-gap": "12px",
+                      "margin-x": "20px",
+                      "gutter": "16px"
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background selection:bg-primary selection:text-background">
+<div class="max-w-container-max mx-auto min-h-screen flex flex-col bg-background pb-24">
+<!-- Header -->
+<header class="w-full h-16 flex justify-between items-center px-margin-x bg-background border-b border-outline-variant sticky top-0 z-50">
+<div class="flex flex-col">
+<span class="text-lg font-bold tracking-tighter text-primary uppercase">OBSIDIAN LEDGER</span>
+<span class="text-[10px] font-bold geist-mono text-bullish-green flex items-center gap-1 uppercase tracking-wider">
+<span class="w-1.5 h-1.5 bg-bullish-green animate-pulse"></span>
+                TERMINAL ACTIVE
+            </span>
+</div>
+<div class="flex items-center gap-3">
+<!-- Streak Badge -->
+<div class="streak-scale-pulse flex items-center bg-surface border border-outline-variant px-2 py-1 gap-1">
+<span class="text-xs">🔥</span>
+<span class="geist-mono text-xs font-bold text-primary">7</span>
+</div>
+<!-- Avatar -->
+<div class="w-10 h-10 border border-outline-variant p-0.5 rounded-sm">
+<img alt="User" class="w-full h-full object-cover rounded-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnzHS6ZvY7GZ1g89EFdC4f6bomgF33cjdJhHKeVJu0nyXxrl9qMsBxb38mhA5RuimOQag1zf24S1y01CgGdkMJJm9XpVgMWekqUNwplwARuY36i9Oc0iU1JKaRQMg5EIWcfW5P4x6catYmCWLyq4lB3anw9Vem5-dAk56H95Po1aEo80qVtODS3Ff8kN3revsprKnY97uv1ryb3tpeaNcKI3emFA96MdNthjFzUebIMROc7-W81WjGONVJwYCKMurc5jp1-C0tnyI"/>
+</div>
+</div>
+</header>
+<main class="flex-1 px-margin-x pt-8">
+<div class="mb-gutter">
+<h2 class="text-2xl font-bold text-primary">Market Bias</h2>
+<p class="text-xs text-zinc-muted">Define your technical stance for current timeframes.</p>
+</div>
+<!-- Stacked Deck -->
+<div class="relative h-[440px] mt-4" id="deck-container">
+<!-- Cards will be rendered here by JS -->
+</div>
+<!-- Dot Indicators -->
+<div class="flex justify-center gap-2 mt-6" id="dot-indicators">
+<!-- Dots will be rendered here -->
+</div>
+<!-- Reset Button -->
+<div class="mt-8 flex justify-center">
+<button class="text-[10px] geist-mono text-zinc-muted hover:text-primary transition-colors flex items-center gap-1 uppercase tracking-widest" onclick="resetDeck()">
+<span class="material-symbols-outlined text-xs">restart_alt</span>
+                Reset Deck
+            </button>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 gap-gutter mt-8">
+<div class="bg-surface border border-outline-variant p-4">
+<span class="text-[10px] font-bold geist-mono text-zinc-muted block mb-2 uppercase">WIN RATE</span>
+<span class="text-lg font-bold geist-mono text-primary">64.2%</span>
+<div class="w-full bg-outline-variant h-[2px] mt-3">
+<div class="bg-bullish-green h-full" style="width: 64.2%"></div>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant p-4">
+<span class="text-[10px] font-bold geist-mono text-zinc-muted block mb-2 uppercase">PROFIT FACTOR</span>
+<span class="text-lg font-bold geist-mono text-primary">2.14</span>
+<div class="flex gap-1 mt-3">
+<div class="w-2 h-3 bg-bullish-green opacity-20"></div>
+<div class="w-2 h-3 bg-bullish-green opacity-40"></div>
+<div class="w-2 h-3 bg-bullish-green opacity-70"></div>
+<div class="w-2 h-3 bg-bullish-green"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Navigation -->
+<nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-container-max flex justify-around items-center h-16 bg-background border-t border-outline-variant z-50">
+<div class="flex flex-col items-center justify-center text-primary bg-surface p-2 rounded-sm border border-outline-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-muted p-2">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-muted p-2">
+<span class="material-symbols-outlined">query_stats</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-muted p-2">
+<span class="material-symbols-outlined">settings</span>
+</div>
+</nav>
+<!-- Lightbox Modal -->
+<div class="fixed inset-0 z-[100] hidden items-center justify-center px-4" id="lightbox">
+<div class="absolute inset-0 bg-[#0A0A0C]/90 backdrop-blur-[12px]" onclick="toggleLightbox()"></div>
+<div class="relative w-full max-w-container-max bg-surface border border-outline-variant p-2">
+<div class="flex justify-between items-center mb-2 px-1">
+<span class="text-[10px] font-bold geist-mono text-primary uppercase">CHART_VIEW_EXPANDED</span>
+<button class="material-symbols-outlined text-zinc-muted hover:text-primary transition-colors" onclick="toggleLightbox()">close</button>
+</div>
+<div class="aspect-video w-full border border-outline-variant bg-background overflow-hidden">
+<img class="w-full h-full object-contain" id="lightbox-img" src=""/>
+</div>
+</div>
+</div>
+</div>
+<script>
+    const timeframes = [
+        { id: 'daily', label: 'DAILY BIAS', image: 'https://lh3.googleusercontent.com/aida/AP1WRLszxOCvQPbhiS3xE50Q-bDvnP92bY1OmKfEiNHUvX5mGnVIGoRA5pa3jgWG68eO-9c5dtwGOV4jNT-Xa_0FIZ3uwNbdM1Ibc-9N8H1tj5BukIxiZKwnjjoM-10do_tuwlQd7plYEZFNgx0_hVVl_V5Xjx_F2NSA4S3bnIkfs7on86-ShtGeyBtr3PJs99ml9C_oISkrJJyewiv1Q4Q9QGfQHF5Ow8GpApXT-AqghmlpFlgk7sRZsThuIYA' },
+        { id: 'weekly', label: 'WEEKLY BIAS', image: null },
+        { id: 'monthly', label: 'MONTHLY BIAS', image: null },
+        { id: 'yearly', label: 'YEARLY BIAS', image: null }
+    ];
+
+    let currentIndex = 0;
+    const deckContainer = document.getElementById('deck-container');
+    const dotContainer = document.getElementById('dot-indicators');
+
+    function renderDeck() {
+        deckContainer.innerHTML = '';
+        dotContainer.innerHTML = '';
+
+        timeframes.forEach((tf, index) => {
+            // Render Dots
+            const dot = document.createElement('div');
+            dot.className = `w-1.5 h-1.5 transition-colors ${index === currentIndex ? 'bg-[#F4F4F5]' : 'bg-[#71717A]'}`;
+            dotContainer.appendChild(dot);
+
+            // Create Card
+            const card = document.createElement('div');
+            card.id = `card-${index}`;
+            card.className = `absolute inset-0 bg-surface border border-outline-variant p-4 card-spring flex flex-col`;
+            
+            // Layout depth logic
+            const diff = index - currentIndex;
+            if (diff < 0) {
+                card.classList.add('swipe-out');
+            } else {
+                const scale = 1 - (diff * 0.04);
+                const translateY = diff * 12;
+                const opacity = 1 - (diff * 0.3);
+                card.style.transform = `scale(${scale}) translateY(${translateY}px)`;
+                card.style.opacity = opacity;
+                card.style.zIndex = 40 - index;
+            }
+
+            const isLocked = index < currentIndex;
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-[10px] font-bold geist-mono text-primary uppercase tracking-widest">${tf.label}</span>
+                    <div id="check-${index}" class="hidden text-bullish-green flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        <span class="text-[10px] geist-mono font-bold">SAVED</span>
+                    </div>
+                </div>
+                
+                <div class="flex-1 bg-background border border-outline-variant relative overflow-hidden group">
+                    ${tf.image ? `
+                        <img src="${tf.image}" class="w-full h-full object-cover opacity-80 cursor-pointer" onclick="toggleLightbox('${tf.image}')">
+                        <div class="absolute bottom-2 right-2 pointer-events-none">
+                            <span class="material-symbols-outlined text-primary bg-background/50 p-1 text-sm">fullscreen</span>
+                        </div>
+                    ` : `
+                        <div class="w-full h-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-outline-variant/50">
+                            <span class="material-symbols-outlined text-zinc-muted text-3xl">add</span>
+                            <span class="text-[10px] geist-mono text-zinc-muted font-bold uppercase tracking-widest">ADD CHART LINK</span>
+                        </div>
+                    `}
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mt-6">
+                    <button onclick="handleBias(${index}, 'bullish')" class="flex flex-col items-center py-4 border border-outline-variant hover:bg-bullish-green hover:text-background transition-colors">
+                        <span class="material-symbols-outlined text-lg mb-1">trending_up</span>
+                        <span class="text-[10px] geist-mono font-bold uppercase">BULLISH</span>
+                    </button>
+                    <button onclick="handleBias(${index}, 'bearish')" class="flex flex-col items-center py-4 border border-outline-variant hover:bg-bearish-red hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-lg mb-1">trending_down</span>
+                        <span class="text-[10px] geist-mono font-bold uppercase">BEARISH</span>
+                    </button>
+                    <button onclick="handleBias(${index}, 'cons')" class="flex flex-col items-center py-4 border border-outline-variant hover:bg-consolidation-orange hover:text-background transition-colors">
+                        <span class="material-symbols-outlined text-lg mb-1">horizontal_rule</span>
+                        <span class="text-[10px] geist-mono font-bold uppercase">CONS.</span>
+                    </button>
+                </div>
+            `;
+            deckContainer.appendChild(card);
+        });
+    }
+
+    function handleBias(index, bias) {
+        const check = document.getElementById(`check-${index}`);
+        if (check) check.classList.remove('hidden');
+
+        // Simulate short delay for feedback
+        setTimeout(() => {
+            if (currentIndex < timeframes.length - 1) {
+                currentIndex++;
+                renderDeck();
+            }
+        }, 400);
+    }
+
+    function resetDeck() {
+        currentIndex = 0;
+        renderDeck();
+    }
+
+    function toggleLightbox(imgSrc) {
+        const lightbox = document.getElementById('lightbox');
+        const img = document.getElementById('lightbox-img');
+        if (imgSrc) img.src = imgSrc;
+        
+        if (lightbox.classList.contains('hidden')) {
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        } else {
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // Initial Render
+    renderDeck();
+</script>
+</body></html>

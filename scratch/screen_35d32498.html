@@ -1,0 +1,465 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Tape Reader Pro - Obsidian Ledger</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "obsidian-base": "#0B0F19",
+              "obsidian-surface": "#161B26",
+              emerald: "#10B981",
+              rose: "#F43F5E",
+              amber: "#F59E0B",
+              "on-surface": "#ffddb8",
+              "on-surface-variant": "#c4c7c8",
+              outline: "#8e9192",
+              primary: "#ffffff",
+              secondary: "#10B981",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              gutter: "12px",
+              "stack-lg": "24px",
+              "stack-sm": "8px",
+              "container-margin": "16px",
+              "stack-md": "16px",
+            },
+            fontFamily: {
+              "headline-lg": ["Outfit"],
+              "body-lg": ["Outfit"],
+              "body-md": ["Outfit"],
+              "label-caps": ["Outfit"],
+              "headline-md": ["Outfit"],
+              "data-mono": ["Inter"],
+            },
+            fontSize: {
+              "headline-lg": [
+                "28px",
+                { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" },
+              ],
+              "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+              "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+              "label-caps": [
+                "11px",
+                { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" },
+              ],
+              "headline-md": [
+                "20px",
+                { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" },
+              ],
+              "data-mono": [
+                "15px",
+                { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "500" },
+              ],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #0b0f19;
+        color: #ffddb8;
+        overflow-x: hidden;
+        font-family: "Outfit", sans-serif;
+        max-width: 390px;
+        margin: 0 auto;
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .glass-card {
+        background: rgba(22, 27, 38, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .glass-nav {
+        background: rgba(11, 15, 25, 0.85);
+        backdrop-filter: blur(16px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .view-content {
+        transition:
+          opacity 0.3s ease-in-out,
+          transform 0.3s ease-out;
+      }
+      .view-hidden {
+        display: none;
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      .view-visible {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .heatmap-cell {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+      .streak-ring {
+        transform: rotate(-90deg);
+      }
+      @keyframes dash {
+        from {
+          stroke-dashoffset: 283;
+        }
+        to {
+          stroke-dashoffset: 141;
+        }
+      }
+      .animate-dash {
+        animation: dash 1.5s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <!-- GLOBAL TOP BAR -->
+    <header
+      class="glass-nav text-primary docked full-width top-0 sticky border-b border-white/10 shadow-sm z-50 flex justify-between items-center px-4 py-3 w-full"
+    >
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg border border-white/20 overflow-hidden shadow-inner">
+          <img
+            alt="User Profile"
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3yinbhUXRbtmEETBHNhMGQ4aj7pvkNXB62HqTdQMhAGQLKCNpkWZEivV8A9olhIkJZB8XONGu01F_5Syx6oezGMHMNhu3u7NjeVrSs2n6eM4QoI-8gzLYt7wuwrKHsPD_7GdQR46VFLHtl6U4HGvf-M9hUGs9D-885VsZ1EFByI8AySC2Hp_Rx9YeqgsHMAKUvkvzFEXaNF3Dkd36PqkI03IPZaEzT97GE_AZAZ5WO5Ld_xdHTvkQ"
+          />
+        </div>
+        <h1 class="text-headline-md font-semibold tracking-tight">Tape Reader Pro</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          class="material-symbols-outlined text-primary/80 hover:bg-white/5 p-2 rounded-lg transition-colors"
+        >
+          settings
+        </button>
+      </div>
+    </header>
+    <main class="flex-1 pb-32">
+      <!-- VIEW: BIAS TIMELINE -->
+      <div class="view-content view-visible" id="view-timeline">
+        <!-- Asset Filters -->
+        <section class="mt-4 px-4">
+          <div class="flex gap-2 overflow-x-auto hide-scrollbar">
+            <button
+              class="border border-white/20 rounded px-3 py-1 text-label-caps whitespace-nowrap bg-white/10 text-white"
+            >
+              ALL
+            </button>
+            <button
+              class="text-on-surface-variant/60 border border-white/5 rounded px-3 py-1 text-label-caps whitespace-nowrap hover:bg-white/5 transition-all"
+            >
+              TODAY
+            </button>
+            <button
+              class="text-on-surface-variant/60 border border-white/5 rounded px-3 py-1 text-label-caps whitespace-nowrap hover:bg-white/5 transition-all"
+            >
+              GC1!
+            </button>
+            <button
+              class="text-on-surface-variant/60 border border-white/5 rounded px-3 py-1 text-label-caps whitespace-nowrap hover:bg-white/5 transition-all"
+            >
+              NQ1!
+            </button>
+            <button
+              class="text-on-surface-variant/60 border border-white/5 rounded px-3 py-1 text-label-caps whitespace-nowrap hover:bg-white/5 transition-all"
+            >
+              BTCUSD
+            </button>
+          </div>
+        </section>
+        <section class="mt-6 px-4 flex justify-between items-end">
+          <div>
+            <h2 class="font-headline-lg text-primary tracking-tight">Bias Timeline</h2>
+            <p class="text-body-md text-on-surface-variant/70">Anticipate market flow</p>
+          </div>
+          <div class="flex bg-white/5 p-1 rounded-lg border border-white/5">
+            <button class="bg-white/10 text-white p-1.5 rounded shadow-sm">
+              <span class="material-symbols-outlined block text-[18px]">view_kanban</span>
+            </button>
+            <button
+              class="text-on-surface-variant/50 p-1.5 rounded hover:text-white transition-colors"
+            >
+              <span class="material-symbols-outlined block text-[18px]">calendar_view_month</span>
+            </button>
+          </div>
+        </section>
+        <section class="mt-6 overflow-x-auto hide-scrollbar flex gap-4 px-4 pb-4">
+          <!-- Day Card 1 -->
+          <div
+            class="glass-card min-w-[310px] max-w-[310px] rounded-xl flex flex-col p-5 space-y-5 border border-white/10"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-label-caps text-emerald font-bold tracking-widest">TODAY</p>
+                <h3 class="font-headline-md text-white mt-0.5">Oct 24, 2023</h3>
+              </div>
+              <span class="material-symbols-outlined text-white/30 cursor-pointer">more_vert</span>
+            </div>
+            <div class="space-y-3 font-data-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-label-caps text-on-surface-variant/80">YEARLY</span
+                ><span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-emerald/20 text-emerald border border-emerald/30"
+                  >BULL</span
+                >
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-label-caps text-on-surface-variant/80">MONTHLY</span
+                ><span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-emerald/20 text-emerald border border-emerald/30"
+                  >BULL</span
+                >
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-label-caps text-on-surface-variant/80">WEEKLY</span
+                ><span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-rose/20 text-rose border border-rose/30"
+                  >BEAR</span
+                >
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-label-caps text-on-surface-variant/80">DAILY</span
+                ><span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-rose/20 text-rose border border-rose/30"
+                  >BEAR</span
+                >
+              </div>
+              <div class="pt-1 border-t border-white/5"></div>
+              <div class="flex items-center justify-between">
+                <div class="flex flex-col">
+                  <span class="text-label-caps text-white/90">ASIA SESSION</span
+                  ><span class="text-[9px] text-white/40">20:00 - 02:00</span>
+                </div>
+                <span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-amber/20 text-amber border border-amber/30"
+                  >CONS</span
+                >
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex flex-col">
+                  <span class="text-label-caps text-white/90">LDN SESSION</span
+                  ><span class="text-[9px] text-white/40">03:00 - 11:00</span>
+                </div>
+                <span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-rose/20 text-rose border border-rose/30"
+                  >BEAR</span
+                >
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex flex-col">
+                  <span class="text-label-caps text-white/90">NY SESSION</span
+                  ><span class="text-[9px] text-white/40">08:00 - 17:00</span>
+                </div>
+                <span
+                  class="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-emerald/20 text-emerald border border-emerald/30"
+                  >BULL</span
+                >
+              </div>
+            </div>
+            <div class="bg-black/20 border-l-2 border-emerald/50 rounded-r-lg p-3">
+              <p class="text-body-md italic text-white/70 leading-snug">
+                Expected sweep of Monday's low followed by a displacement higher into the NY session
+                FVG...
+              </p>
+            </div>
+          </div>
+          <!-- Day Card 2 -->
+          <div
+            class="glass-card min-w-[310px] max-w-[310px] rounded-xl flex flex-col p-5 space-y-4 border border-white/5 opacity-40"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-label-caps text-on-surface-variant/50">TOMORROW</p>
+                <h3 class="font-headline-md text-white mt-0.5">Oct 25, 2023</h3>
+              </div>
+            </div>
+            <div
+              class="flex-1 flex flex-col items-center justify-center py-12 text-on-surface-variant/30 italic font-body-md"
+            >
+              No bias set yet
+            </div>
+          </div>
+        </section>
+        <section class="mt-8 px-4">
+          <h3
+            class="text-label-caps text-on-surface-variant/60 mb-4 uppercase tracking-widest font-bold"
+          >
+            Bias Accuracy
+          </h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="glass-card p-4 rounded-xl border border-white/10">
+              <p class="text-label-caps text-on-surface-variant/80">NY HIT RATE</p>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-[24px] font-bold text-emerald font-data-mono">68%</span>
+                <span class="text-[12px] text-emerald/60">+4%</span>
+              </div>
+              <div class="w-full bg-white/5 h-1.5 mt-4 rounded-full overflow-hidden">
+                <div class="h-full bg-emerald" style="width: 68%"></div>
+              </div>
+            </div>
+            <div class="glass-card p-4 rounded-xl border border-white/10">
+              <p class="text-label-caps text-on-surface-variant/80">LDN HIT RATE</p>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span class="text-[24px] font-bold text-rose font-data-mono">42%</span>
+                <span class="text-[12px] text-rose/60">-2%</span>
+              </div>
+              <div class="w-full bg-white/5 h-1.5 mt-4 rounded-full overflow-hidden">
+                <div class="h-full bg-rose" style="width: 42%"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <button
+          class="fixed bottom-24 right-6 w-14 h-14 bg-emerald text-obsidian-base rounded-lg flex items-center justify-center shadow-[0_8px_30px_rgb(16,185,129,0.3)] active:scale-90 transition-transform z-50"
+        >
+          <span class="material-symbols-outlined text-[32px] font-bold">add</span>
+        </button>
+      </div>
+      <!-- VIEW: TRADE LOG -->
+      <div class="view-content view-hidden px-4 mt-6 space-y-6" id="view-log">
+        <section class="grid grid-cols-3 gap-3">
+          <div class="glass-card p-4 rounded-xl flex flex-col border border-white/10">
+            <span class="text-label-caps text-on-surface-variant/70">WIN RATE</span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span class="text-[20px] font-bold text-emerald">68%</span>
+            </div>
+          </div>
+          <div class="glass-card p-4 rounded-xl flex flex-col border border-white/10">
+            <span class="text-label-caps text-on-surface-variant/70">PNL</span>
+            <div class="mt-1">
+              <span class="font-data-mono text-[18px] text-emerald">+$1.2k</span>
+            </div>
+          </div>
+          <div class="glass-card p-4 rounded-xl flex flex-col border border-white/10">
+            <span class="text-label-caps text-on-surface-variant/70">AVG R:R</span>
+            <div class="mt-1"><span class="font-data-mono text-[18px] text-white">1:2.5</span></div>
+          </div>
+        </section>
+        <div class="p-8 text-center text-on-surface-variant/40 italic">
+          Trade log data loading...
+        </div>
+      </div>
+      <!-- VIEW: STATS -->
+      <div class="view-content view-hidden px-4 mt-6 space-y-6" id="view-stats">
+        <div
+          class="glass-card rounded-xl p-6 flex flex-col items-center justify-center border border-white/10"
+        >
+          <div class="relative w-32 h-32">
+            <svg class="streak-ring w-full h-full" viewbox="0 0 100 100">
+              <circle
+                class="text-white/5"
+                cx="50"
+                cy="50"
+                fill="transparent"
+                r="45"
+                stroke="currentColor"
+                stroke-width="8"
+              ></circle>
+              <circle
+                class="text-emerald animate-dash"
+                cx="50"
+                cy="50"
+                fill="transparent"
+                r="45"
+                stroke="currentColor"
+                stroke-dasharray="283"
+                stroke-dashoffset="141"
+                stroke-linecap="round"
+                stroke-width="8"
+              ></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-[32px] font-bold text-white">12</span>
+              <span class="text-label-caps text-on-surface-variant/60">DAYS</span>
+            </div>
+          </div>
+          <p class="mt-4 text-emerald font-bold tracking-widest text-label-caps">CURRENT STREAK</p>
+        </div>
+        <div class="p-8 text-center text-on-surface-variant/40 italic">Global stats loading...</div>
+      </div>
+    </main>
+    <!-- GLOBAL BOTTOM NAV -->
+    <nav
+      class="fixed bottom-4 left-4 right-4 z-50 flex justify-around items-center h-16 glass-nav border border-white/10 rounded-xl shadow-2xl"
+    >
+      <button
+        class="nav-item flex flex-col items-center justify-center text-emerald px-4 py-2 transition-all active:scale-95"
+        id="nav-timeline"
+        onclick="switchView('timeline')"
+      >
+        <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1"
+          >timeline</span
+        >
+        <span class="text-[10px] font-bold uppercase mt-0.5">Bias</span>
+      </button>
+      <button
+        class="nav-item flex flex-col items-center justify-center text-on-surface-variant/50 px-4 py-2 hover:text-white transition-all active:scale-95"
+        id="nav-log"
+        onclick="switchView('log')"
+      >
+        <span class="material-symbols-outlined">receipt_long</span>
+        <span class="text-[10px] font-bold uppercase mt-0.5">Log</span>
+      </button>
+      <button
+        class="nav-item flex flex-col items-center justify-center text-on-surface-variant/50 px-4 py-2 hover:text-white transition-all active:scale-95"
+        id="nav-stats"
+        onclick="switchView('stats')"
+      >
+        <span class="material-symbols-outlined">leaderboard</span>
+        <span class="text-[10px] font-bold uppercase mt-0.5">Stats</span>
+      </button>
+    </nav>
+    <script>
+      function switchView(viewId) {
+        const views = ["timeline", "log", "stats"];
+        views.forEach((v) => {
+          const el = document.getElementById(`view-${v}`);
+          const nav = document.getElementById(`nav-${v}`);
+
+          if (v === viewId) {
+            el.classList.remove("view-hidden");
+            el.classList.add("view-visible");
+            nav.classList.add("text-emerald");
+            nav.classList.remove("text-on-surface-variant/50");
+            const icon = nav.querySelector(".material-symbols-outlined");
+            if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+          } else {
+            el.classList.remove("view-visible");
+            el.classList.add("view-hidden");
+            nav.classList.remove("text-emerald");
+            nav.classList.add("text-on-surface-variant/50");
+            const icon = nav.querySelector(".material-symbols-outlined");
+            if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
