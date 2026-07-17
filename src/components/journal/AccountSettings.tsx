@@ -637,7 +637,7 @@ export function AccountSettings() {
                     </button>
                   ) : (
                     <a
-                      href={`https://t.me/ChartmateBot?start=${user.id}`}
+                      href={`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'ChartmateBot'}?start=${user.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-6 py-2.5 bg-[#0088cc] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#0088cc]/20 hover:opacity-90 active:scale-95 transition-all text-center"

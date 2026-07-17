@@ -108,9 +108,8 @@ function NotLinkedScreen() {
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔗</div>
       <h2 style={{ color: "#f4f7f8", marginBottom: 8, fontSize: 18 }}>Tài khoản chưa liên kết</h2>
       <p style={{ color: "#778792", fontSize: 14, lineHeight: 1.6 }}>
-        Vui lòng đăng nhập vào{" "}
-        <strong style={{ color: "#2cc7b4" }}>Trading Journal Web</strong> và liên kết tài khoản
-        Telegram trong phần Cài đặt để sử dụng Mini App này.
+        Vui lòng truy cập ứng dụng web <strong style={{ color: "#2cc7b4" }}>Trading Journal</strong> trên máy tính hoặc trình duyệt điện thoại,
+        vào mục <strong>Cài đặt tài khoản</strong> và chọn <strong>Liên kết Telegram</strong> để bắt đầu sử dụng.
       </p>
       <a
         href="https://trading-journal-3di.pages.dev"
