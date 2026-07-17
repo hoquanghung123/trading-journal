@@ -4,3 +4,4 @@
 [2026-07-17 14:40] Start Phase 1 & 2 of Telegram Mini App integration. CSS isolation done. tsconfig.json updated.
 [2026-07-17 14:51] DONE tasks 2-6: Created src/routes/tg.tsx - Auth (silent+real), NY Cutoff countdown, AssetCard+Editor, StreakScreen, TradesScreen. TypeScript clean.
 [2026-07-17 21:49] Auth Debugging: Bypass signature verification, deploy tma-auth edge function. Add debugInfo overlays in tg.tsx. Set Menu Button URL to production & configure no-cache headers.
+[2026-07-17 22:35] Fix TS compilation errors: achievements view, useQuery references, server function inputValidators, and DateRangePicker types.
