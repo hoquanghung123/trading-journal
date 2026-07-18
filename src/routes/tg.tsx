@@ -888,23 +888,24 @@ function TgMiniApp() {
                   <button
                     onClick={() => setShowAddSheet(true)}
                     style={{
-                      width: 38,
-                      height: 38,
+                      width: 36,
+                      height: 36,
                       borderRadius: 12,
                       background: "linear-gradient(135deg, #25c7ae, #0f958c)",
                       border: "none",
                       color: "#fff",
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: 700,
                       cursor: "pointer",
-                      display: "grid",
-                      placeItems: "center",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       flexShrink: 0,
                       boxShadow: "0 0 20px rgba(37,199,174,0.4)",
-                      lineHeight: 1,
+                      padding: 0,
                     }}
                   >
-                    ＋
+                    <span style={{ lineHeight: 1, marginTop: -1 }}>+</span>
                   </button>
                 )}
               </div>
