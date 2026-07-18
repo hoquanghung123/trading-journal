@@ -206,8 +206,12 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
       setImg(activeTab, path);
       setUrlInput("");
       setPreviewUrl(null);
-    } catch {
-      // Keep preview - user can retry
+    } catch (err) {
+      console.error('[TMA] uploadChartImage failed, fallback to direct URL:', err);
+      // Fallback: lưu trực tiếp URL gốc (hoạt động trên localhost và khi R2 lỗi)
+      setImg(activeTab, previewUrl);
+      setUrlInput("");
+      setPreviewUrl(null);
     } finally {
       setSaving(false);
     }
@@ -216,7 +220,25 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave(draft);
+      // Auto-upload pending preview image nếu user chưa bấm "Lưu" riêng
+      let finalDraft = draft;
+      if (previewUrl && !getImg(activeTab)) {
+        let imgPath = previewUrl; // fallback: dùng URL gốc
+        try {
+          imgPath = await uploadChartImage(previewUrl);
+        } catch (err) {
+          console.error('[TMA] auto-upload failed, using direct URL:', err);
+        }
+        // Cập nhật draft với img (R2 path hoặc URL gốc)
+        if (activeTab === "M") finalDraft = { ...finalDraft, monthlyImg: imgPath };
+        else if (activeTab === "W") finalDraft = { ...finalDraft, weeklyImg: imgPath };
+        else if (activeTab === "D") finalDraft = { ...finalDraft, dailyImg: imgPath };
+        else finalDraft = { ...finalDraft, h4: { ...finalDraft.h4, [activeTab]: { ...finalDraft.h4[activeTab], img: imgPath } } };
+        setDraft(finalDraft);
+        setUrlInput("");
+        setPreviewUrl(null);
+      }
+      await onSave(finalDraft);
     } finally {
       setSaving(false);
     }
@@ -320,27 +342,32 @@ function AssetCard({ asset, entry, tradingDate, onSave }: AssetCardProps) {
   // Non-split: W D ASIA LDN NY = 5 (6 with Monthly)
   // Split (NQ/YM/ES): W D ASIA LDN NY-AM NY-PM = 6 (7 with Monthly)
   const tfGrid = [
-    ...(showMonthly ? [{ key: "M", bias: e.monthlyBias }] : []),
-    { key: "W", bias: e.weeklyBias },
-    { key: "D", bias: e.dailyBias },
+    ...(showMonthly ? [{ key: "M", bias: e.monthlyBias, img: (e as any).monthlyImg }] : []),
+    { key: "W", bias: e.weeklyBias, img: (e as any).weeklyImg },
+    { key: "D", bias: e.dailyBias, img: (e as any).dailyImg },
     ...(isSplitNy
       ? [
-          { key: "ASIA", bias: e.h4["ASIA"]?.bias },
-          { key: "LDN", bias: e.h4["LDN"]?.bias },
-          { key: "NY AM", bias: e.h4["NY AM"]?.bias },
-          { key: "NY PM", bias: e.h4["NY PM"]?.bias },
+          { key: "ASIA", bias: e.h4["ASIA"]?.bias, img: e.h4["ASIA"]?.img },
+          { key: "LDN", bias: e.h4["LDN"]?.bias, img: e.h4["LDN"]?.img },
+          { key: "NY AM", bias: e.h4["NY AM"]?.bias, img: e.h4["NY AM"]?.img },
+          { key: "NY PM", bias: e.h4["NY PM"]?.bias, img: e.h4["NY PM"]?.img },
         ]
       : [
-          { key: "ASIA", bias: e.h4["ASIA"]?.bias },
-          { key: "LDN", bias: e.h4["LDN"]?.bias },
-          { key: "NY", bias: e.h4["NY"]?.bias },
+          { key: "ASIA", bias: e.h4["ASIA"]?.bias, img: e.h4["ASIA"]?.img },
+          { key: "LDN", bias: e.h4["LDN"]?.bias, img: e.h4["LDN"]?.img },
+          { key: "NY", bias: e.h4["NY"]?.bias, img: e.h4["NY"]?.img },
         ]),
   ];
 
-  // Completion score: đếm TF đã có bias (không phải undefined)
+  // Completion score: đếm TF đã có dữ liệu thực (bias ≠ default HOẶC có hình)
   const totalTF = tfGrid.length;
-  const filledTF = tfGrid.filter(({ bias }) => bias !== undefined && bias !== null).length;
+  const filledTF = tfGrid.filter(({ bias, img }) => (bias && bias !== "consolidation") || !!img).length;
   const isComplete = filledTF === totalTF;
+
+  // Chỉ hiển thị chip cho TF đã có dữ liệu thực (bias ≠ default "consolidation" HOẶC có hình)
+  const filledChips = tfGrid.filter(
+    ({ bias, img }) => (bias && bias !== "consolidation") || !!img
+  );
 
   return (
     <div className={`asset${open ? " open" : ""}`}>
@@ -393,14 +420,16 @@ function AssetCard({ asset, entry, tradingDate, onSave }: AssetCardProps) {
         <span style={{ color: "#778792", fontSize: 18 }}>{open ? "▾" : "▸"}</span>
       </button>
 
-      {/* TF grid */}
-      <div className={`tfgrid${isSplitNy ? "" : " monthly-off"}`} style={{ gridTemplateColumns: `repeat(${tfGrid.length}, minmax(0,1fr))` }}>
-        {tfGrid.map(({ key, bias }) => (
-          <div key={key} className={`tf${biasClass(bias) ? " " + biasClass(bias) : ""}`}>
-            <small>{key === "NY AM" ? "NAM" : key === "NY PM" ? "NPM" : key}</small>
-          </div>
-        ))}
-      </div>
+      {/* TF grid - chỉ hiển thị chip đã có dữ liệu */}
+      {filledChips.length > 0 && (
+        <div className={`tfgrid${isSplitNy ? "" : " monthly-off"}`} style={{ gridTemplateColumns: `repeat(${filledChips.length}, minmax(0,1fr))` }}>
+          {filledChips.map(({ key, bias }) => (
+            <div key={key} className={`tf${biasClass(bias) ? " " + biasClass(bias) : ""}`}>
+              <small>{key === "NY AM" ? "NAM" : key === "NY PM" ? "NPM" : key}</small>
+            </div>
+          ))}
+        </div>
+      )}
 
       <AssetEditor entry={e} onSave={onSave} />
     </div>
@@ -833,35 +862,52 @@ function TgMiniApp() {
                   All biases today
                 </div>
                 <div style={{ fontSize: 11, color: "#4a6070", marginTop: 2 }}>
-                  {userAssets.length} assets
-                  {todayAssets.length > 0 && ` · ${completedTFAll}/${totalTFAll} completed`}
+                  {todayAssets.length > 0
+                    ? `${todayAssets.length}/${userAssets.length} assets · ${completedTFAll}/${totalTFAll} completed`
+                    : `${userAssets.length} assets`}
                 </div>
               </div>
-              {availableToAdd.length > 0 && (
-                <button
-                  onClick={() => setShowAddSheet(true)}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #25c7ae, #0f958c)",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: 22,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    boxShadow: "0 4px 14px rgba(37,199,174,0.4)",
-                    lineHeight: 1,
-                    paddingBottom: 1,
-                  }}
-                >
-                  +
-                </button>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                {todayAssets.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#2cc7b4",
+                      background: "rgba(44,199,180,0.12)",
+                      border: "1px solid rgba(44,199,180,0.25)",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    Live
+                  </span>
+                )}
+                {availableToAdd.length > 0 && (
+                  <button
+                    onClick={() => setShowAddSheet(true)}
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      background: "linear-gradient(135deg, #25c7ae, #0f958c)",
+                      border: "none",
+                      color: "#fff",
+                      fontSize: 24,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                      boxShadow: "0 0 20px rgba(37,199,174,0.4)",
+                      lineHeight: 1,
+                    }}
+                  >
+                    ＋
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Asset cards */}
