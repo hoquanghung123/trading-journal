@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-07-18]
+### Fixed
+- Fixed Telegram Mini App "+" (Add Bias) button alignment on mobile WebViews by replacing fullwidth characters with standard ones and switching to flexbox layout.
+- Fixed chart image saving issue by implementing automatic upload on bias save and a robust fallback to store direct TradingView S3 URLs when Cloudflare R2 uploads fail.
+- Fixed Daily Reset cutoff synchronization (switched from 11:00 AM VN to 07:00 AM VN / 00:00 UTC) to align with Web App logic.
+- Fixed empty timeframe chips showing up by conditionally rendering chips only when there is an active bias or an associated image.
+- Fixed asset count dynamic subtitle to show today's completion count instead of hardcoded overall counts.
+
 ## [2026-07-17]
 ### Added
 - Created `docs/PLAN-telegram-mini-app.md` detailing styling, fallback auth, NY time cutoff countdown, and TradingView URL preview.

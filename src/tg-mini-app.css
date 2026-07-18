@@ -638,6 +638,25 @@ button {
   border-radius: 11px;
   padding: 11px;
   box-shadow: 0 8px 22px #12b6a13d;
+  transition: all 0.3s ease;
+}
+
+.new.saved {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.24);
+  animation: pulse-scale 0.4s ease-out;
+}
+
+@keyframes pulse-scale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Fixed dock bottom navigation */

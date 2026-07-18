@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../integrations/supabase/client";
 import {
   fetchEntries,
@@ -63,6 +63,19 @@ function parseTvUrl(raw: string): string | null {
   if (resolved) return resolved;
   if (/\.(png|jpg|jpeg|webp|gif)(\?.*)?$/i.test(raw)) return raw;
   return null;
+}
+
+function isCompleteUrl(raw: string): boolean {
+  const trimmed = raw.trim();
+  // 1. TradingView snapshot: phải có ID chính xác 8 ký tự
+  const tvRegex = /^https?:\/\/(?:www\.)?tradingview\.com\/x\/([a-zA-Z0-9]{8})\/?$/i;
+  if (tvRegex.test(trimmed)) return true;
+
+  // 2. Định dạng ảnh trực tiếp hoàn chỉnh
+  const imgRegex = /^https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|webp|gif)(?:\?.*)?$/i;
+  if (imgRegex.test(trimmed)) return true;
+
+  return false;
 }
 
 // ─── Bias helpers ─────────────────────────────────────────────────────────────
@@ -156,13 +169,26 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
   // Default to W — M may not be available depending on day
   const [activeTab, setActiveTab] = useState<string>("W");
   const [urlInput, setUrlInput] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUploadedUrlRef = useRef<string>("");
 
   // Sync draft khi entry prop thay đổi (ví dụ: fetch từ DB về sau khi mount)
   useEffect(() => {
     setDraft(entry);
+    setJustSaved(false);
   }, [entry.id, entry.asset, entry.date]);
+
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const getBias = (tab: string): Bias => {
     if (tab === "M") return draft.monthlyBias;
@@ -172,6 +198,7 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
   };
 
   const setBias = (tab: string, b: Bias) => {
+    setJustSaved(false);
     if (tab === "M") setDraft((d) => ({ ...d, monthlyBias: b }));
     else if (tab === "W") setDraft((d) => ({ ...d, weeklyBias: b }));
     else if (tab === "D") setDraft((d) => ({ ...d, dailyBias: b }));
@@ -186,61 +213,105 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
   };
 
   const setImg = (tab: string, img: string | undefined) => {
+    setJustSaved(false);
     if (tab === "M") setDraft((d) => ({ ...d, monthlyImg: img }));
     else if (tab === "W") setDraft((d) => ({ ...d, weeklyImg: img }));
     else if (tab === "D") setDraft((d) => ({ ...d, dailyImg: img }));
     else setDraft((d) => ({ ...d, h4: { ...d.h4, [tab]: { ...d.h4[tab], img } } }));
   };
 
-  const handleUrlPaste = (val: string) => {
-    setUrlInput(val);
-    const img = parseTvUrl(val.trim());
-    setPreviewUrl(img);
-  };
+  const startImageUpload = async (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed || isUploading) return;
 
-  const handleApplyUrl = async () => {
-    if (!previewUrl) return;
-    setSaving(true);
+    const img = parseTvUrl(trimmed);
+    if (!img) return;
+
+    setIsUploading(true);
+    lastUploadedUrlRef.current = trimmed;
     try {
-      const path = await uploadChartImage(previewUrl);
+      const path = await uploadChartImage(img);
       setImg(activeTab, path);
       setUrlInput("");
-      setPreviewUrl(null);
     } catch (err) {
       console.error('[TMA] uploadChartImage failed, fallback to direct URL:', err);
       // Fallback: lưu trực tiếp URL gốc (hoạt động trên localhost và khi R2 lỗi)
-      setImg(activeTab, previewUrl);
+      setImg(activeTab, img);
       setUrlInput("");
-      setPreviewUrl(null);
     } finally {
-      setSaving(false);
+      setIsUploading(false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData("text");
+    setUrlInput(pastedText);
+    setJustSaved(false);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    const img = parseTvUrl(pastedText.trim());
+    if (img) {
+      startImageUpload(pastedText);
+    }
+  };
+
+  const handleChange = (val: string) => {
+    setUrlInput(val);
+    setJustSaved(false);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    const trimmed = val.trim();
+    if (trimmed === lastUploadedUrlRef.current) {
+      return;
+    }
+
+    if (isCompleteUrl(trimmed)) {
+      debounceTimerRef.current = setTimeout(() => {
+        startImageUpload(trimmed);
+      }, 900); // 900ms debounce
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
     try {
-      // Auto-upload pending preview image nếu user chưa bấm "Lưu" riêng
       let finalDraft = draft;
-      if (previewUrl && !getImg(activeTab)) {
-        let imgPath = previewUrl; // fallback: dùng URL gốc
+      const trimmed = urlInput.trim();
+      const img = parseTvUrl(trimmed);
+      if (img) {
+        let imgPath = img;
         try {
-          imgPath = await uploadChartImage(previewUrl);
+          imgPath = await uploadChartImage(img);
         } catch (err) {
           console.error('[TMA] auto-upload failed, using direct URL:', err);
         }
-        // Cập nhật draft với img (R2 path hoặc URL gốc)
         if (activeTab === "M") finalDraft = { ...finalDraft, monthlyImg: imgPath };
         else if (activeTab === "W") finalDraft = { ...finalDraft, weeklyImg: imgPath };
         else if (activeTab === "D") finalDraft = { ...finalDraft, dailyImg: imgPath };
         else finalDraft = { ...finalDraft, h4: { ...finalDraft.h4, [activeTab]: { ...finalDraft.h4[activeTab], img: imgPath } } };
         setDraft(finalDraft);
         setUrlInput("");
-        setPreviewUrl(null);
       }
       await onSave(finalDraft);
+      setJustSaved(true);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTabChange = (t: string) => {
+    if (!isUploading) {
+      setActiveTab(t);
+      setJustSaved(false);
     }
   };
 
@@ -255,7 +326,8 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
           <button
             key={t}
             className={`control${activeTab === t ? " active" : ""}`}
-            onClick={() => setActiveTab(t)}
+            onClick={() => handleTabChange(t)}
+            disabled={isUploading}
             style={{ fontSize: 11 }}
           >
             {TF_FULL[t] ?? t}
@@ -270,6 +342,7 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
             key={b}
             className={`subbtn${currentBias === b ? " active" : ""}`}
             onClick={() => setBias(activeTab, b)}
+            disabled={isUploading}
           >
             {b === "bullish" ? "📈 Bull" : b === "bearish" ? "📉 Bear" : "↔ Cons"}
           </button>
@@ -280,9 +353,21 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
       {currentImg && (
         <div className="image-preview-container">
           <img src={getChartUrl(currentImg)} alt="chart" />
-          <button className="image-preview-delete" onClick={() => setImg(activeTab, undefined)}>
+          <button
+            className="image-preview-delete"
+            onClick={() => setImg(activeTab, undefined)}
+            disabled={isUploading}
+          >
             ×
           </button>
+        </div>
+      )}
+
+      {/* Loading placeholder when image is uploading */}
+      {isUploading && (
+        <div className="image-uploading-placeholder">
+          <span className="spinner">⟳</span>
+          <span>Đang tải ảnh lên...</span>
         </div>
       )}
 
@@ -292,28 +377,26 @@ function AssetEditor({ entry, onSave }: AssetEditorProps) {
           type="text"
           placeholder="Dán link TradingView hoặc ảnh..."
           value={urlInput}
-          onChange={(e) => handleUrlPaste(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
+          onPaste={handlePaste}
+          disabled={isUploading || saving}
         />
-        <button onClick={handleApplyUrl} disabled={!previewUrl || saving}>
-          {saving ? "..." : "Lưu"}
-        </button>
       </div>
-
-      {/* URL preview before upload */}
-      {previewUrl && !currentImg && (
-        <div className="image-preview-container" style={{ marginTop: 8 }}>
-          <img src={previewUrl} alt="preview" />
-        </div>
-      )}
 
       {/* Save button */}
       <button
-        className="new"
+        className={`new${justSaved ? " saved" : ""}`}
         onClick={handleSave}
-        disabled={saving}
+        disabled={saving || isUploading}
         style={{ marginTop: 12 }}
       >
-        {saving ? "Đang lưu..." : "✓ Lưu Bias"}
+        {saving
+          ? "Đang lưu..."
+          : isUploading
+          ? "Đang xử lý ảnh..."
+          : justSaved
+          ? "✓ Đã lưu"
+          : "✓ Lưu Bias"}
       </button>
     </div>
   );
