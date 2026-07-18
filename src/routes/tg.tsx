@@ -33,16 +33,10 @@ type Tab = "bias" | "streak" | "trades";
 type AuthState = "loading" | "ok" | "unlinked" | "error";
 const TODAY_CHIP = "__today__";
 
-// ─── NY Cutoff helpers ────────────────────────────────────────────────────────
-/** Cutoff = 11:00 AM VN (GMT+7) = 00:00 America/New_York */
+// ─── Day Reset helpers ────────────────────────────────────────────────────────
+/** Cutoff = 07:00 AM VN (GMT+7) = 00:00 UTC — synced with Web App */
 function getTradingDate(): string {
-  const now = new Date();
-  const vnHour = now.getUTCHours() + 7;
-  const adjusted = new Date(now);
-  if (vnHour < 11 || (vnHour === 11 && now.getUTCMinutes() === 0 && now.getUTCSeconds() === 0)) {
-    adjusted.setUTCDate(adjusted.getUTCDate() - 1);
-  }
-  return adjusted.toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
 }
 
 function getSecondsUntilCutoff(): number {
@@ -50,7 +44,7 @@ function getSecondsUntilCutoff(): number {
   const vnMs = now.getTime() + 7 * 3600 * 1000;
   const vnNow = new Date(vnMs);
   const todayCutoff = new Date(vnMs);
-  todayCutoff.setUTCHours(11, 0, 0, 0);
+  todayCutoff.setUTCHours(7, 0, 0, 0);
   let diff = (todayCutoff.getTime() - vnNow.getTime()) / 1000;
   if (diff <= 0) diff += 86400;
   return Math.floor(diff);
@@ -672,8 +666,8 @@ function TgMiniApp() {
 
   // ── Streak stats ──────────────────────────────────────────────────────────────
   const stats = calculateStreak(entries);
-  const isBefore11 = new Date().getUTCHours() + 7 < 11;
-  const cutoffLabel = isBefore11 ? `Ngày GD: ${tradingDate} (Hôm qua)` : `Ngày GD: ${tradingDate}`;
+  const isBeforeCutoff = new Date().getUTCHours() + 7 < 7;
+  const cutoffLabel = `Ngày GD: ${tradingDate}`;
 
   // ── Render ────────────────────────────────────────────────────────────────────
   if (authState === "loading") {
@@ -735,7 +729,7 @@ function TgMiniApp() {
           </div>
         </div>
 
-        {/* NY Cutoff countdown */}
+        {/* Daily Reset countdown */}
         <div
           style={{
             display: "flex",
@@ -749,14 +743,14 @@ function TgMiniApp() {
           }}
         >
           <div>
-            <div style={{ color: "#778792", fontSize: 11, marginBottom: 2 }}>NY Cutoff (11:00 AM VN)</div>
+            <div style={{ color: "#778792", fontSize: 11, marginBottom: 2 }}>Daily Reset (07:00 AM VN)</div>
             <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#2cc7b4" }}>
               {fmtCountdown(countdown)}
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 24 }}>{isBefore11 ? "🌙" : "☀️"}</div>
-            <div style={{ color: "#778792", fontSize: 11 }}>{isBefore11 ? "Trước cutoff" : "Sau cutoff"}</div>
+            <div style={{ fontSize: 24 }}>{isBeforeCutoff ? "🌙" : "☀️"}</div>
+            <div style={{ color: "#778792", fontSize: 11 }}>{isBeforeCutoff ? "Trước reset" : "Sau reset"}</div>
           </div>
         </div>
       </div>
