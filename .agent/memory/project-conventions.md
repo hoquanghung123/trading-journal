@@ -75,6 +75,14 @@ This document summarizes the architectural and implementation conventions establ
     ```
 - **Cascade Integrity Restorations:** Rebuilding data from snapshots uses transaction-safe dynamic SQL inside `restore_single_system_version` and `restore_batch_system_versions`. These procedures automatically safeguard foreign key constraints (e.g. verifying `setup_id` or `trade_id` exist in their parent tables before restoring) to prevent database referential integrity crashes.
 
+## 💾 Journal Entry Save Conflict Resolution
+- **ID Reuse Protocol**: To prevent primary key duplicate key violations (`duplicate key value violates unique constraint "journal_entries_pkey"`) when a user adds a day and changes its asset or date in the modal:
+  - `upsertEntry` dynamically queries if a row with the same `(user_id, date, asset)` already exists in the database.
+  - If found, it reuses that existing row's `id` instead of generating or using a new `id`.
+  - The upsert query uses `{ onConflict: "id" }` to update fields (including asset and date) of the matched row.
+- **Form State Decoupling**: We do not pre-insert blank entries in `addEntry` to prevent cluttering the database with empty entries if the user cancels. The entry is only written when they explicitly click "Save Changes".
+- **PostgrestError Toast Handling**: Database errors returned by Supabase are not standard `Error` objects, so toast notifications check for `(err as any)?.message` to display the actual database error message rather than a generic `"An error occurred"`.
+
 
 
 

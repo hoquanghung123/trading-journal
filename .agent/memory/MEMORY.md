@@ -11,6 +11,7 @@
 - [project] Explicit await fallback for Cloudflare Pages worker background task context → project-conventions.md
 - [project] Strict RLS hardening (no update/delete, restricted select) on realtime_sync_logs table → project-conventions.md
 - [project] Centralized temporal history table secured via statement-level immutability triggers → project-conventions.md
+- [project] upsertEntry queries and reuses existing row IDs with onConflict: "id" to prevent primary key violations on asset changes → project-conventions.md
 
 
 
