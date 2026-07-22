@@ -158,9 +158,25 @@ export async function upsertEntry(e: DayEntry, explicitUserId?: string): Promise
     if (!u.user) throw new Error("Not authenticated");
     uid = u.user.id;
   }
+
+  // Check if an entry for this user, date, and asset already exists in the DB
+  const { data: existing } = await supabase
+    .from("journal_entries")
+    .select("id")
+    .eq("user_id", uid)
+    .eq("date", e.date)
+    .eq("asset", e.asset)
+    .maybeSingle();
+
+  const row = toRow(e, uid);
+  if (existing) {
+    // Reuse the existing row ID to prevent primary key collision
+    row.id = existing.id;
+  }
+
   const { error } = await supabase
     .from("journal_entries")
-    .upsert(toRow(e, uid), { onConflict: "user_id,date,asset" });
+    .upsert(row, { onConflict: "id" });
   if (error) throw error;
 }
 

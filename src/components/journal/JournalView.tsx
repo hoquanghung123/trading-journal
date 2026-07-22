@@ -253,7 +253,7 @@ export function JournalView() {
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
       track();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "An error occurred");
+      toast.error(err instanceof Error ? err.message : (err as any)?.message || "An error occurred");
     }
   };
 
@@ -263,14 +263,13 @@ export function JournalView() {
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
       track();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "An error occurred");
+      toast.error(err instanceof Error ? err.message : (err as any)?.message || "An error occurred");
     }
   };
 
   const addEntry = async () => {
     const fallback = ASSETS[0] ?? "XAUUSD";
     const e = newEntry(asset === "ALL" || asset === "TODAY" ? fallback : asset);
-    await upsert(e);
     setEditing(e);
     setTimeout(jumpRight, 100);
   };

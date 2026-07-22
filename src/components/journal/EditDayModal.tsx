@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
-import { X, Trash2, Save, Plus } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { X, Trash2, Save, Plus, Loader2 } from "lucide-react";
 import type { Bias, DayEntry, Session } from "@/lib/journal";
 import { biasStyle, biasLabel, weekdayOf, getSessionsForAsset } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
@@ -7,7 +7,7 @@ import { PasteSlot } from "./PasteSlot";
 
 interface Props {
   entry: DayEntry;
-  onSave: (e: DayEntry) => void;
+  onSave: (e: DayEntry) => Promise<void> | void;
   onDelete?: (id: string) => void;
   onClose: () => void;
 }
@@ -20,6 +20,35 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const [draft, setDraft] = useState<DayEntry>(entry);
   const [focusKey, setFocusKey] = useState<string>("weekly");
   const [session, setSession] = useState<Session>("ASIA");
+  const [isSaving, setIsSaving] = useState(false);
+  const [uploadingSlots, setUploadingSlots] = useState<Record<string, boolean>>({});
+
+  const isUploading = useMemo(
+    () => Object.values(uploadingSlots).some(Boolean),
+    [uploadingSlots]
+  );
+
+  const handleClose = useCallback(() => {
+    if (isUploading) {
+      if (!window.confirm("Ảnh đang tải lên, bạn có chắc muốn thoát và hủy?")) {
+        return;
+      }
+    }
+    onClose();
+  }, [isUploading, onClose]);
+
+  const handleSave = useCallback(async () => {
+    if (isUploading || isSaving) return;
+    setIsSaving(true);
+    try {
+      await onSave(draft);
+      onClose();
+    } catch (err) {
+      console.error("Save failed:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [draft, onSave, onClose, isUploading, isSaving]);
 
   const sessions = useMemo(() => getSessionsForAsset(draft.asset), [draft.asset]);
 
@@ -32,10 +61,10 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   }, [sessions, session]);
 
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
-  }, [onClose]);
+  }, [handleClose]);
 
   const update = <K extends keyof DayEntry>(k: K, v: DayEntry[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
@@ -43,7 +72,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="bg-card sm:rounded-[32px] w-full max-w-3xl h-full sm:h-auto max-h-[100vh] sm:max-h-[94vh] overflow-y-auto shadow-2xl border border-white/20 animate-in fade-in zoom-in-95 duration-300 relative"
@@ -65,7 +94,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center transition-all text-muted-foreground hover:text-foreground"
           >
             <X className="w-6 h-6" />
@@ -109,6 +138,9 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                     label="Monthly Chart"
                     image={draft.monthlyImg}
                     onChange={(u) => update("monthlyImg", u)}
+                    onBusyChange={(busy) =>
+                      setUploadingSlots((prev) => ({ ...prev, monthly: busy }))
+                    }
                     focused={focusKey === "monthly"}
                     onFocus={() => setFocusKey("monthly")}
                     className="h-48"
@@ -128,6 +160,9 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   label="Weekly Chart"
                   image={draft.weeklyImg}
                   onChange={(u) => update("weeklyImg", u)}
+                  onBusyChange={(busy) =>
+                    setUploadingSlots((prev) => ({ ...prev, weekly: busy }))
+                  }
                   focused={focusKey === "weekly"}
                   onFocus={() => setFocusKey("weekly")}
                   className="h-48"
@@ -143,6 +178,9 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   label="Daily Chart"
                   image={draft.dailyImg}
                   onChange={(u) => update("dailyImg", u)}
+                  onBusyChange={(busy) =>
+                    setUploadingSlots((prev) => ({ ...prev, daily: busy }))
+                  }
                   focused={focusKey === "daily"}
                   onFocus={() => setFocusKey("daily")}
                   className="h-48"
@@ -169,10 +207,23 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
               </div>
               <div className="grid grid-cols-[1fr_120px] gap-4">
                 <PasteSlot
+                  key={session}
                   label={`H4 · ${session} SESSION`}
                   image={draft.h4[session]?.img}
                   onChange={(u) =>
-                    update("h4", { ...draft.h4, [session]: { ...draft.h4[session], img: u } })
+                    setDraft((d) => ({
+                      ...d,
+                      h4: {
+                        ...d.h4,
+                        [session]: {
+                          ...d.h4[session],
+                          img: u,
+                        },
+                      },
+                    }))
+                  }
+                  onBusyChange={(busy) =>
+                    setUploadingSlots((prev) => ({ ...prev, [`h4-${session}`]: busy }))
                   }
                   focused={focusKey === `h4-${session}`}
                   onFocus={() => setFocusKey(`h4-${session}`)}
@@ -181,7 +232,16 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                 <BiasPicker
                   value={draft.h4[session]?.bias as Bias}
                   onChange={(v) =>
-                    update("h4", { ...draft.h4, [session]: { ...draft.h4[session], bias: v } })
+                    setDraft((d) => ({
+                      ...d,
+                      h4: {
+                        ...d.h4,
+                        [session]: {
+                          ...d.h4[session],
+                          bias: v,
+                        },
+                      },
+                    }))
                   }
                 />
               </div>
@@ -216,13 +276,25 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
             <span />
           )}
           <button
-            onClick={() => {
-              onSave(draft);
-              onClose();
-            }}
-            className="forest-gradient flex items-center gap-2 px-8 py-3 text-sm font-black text-white rounded-xl shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest"
+            onClick={handleSave}
+            disabled={isUploading || isSaving}
+            className={`forest-gradient flex items-center gap-2 px-8 py-3 text-sm font-black text-white rounded-xl shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest ${
+              (isUploading || isSaving) ? "opacity-50 cursor-not-allowed select-none" : ""
+            }`}
           >
-            <Save className="w-4 h-4" /> Save Changes
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+              </>
+            ) : isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Uploading Charts...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Save Changes
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -13,6 +13,7 @@ interface Props {
   label: string;
   image?: string; // storage path OR legacy data URL
   onChange: (path: string | undefined) => void;
+  onBusyChange?: (busy: boolean) => void;
   focused?: boolean;
   onFocus?: () => void;
   className?: string;
@@ -23,6 +24,7 @@ export function PasteSlot({
   label,
   image,
   onChange,
+  onBusyChange,
   focused,
   onFocus,
   className,
@@ -33,6 +35,11 @@ export function PasteSlot({
   const [busy, setBusy] = useState(false);
   const [displayUrl, setDisplayUrl] = useState<string>("");
   const [zoom, setZoom] = useState(false);
+
+  const onBusyChangeRef = useRef(onBusyChange);
+  useEffect(() => {
+    onBusyChangeRef.current = onBusyChange;
+  }, [onBusyChange]);
 
   // Resolve storage path -> signed URL (or pass through legacy data URL)
   useEffect(() => {
@@ -45,6 +52,7 @@ export function PasteSlot({
 
   const handleFile = async (file: File) => {
     setBusy(true);
+    onBusyChangeRef.current?.(true);
     try {
       const path = await uploadChartImage(file);
       const old = image;
@@ -54,11 +62,13 @@ export function PasteSlot({
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
+      onBusyChangeRef.current?.(false);
     }
   };
 
   const handleDataUrl = async (dataUrl: string) => {
     setBusy(true);
+    onBusyChangeRef.current?.(true);
     try {
       const path = await uploadChartImage(dataUrl);
       const old = image;
@@ -68,6 +78,7 @@ export function PasteSlot({
       toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
+      onBusyChangeRef.current?.(false);
     }
   };
 
