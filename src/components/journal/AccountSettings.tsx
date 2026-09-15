@@ -13,6 +13,7 @@ import {
   HelpCircle,
   ShieldAlert,
   Globe,
+  Settings,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings, type UserSettings } from "@/lib/settings";
@@ -39,7 +40,7 @@ const IMPACTS = [
   { id: "holiday", name: "Holiday (Grey)", color: "bg-slate-400", text: "text-slate-600" }
 ];
 
-export function AccountSettings() {
+export function AccountSettings({ onManageAssets }: { onManageAssets?: () => void }) {
   const qc = useQueryClient();
   const [user, setUser] = useState<any>(null);
   const [localSettings, setLocalSettings] = useState<Partial<UserSettings>>({});
@@ -595,8 +596,33 @@ export function AccountSettings() {
             </div>
           </section>
 
+          {onManageAssets && (
+            <section className="bg-card rounded-[32px] border border-border p-8 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                    <Settings className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Trading assets</h2>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Symbols shown on Bias Expect and the Telegram mini app
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onManageAssets}
+                  className="px-5 py-2.5 rounded-xl border border-border text-sm font-bold hover:bg-muted"
+                >
+                  Manage assets
+                </button>
+              </div>
+            </section>
+          )}
+
           {/* Telegram Section */}
-          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
+          <section className="bg-card rounded-[32px] border border-border p-8 shadow-sm space-y-6">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-[#0088cc]/10 text-[#0088cc]">
                 <Send className="w-5 h-5" />

@@ -1,14 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <motion.button
       onClick={toggleTheme}
-      className="fixed top-2.5 right-4 z-50 lg:top-4 lg:right-6 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all focus:outline-none border shadow-md active:scale-95 bg-white/70 dark:bg-slate-900/50 backdrop-blur-md border-slate-200/80 dark:border-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 hover:shadow-lg dark:hover:shadow-slate-950/30"
+      className={cn(
+        "fixed top-16 right-3 z-50 lg:top-4 lg:right-6 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring border active:scale-95 bg-card/80 backdrop-blur-md border-border text-foreground hover:bg-muted",
+        className,
+      )}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       aria-label="Toggle Night Mode"

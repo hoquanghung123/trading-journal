@@ -4,11 +4,10 @@ import { Terminal } from "@/components/journal/Terminal";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ICT Trading Journal Terminal" },
+      { title: "Chartmate" },
       {
         name: "description",
-        content:
-          "Deep-navy terminal-style ICT trading journal with timeline, sessions, and clipboard paste.",
+        content: "ICT trading journal with bias, trades, playbook, and weekly review.",
       },
     ],
   }),

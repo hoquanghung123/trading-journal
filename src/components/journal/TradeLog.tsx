@@ -10,6 +10,7 @@ import {
   Clock,
   TrendingUp,
   TrendingDown,
+  Search,
 } from "lucide-react";
 import {
   computeOutcome,
@@ -23,7 +24,8 @@ import {
 import { isWithinInterval, startOfDay, endOfDay, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { DateRangePicker } from "../shared/DateRangePicker";
 import { DateRange } from "react-day-picker";
-import { focusBiasEntry, focusPlaybookModel, navigateToPage } from "@/lib/nav-bus";
+import { focusBiasEntry, focusPlaybookModel, navigateToPage, onRequestNewTrade } from "@/lib/nav-bus";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { CheckCircle2, ShieldAlert, AlertCircle, BookOpen } from "lucide-react";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { TradeModal } from "./TradeModal";
@@ -82,9 +84,19 @@ export function TradeLog() {
   const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [symbolFilter, setSymbolFilter] = useState("ALL");
+  const [sideFilter, setSideFilter] = useState<"ALL" | "buy" | "sell">("ALL");
+  const [outcomeFilter, setOutcomeFilter] = useState<"ALL" | "Win" | "Loss" | "BE">("ALL");
+  const [setupFilter, setSetupFilter] = useState("ALL");
+  const [complianceFilter, setComplianceFilter] = useState<"ALL" | "yes" | "no">("ALL");
+  const [viewOverride, setViewOverride] = useState<"table" | "gallery" | null>(() =>
+    typeof window !== "undefined" && window.innerWidth < 1024 ? "gallery" : null,
+  );
   const queryClient = useQueryClient();
 
   const handleUpdateView = async (view: "table" | "gallery") => {
+    setViewOverride(view);
     await updateSettings({ tradeLogView: view });
     queryClient.invalidateQueries({ queryKey: ["user_settings"] });
   };
@@ -154,6 +166,8 @@ export function TradeLog() {
     setOpen(true);
   };
 
+  useEffect(() => onRequestNewTrade(openNew), []);
+
   const openEdit = (t: Trade) => {
     setEditing(t);
     setOpen(true);
@@ -170,21 +184,54 @@ export function TradeLog() {
   };
 
   const filteredTrades = useMemo(() => {
-    if (!dateRange?.from) return trades;
-    
-    const start = startOfDay(dateRange.from);
-    const end = endOfDay(dateRange.to || dateRange.from);
-
+    const q = query.trim().toLowerCase();
     return trades.filter((t) => {
-      const entryDate = parseISO(t.entryTime);
-      return isWithinInterval(entryDate, { start, end });
+      if (dateRange?.from) {
+        const start = startOfDay(dateRange.from);
+        const end = endOfDay(dateRange.to || dateRange.from);
+        const entryDate = parseISO(t.entryTime);
+        if (!isWithinInterval(entryDate, { start, end })) return false;
+      }
+      if (symbolFilter !== "ALL" && t.symbol !== symbolFilter) return false;
+      if (sideFilter !== "ALL" && t.side !== sideFilter) return false;
+      if (setupFilter !== "ALL" && t.setupId !== setupFilter) return false;
+      if (complianceFilter === "yes" && !t.complianceCheck) return false;
+      if (complianceFilter === "no" && t.complianceCheck) return false;
+      if (outcomeFilter !== "ALL") {
+        const o = computeOutcome(t.actualRr, t.maxRr, t.netPnl).label;
+        if (o !== outcomeFilter) return false;
+      }
+      if (q) {
+        const hay = `${t.symbol} ${t.notes ?? ""} ${t.side}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
     });
-  }, [trades, dateRange]);
+  }, [
+    trades,
+    dateRange,
+    query,
+    symbolFilter,
+    sideFilter,
+    outcomeFilter,
+    setupFilter,
+    complianceFilter,
+  ]);
 
   const sorted = useMemo(
     () => [...filteredTrades].sort((a, b) => +new Date(b.entryTime) - +new Date(a.entryTime)),
     [filteredTrades],
   );
+
+  const viewMode = viewOverride ?? settings?.tradeLogView ?? "table";
+  const symbolsInLog = useMemo(
+    () => Array.from(new Set(trades.map((t) => t.symbol))).sort(),
+    [trades],
+  );
+  const chip = (active: boolean) =>
+    `px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap ${
+      active ? "bg-primary text-white border-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"
+    }`;
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-10">
@@ -207,7 +254,9 @@ export function TradeLog() {
             </div>
 
             <button
+              type="button"
               onClick={openNew}
+              aria-label="New trade"
               className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95 transition-all"
             >
               <Plus className="w-6 h-6" strokeWidth={3} />
@@ -222,7 +271,7 @@ export function TradeLog() {
               <button
                 onClick={() => handleUpdateView("table")}
                 className={`p-2 rounded-lg transition-all ${
-                  settings?.tradeLogView === "table"
+                  viewMode === "table"
                     ? "bg-card text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -233,7 +282,7 @@ export function TradeLog() {
               <button
                 onClick={() => handleUpdateView("gallery")}
                 className={`p-2 rounded-lg transition-all ${
-                  settings?.tradeLogView === "gallery"
+                  viewMode === "gallery"
                     ? "bg-card text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -277,17 +326,88 @@ export function TradeLog() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search notes or symbol"
+              className="h-9 w-44 sm:w-56 rounded-lg border border-border bg-card pl-8 pr-3 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <select
+            value={symbolFilter}
+            onChange={(e) => setSymbolFilter(e.target.value)}
+            className="h-9 rounded-lg border border-border bg-card px-3 text-xs font-bold"
+          >
+            <option value="ALL">All symbols</option>
+            {symbolsInLog.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={setupFilter}
+            onChange={(e) => setSetupFilter(e.target.value)}
+            className="h-9 rounded-lg border border-border bg-card px-3 text-xs font-bold"
+          >
+            <option value="ALL">All models</option>
+            {playbookSetups.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+          {(["ALL", "buy", "sell"] as const).map((s) => (
+            <button key={s} type="button" onClick={() => setSideFilter(s)} className={chip(sideFilter === s)}>
+              {s === "ALL" ? "Side" : s}
+            </button>
+          ))}
+          {(["ALL", "Win", "Loss", "BE"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setOutcomeFilter(s)}
+              className={chip(outcomeFilter === s)}
+            >
+              {s === "ALL" ? "Outcome" : s}
+            </button>
+          ))}
+          {(["ALL", "yes", "no"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setComplianceFilter(s)}
+              className={chip(complianceFilter === s)}
+            >
+              {s === "ALL" ? "Playbook" : s === "yes" ? "Followed" : "Broke"}
+            </button>
+          ))}
+        </div>
+
         {/* Content Area */}
         <div className="w-full">
           {loading ? (
             <div className="p-20 text-center bg-card rounded-3xl border border-border/50">
               <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
             </div>
+          ) : trades.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Your trade log is empty"
+              description="Log your first execution with R, playbook, and screenshots."
+              actionLabel="Add first trade"
+              onAction={openNew}
+            />
           ) : sorted.length === 0 ? (
-            <div className="p-20 text-center text-muted-foreground text-sm font-medium bg-card rounded-3xl border border-border/50">
-              Your trade log is empty.
-            </div>
-          ) : settings?.tradeLogView === "gallery" ? (
+            <EmptyState
+              icon={Search}
+              title="No trades match these filters"
+              description="Widen the date range or clear symbol, side, and outcome chips."
+            />
+          ) : viewMode === "gallery" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sorted.map((t) => (
                 <TradeGalleryCard

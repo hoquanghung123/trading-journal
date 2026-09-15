@@ -26,6 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchSettings, updateSettings } from "@/lib/settings";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -53,6 +54,8 @@ type TabID = "execution" | "analysis" | "performance" | "screenshots" | "journal
 export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [t, setT] = useState<Trade | null>(trade);
   const [activeTab, setActiveTab] = useState<TabID>("execution");
+  const [showMoreTabs, setShowMoreTabs] = useState(false);
+  const isMobile = useIsMobile();
   const [focused, setFocused] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
@@ -223,16 +226,26 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
         {/* Tab Navigation */}
         <div className="px-6 sm:px-10 py-4 bg-muted/10 border-b border-border/50 overflow-x-auto scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max">
-            {[
+            {([
               { id: "execution", label: "Execution", icon: Activity },
               { id: "analysis", label: "Analysis", icon: Sliders },
               { id: "performance", label: "Performance", icon: TrendingUp },
               { id: "screenshots", label: "Screenshots", icon: ImageIcon },
               { id: "journal", label: "Journal", icon: FileText },
-            ].map((tab) => (
+            ] as const)
+              .filter((tab) => {
+                if (!isMobile || showMoreTabs) return true;
+                return (
+                  tab.id === "execution" ||
+                  tab.id === "screenshots" ||
+                  tab.id === "journal" ||
+                  tab.id === activeTab
+                );
+              })
+              .map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabID)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
                   activeTab === tab.id
                     ? "forest-gradient text-white shadow-lg shadow-primary/20 scale-[1.02]"
@@ -245,6 +258,15 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 {tab.label}
               </button>
             ))}
+            {isMobile && !showMoreTabs && (
+              <button
+                type="button"
+                onClick={() => setShowMoreTabs(true)}
+                className="px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-background border border-border text-muted-foreground"
+              >
+                More
+              </button>
+            )}
           </div>
         </div>
 

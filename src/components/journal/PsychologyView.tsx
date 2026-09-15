@@ -12,6 +12,7 @@ import {
   type PsychologyLog,
 } from "@/lib/psychology";
 import { format } from "date-fns";
+import { nyDateString } from "@/lib/journal";
 import { PsychologyCalendar } from "./PsychologyCalendar";
 import { PsychologyDayTimeline } from "./PsychologyDayTimeline";
 import { toast } from "sonner";
@@ -48,7 +49,7 @@ export function PsychologyView() {
   // Trades placed on the selected date — compared in **New York** timezone
   // because users enter entry_time in NY local time.
   const tradesForDate = useMemo(
-    () => trades.filter((t) => format(new Date(t.entryTime), "yyyy-MM-dd") === date),
+    () => trades.filter((t) => nyDateString(t.entryTime) === date),
     [trades, date],
   );
 

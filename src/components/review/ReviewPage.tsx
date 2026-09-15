@@ -8,7 +8,7 @@ import { TradeNotesTab } from "@/components/review/TradeNotesTab";
 import { useReviewsStorage } from "@/hooks/useReviewsStorage";
 import { Review } from "@/types/review";
 import { Button } from "@/components/ui/button";
-import { Save, AlertCircle, Edit2, ClipboardList, StickyNote } from "lucide-react";
+import { Save, AlertCircle, Edit2, ClipboardList, StickyNote, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -21,19 +21,42 @@ import {
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-// Helper to get current week period, e.g., "2026-04-W3"
-const getCurrentWeekPeriod = () => {
-  const d = new Date();
+import { format, addDays } from "date-fns";
+
+const getCurrentWeekPeriod = () => periodFromDate(new Date());
+
+function periodFromDate(d: Date) {
   const year = d.getFullYear();
   const month = (d.getMonth() + 1).toString().padStart(2, "0");
-
-  // Calculate week of the month (assuming week starts on Monday)
   const firstDayOfMonth = new Date(year, d.getMonth(), 1);
-  const dayOffset = (firstDayOfMonth.getDay() + 6) % 7; // Mon=0 ... Sun=6
+  const dayOffset = (firstDayOfMonth.getDay() + 6) % 7;
   const weekOfMonth = Math.ceil((d.getDate() + dayOffset) / 7);
-
   return `${year}-${month}-W${weekOfMonth}`;
-};
+}
+
+function weekStartFromPeriod(period: string): Date | null {
+  const m = period.match(/^(\d{4})-(\d{2})-W(\d+)$/i);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const week = Number(m[3]);
+  const first = new Date(year, month - 1, 1);
+  const dayOffset = (first.getDay() + 6) % 7;
+  return new Date(year, month - 1, (week - 1) * 7 - dayOffset + 1);
+}
+
+function periodLabel(period: string) {
+  const start = weekStartFromPeriod(period);
+  if (!start) return period;
+  const end = addDays(start, 6);
+  return `${format(start, "MMM d")}–${format(end, "d, yyyy")}`;
+}
+
+function shiftPeriod(period: string, deltaWeeks: number) {
+  const start = weekStartFromPeriod(period);
+  if (!start) return period;
+  return periodFromDate(addDays(start, deltaWeeks * 7));
+}
 
 export function ReviewPage() {
   const {
@@ -56,6 +79,7 @@ export function ReviewPage() {
   const [tempPeriod, setTempPeriod] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"reflection" | "trade-notes">("reflection");
+  const [dirty, setDirty] = useState(false);
 
   const handleConfirmPeriod = () => {
     if (tempPeriod && tempPeriod.trim() !== "") {
@@ -97,6 +121,7 @@ export function ReviewPage() {
   const handleDraftChange = (updates: Partial<Review>) => {
     if (!draftReview) return;
     setDraftReview({ ...draftReview, ...updates });
+    setDirty(true);
   };
 
   const handleSave = async () => {
@@ -104,7 +129,8 @@ export function ReviewPage() {
       setIsSaving(true);
       try {
         await saveReview(draftReview);
-        toast.success("Review saved successfully!");
+        setDirty(false);
+        toast.success("Review saved");
       } catch (e) {
         toast.error("Failed to save review");
       } finally {
@@ -115,8 +141,8 @@ export function ReviewPage() {
 
   if (!isLoaded || !draftReview) {
     return (
-      <div className="min-h-screen bg-background text-primary flex items-center justify-center font-bold">
-        Loading Storage...
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -127,8 +153,8 @@ export function ReviewPage() {
 
   if (!displayReview) {
     return (
-      <div className="min-h-screen bg-background text-destructive flex items-center justify-center font-bold">
-        Error: Review data not found.
+      <div className="min-h-screen bg-background flex items-center justify-center p-8 text-center">
+        <p className="text-sm font-medium text-muted-foreground">This review period could not be loaded.</p>
       </div>
     );
   }
@@ -156,10 +182,36 @@ export function ReviewPage() {
           <div className="flex flex-wrap items-center gap-4 lg:gap-6">
             <div className="text-left md:text-right">
               <div className="text-[10px] lg:text-xs font-bold text-muted-foreground uppercase tracking-widest mb-0.5 lg:mb-1">
-                Editing Period
+                Editing period
               </div>
-              <div className="text-lg lg:text-2xl font-black text-primary flex items-center justify-start md:justify-end gap-2 lg:gap-3">
-                {currentPeriod}
+              <div className="text-lg lg:text-2xl font-black text-primary flex items-center justify-start md:justify-end gap-2">
+                <button
+                  type="button"
+                  aria-label="Previous week"
+                  onClick={() => {
+                    setCurrentPeriod(shiftPeriod(currentPeriod, -1));
+                    setSelectedPeriod(null);
+                    setDraftReview(null);
+                    setDirty(false);
+                  }}
+                  className="p-1 rounded-lg hover:bg-muted text-muted-foreground"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <span className="min-w-[9rem] text-center">{periodLabel(currentPeriod)}</span>
+                <button
+                  type="button"
+                  aria-label="Next week"
+                  onClick={() => {
+                    setCurrentPeriod(shiftPeriod(currentPeriod, 1));
+                    setSelectedPeriod(null);
+                    setDraftReview(null);
+                    setDirty(false);
+                  }}
+                  className="p-1 rounded-lg hover:bg-muted text-muted-foreground"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <button
@@ -209,7 +261,7 @@ export function ReviewPage() {
             {!isReadOnly && (
               <Button
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isSaving || !dirty}
                 className="forest-gradient text-white font-bold gap-2 lg:gap-3 h-10 lg:h-14 px-4 lg:px-8 rounded-xl lg:rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50 text-xs lg:text-base"
               >
                 {isSaving ? (
@@ -217,7 +269,7 @@ export function ReviewPage() {
                 ) : (
                   <Save className="h-4 w-4 lg:h-5 lg:w-5" />
                 )}
-                {isSaving ? "Saving..." : "Save Review"}
+                {isSaving ? "Saving..." : dirty ? "Save review" : "Saved"}
               </Button>
             )}
             {isReadOnly && (
@@ -244,6 +296,12 @@ export function ReviewPage() {
             )}
           </div>
         </header>
+
+        {dirty && !isReadOnly && (
+          <div className="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
+            Unsaved changes
+          </div>
+        )}
 
         {/* Tab Bar */}
         <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-2xl border border-border/50 w-fit">

@@ -8,13 +8,15 @@ import {
   computeOutcome,
   outcomeStyle,
 } from "@/lib/trades";
-import { onDailyFocus, navigateToPage } from "@/lib/nav-bus";
+import { onDailyFocus, navigateToPage, parseNavFromUrl } from "@/lib/nav-bus";
 import { format, parseISO } from "date-fns";
 import { TradeModal } from "@/components/journal/TradeModal";
 import { toast } from "sonner";
 
 export function DailyViewPage() {
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    () => parseNavFromUrl().date ?? null,
+  );
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,14 +73,14 @@ export function DailyViewPage() {
   if (!selectedDate) {
     return (
       <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center text-muted-foreground">
-        <div className="w-20 h-20 rounded-[28px] bg-white shadow-xl flex items-center justify-center mb-6">
+        <div className="w-20 h-20 rounded-[28px] bg-card border border-border flex items-center justify-center mb-6">
           <Calendar className="w-10 h-10 text-primary/40" />
         </div>
         <h2 className="text-xl font-black text-foreground">No Date Selected</h2>
         <p className="text-sm font-medium mt-2">Select a day from the calendar to view details.</p>
         <button
           onClick={() => navigateToPage("dashboard")}
-          className="mt-8 px-6 py-3 bg-white border border-border rounded-2xl font-bold text-sm shadow-sm hover:bg-muted transition-all"
+          className="mt-8 px-6 py-3 bg-card border border-border rounded-2xl font-bold text-sm hover:bg-muted transition-all"
         >
           Back to Dashboard
         </button>
@@ -96,7 +98,7 @@ export function DailyViewPage() {
           <div className="flex items-center gap-6">
             <button
               onClick={() => navigateToPage("dashboard")}
-              className="w-12 h-12 rounded-2xl bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/20 transition-all shadow-sm active:scale-95"
+              className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/20 transition-all active:scale-95"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -113,7 +115,7 @@ export function DailyViewPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-border p-4 pr-6 flex items-center gap-5 shadow-sm">
+          <div className="bg-card rounded-3xl border border-border p-4 pr-6 flex items-center gap-5">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <FileText className="w-5 h-5 text-primary" />
             </div>
@@ -131,7 +133,7 @@ export function DailyViewPage() {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-[40px] border border-border shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+        <div className="bg-card rounded-[40px] border border-border overflow-hidden min-h-[500px] flex flex-col">
           {loading ? (
             <div className="flex-1 flex flex-col items-center justify-center p-20">
               <Loader2 className="w-10 h-10 animate-spin text-primary/40" />

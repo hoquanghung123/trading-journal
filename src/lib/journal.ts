@@ -24,6 +24,43 @@ export function getSessionsForAsset(asset: string): Session[] {
   return ["ASIA", "LDN", "NY"];
 }
 
+/** NY-time killzones: Asia 18:00–02:00, London 02:00–08:00, NY 08:00–18:00. */
+export function getActiveKillzone(now = new Date()): {
+  session: Session;
+  next: Session;
+  secondsUntilNext: number;
+} {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false,
+  })
+    .formatToParts(now)
+    .reduce<Record<string, number>>((acc, p) => {
+      if (p.type !== "literal") acc[p.type] = Number(p.value === "24" ? "0" : p.value);
+      return acc;
+    }, {});
+  const mins = (parts.hour ?? 0) * 60 + (parts.minute ?? 0);
+  const secs = (parts.second ?? 0);
+
+  const toNext = (endMins: number) => (endMins * 60 - (mins * 60 + secs) + 24 * 3600) % (24 * 3600);
+
+  if (mins >= 18 * 60 || mins < 2 * 60) {
+    return { session: "ASIA", next: "LDN", secondsUntilNext: toNext(2 * 60) };
+  }
+  if (mins < 8 * 60) {
+    return { session: "LDN", next: "NY", secondsUntilNext: toNext(8 * 60) };
+  }
+  const session: Session = mins < 12 * 60 ? "NY AM" : "NY PM";
+  return { session, next: "ASIA", secondsUntilNext: toNext(18 * 60) };
+}
+
+export function nyDateString(iso: string | Date): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
 export interface DayEntry {
   id: string;
   date: string; // YYYY-MM-DD

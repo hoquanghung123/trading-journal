@@ -18,7 +18,7 @@ import {
   parseISO,
 } from "date-fns";
 import { fetchTrades, tradesQueryKey, type Trade } from "@/lib/trades";
-import { navigateToPage, focusDailyView } from "@/lib/nav-bus";
+import { focusDailyView } from "@/lib/nav-bus";
 import { useQuery } from "@tanstack/react-query";
 
 export function TradingCalendar() {
@@ -44,8 +44,7 @@ export function TradingCalendar() {
 
   const handleDayClick = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    navigateToPage("daily");
-    setTimeout(() => focusDailyView(dateStr), 50);
+    focusDailyView(dateStr);
   };
 
   // Generate calendar grid

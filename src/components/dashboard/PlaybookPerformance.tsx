@@ -255,10 +255,11 @@ function QuickStat({
 
 function EmptyState() {
   return (
-    <div className="h-[200px] flex items-center justify-center border-2 border-dashed border-slate-50 dark:border-slate-800 rounded-[24px]">
-      <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">
+    <div className="h-[200px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-[24px]">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
         No data for this period
       </p>
+      <p className="text-[10px] text-muted-foreground">Widen the date range on Stats.</p>
     </div>
   );
 }

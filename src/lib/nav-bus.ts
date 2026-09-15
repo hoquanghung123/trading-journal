@@ -1,28 +1,78 @@
-// Tiny pub/sub for cross-page navigation (Bias Expect <-> Trade Log)
+// Pub/sub for cross-page navigation + URL sync (?page=&date=)
 
-type Listener = (entryId: string, asset?: string) => void;
-const listeners = new Set<Listener>();
+export const PAGE_IDS = [
+  "dashboard",
+  "bias",
+  "trades",
+  "psychology",
+  "playbook",
+  "daily",
+  "review",
+  "progress",
+  "account",
+] as const;
 
-export function onBiasFocus(fn: Listener): () => void {
-  listeners.add(fn);
+export type PageId = (typeof PAGE_IDS)[number];
+
+export const PAGE_TITLES: Record<PageId, string> = {
+  dashboard: "Stats",
+  bias: "Bias Expect",
+  trades: "Trade Log",
+  psychology: "Psychology",
+  playbook: "Playbook",
+  daily: "Daily",
+  review: "Review",
+  progress: "Progress",
+  account: "Account",
+};
+
+function isPageId(v: string | null | undefined): v is PageId {
+  return !!v && (PAGE_IDS as readonly string[]).includes(v);
+}
+
+export function parseNavFromUrl(): { page: PageId; date?: string } {
+  if (typeof window === "undefined") return { page: "bias" };
+  const params = new URLSearchParams(window.location.search);
+  const pageParam = params.get("page");
+  const date = params.get("date") || undefined;
+  if (isPageId(pageParam)) return { page: pageParam, date };
+  try {
+    const stored = localStorage.getItem("terminal-active-page");
+    if (isPageId(stored)) return { page: stored, date };
+  } catch {
+    /* ignore */
+  }
+  return { page: "bias", date };
+}
+
+function writeUrl(page: PageId, date?: string) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.set("page", page);
+  if (page === "daily" && date) url.searchParams.set("date", date);
+  else url.searchParams.delete("date");
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next !== current) {
+    window.history.pushState({ page, date }, "", next);
+  }
+  document.title = `${PAGE_TITLES[page]} · Chartmate`;
+}
+
+type BiasListener = (entryId: string, asset?: string) => void;
+const biasListeners = new Set<BiasListener>();
+
+export function onBiasFocus(fn: BiasListener): () => void {
+  biasListeners.add(fn);
   return () => {
-    listeners.delete(fn);
+    biasListeners.delete(fn);
   };
 }
 
 export function focusBiasEntry(entryId: string, asset?: string) {
-  listeners.forEach((fn) => fn(entryId, asset));
+  biasListeners.forEach((fn) => fn(entryId, asset));
 }
 
-// Page navigation bus
-export type PageId =
-  | "dashboard"
-  | "bias"
-  | "trades"
-  | "psychology"
-  | "playbook"
-  | "daily"
-  | "review";
 type PageListener = (p: PageId) => void;
 const pageListeners = new Set<PageListener>();
 
@@ -33,11 +83,14 @@ export function onPageChange(fn: PageListener): () => void {
   };
 }
 
-export function navigateToPage(p: PageId) {
+export function navigateToPage(p: PageId, extra?: { date?: string }) {
+  writeUrl(p, extra?.date);
   pageListeners.forEach((fn) => fn(p));
+  if (extra?.date) {
+    dailyListeners.forEach((fn) => fn(extra.date!));
+  }
 }
 
-// Daily View Navigation
 type DailyListener = (date: string) => void;
 const dailyListeners = new Set<DailyListener>();
 
@@ -49,10 +102,11 @@ export function onDailyFocus(fn: DailyListener): () => void {
 }
 
 export function focusDailyView(dateString: string) {
+  writeUrl("daily", dateString);
+  pageListeners.forEach((fn) => fn("daily"));
   dailyListeners.forEach((fn) => fn(dateString));
 }
 
-// Playbook Navigation
 type PlaybookListener = (id: string) => void;
 const playbookListeners = new Set<PlaybookListener>();
 
@@ -67,7 +121,6 @@ export function focusPlaybookModel(id: string) {
   playbookListeners.forEach((fn) => fn(id));
 }
 
-// Celebration Navigation
 type CelebrationListener = (streak: number) => void;
 const celebrationListeners = new Set<CelebrationListener>();
 
@@ -80,4 +133,19 @@ export function onShowCelebration(fn: CelebrationListener): () => void {
 
 export function triggerCelebration(streak: number) {
   celebrationListeners.forEach((fn) => fn(streak));
+}
+
+type NewTradeListener = () => void;
+const newTradeListeners = new Set<NewTradeListener>();
+
+export function onRequestNewTrade(fn: NewTradeListener): () => void {
+  newTradeListeners.add(fn);
+  return () => {
+    newTradeListeners.delete(fn);
+  };
+}
+
+export function requestNewTrade() {
+  navigateToPage("trades");
+  newTradeListeners.forEach((fn) => fn());
 }

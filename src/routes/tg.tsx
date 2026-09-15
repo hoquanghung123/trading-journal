@@ -829,9 +829,25 @@ function TgMiniApp() {
         <div className="appbar">
           <div className="logo">TJ</div>
           <div className="title">
-            <b style={{ fontSize: 14 }}>Trading Journal</b>
+            <b style={{ fontSize: 14 }}>Chartmate</b>
             <span>{cutoffLabel}</span>
           </div>
+          <a
+            href={`${typeof window !== "undefined" ? window.location.origin : ""}/?page=review`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#2cc7b4",
+              textDecoration: "none",
+              padding: "6px 10px",
+              border: "1px solid #1e3540",
+              borderRadius: 10,
+            }}
+          >
+            Review
+          </a>
           <div className="header-streak">
             <span className="fire">🔥</span>
             <div>

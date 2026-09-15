@@ -4,20 +4,15 @@ import {
   ChevronsRight,
   Filter,
   Activity,
-  Terminal as TerminalIcon,
-  Sparkles,
 } from "lucide-react";
 import {
   type DayEntry,
   type SlotKind,
-  type Session,
   fetchEntries,
   upsertEntry,
   deleteEntry,
   monthKey,
   uid,
-  resolveTradingViewUrl,
-  uploadChartImage,
   isPrepDay,
   calculateStreak,
 } from "@/lib/journal";
@@ -33,6 +28,9 @@ import { CelebrationModal } from "./CelebrationModal";
 import { onBiasFocus, onShowCelebration } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
+import { SessionChip } from "@/components/shared/SessionChip";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { navigateToPage } from "@/lib/nav-bus";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -101,6 +99,7 @@ export function JournalView() {
         const today = toLocalDateStr(new Date());
         const logs = await fetchPsychologyForDate(today);
         const daily = logs.find((l) => l.tradeId === null);
+        setTodayLog(daily);
 
         // If no daily log or no mood recorded, show prompt (or if in test mode)
         if (!daily || !daily.morningMood || isTest) {
@@ -295,6 +294,7 @@ export function JournalView() {
                   Journal Timeline
                 </p>
               </div>
+              <SessionChip />
             </div>
 
             <button
@@ -397,6 +397,24 @@ export function JournalView() {
         </div>
       </header>
 
+      <div className="px-4 pt-4 flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-1">
+          Today
+        </span>
+        <CheckChip
+          done={entries.some((e) => e.date === toLocalDateStr(new Date()))}
+          label="Bias logged"
+        />
+        <CheckChip done={!!todayLog?.morningMood} label="Psych check-in" onClick={() => navigateToPage("psychology")} />
+        <button
+          type="button"
+          onClick={() => navigateToPage("trades")}
+          className="text-[10px] font-bold text-primary hover:underline"
+        >
+          Log a trade
+        </button>
+      </div>
+
       <main className="px-4 py-5">
         {filtered.length === 0 ? (
           <Empty onAdd={addEntry} />
@@ -447,22 +465,43 @@ export function JournalView() {
   );
 }
 
+function CheckChip({
+  done,
+  label,
+  onClick,
+}: {
+  done: boolean;
+  label: string;
+  onClick?: () => void;
+}) {
+  const inner = (
+    <>
+      <span className={`w-1.5 h-1.5 rounded-full ${done ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
+      {label}
+    </>
+  );
+  const cls = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+    done ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10" : "border-border text-muted-foreground bg-card"
+  }`;
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={cls}>
+        {inner}
+      </button>
+    );
+  }
+  return <span className={cls}>{inner}</span>;
+}
+
 function Empty({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="bg-card rounded-[32px] border border-border p-16 text-center max-w-xl mx-auto mt-20 shadow-xl">
-      <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-        <Activity className="w-10 h-10 text-primary" />
-      </div>
-      <h2 className="text-2xl font-black tracking-tight text-foreground">Your Journal is Empty</h2>
-      <p className="text-sm font-medium text-muted-foreground mt-2 mb-8 leading-relaxed px-6">
-        Initialize your trading journey by recording your first analysis and bias expectations.
-      </p>
-      <button
-        onClick={onAdd}
-        className="forest-gradient inline-flex items-center gap-2 px-8 py-3 text-sm font-black text-white rounded-xl shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest"
-      >
-        <Plus className="w-4 h-4" /> Add Your First Day
-      </button>
-    </div>
+    <EmptyState
+      icon={Activity}
+      title="Your journal is empty"
+      description="Record your first analysis and bias expectations for the session."
+      actionLabel="Add your first day"
+      onAction={onAdd}
+      className="mt-20"
+    />
   );
 }

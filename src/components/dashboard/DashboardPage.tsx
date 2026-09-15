@@ -29,6 +29,7 @@ export function DashboardPage() {
     to: endOfMonth(new Date()),
   });
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [disciplinedOnly, setDisciplinedOnly] = useState(true);
 
   const { data: trades = [], isLoading: loadingTrades } = useQuery({
     queryKey: tradesQueryKey,
@@ -89,6 +90,7 @@ export function DashboardPage() {
   const stats = useMemo(() => {
     const activeTrades = filteredTrades;
     const total = activeTrades.length;
+    const cohort = disciplinedOnly ? activeTrades.filter((t) => t.complianceCheck) : activeTrades;
     if (total === 0)
       return {
         total: 0,
@@ -103,23 +105,21 @@ export function DashboardPage() {
 
     const disciplinedTrades = activeTrades.filter((t) => t.complianceCheck);
     const totalDisciplined = disciplinedTrades.length;
-    const wins = disciplinedTrades.filter((t) => t.actualRr > 0);
-    const winRate = totalDisciplined > 0 ? (wins.length / totalDisciplined) * 100 : 0;
+    const wins = cohort.filter((t) => t.actualRr > 0);
+    const winRate = cohort.length > 0 ? (wins.length / cohort.length) * 100 : 0;
     const totalPnl = activeTrades.reduce((acc, t) => acc + t.netPnl, 0);
 
-    // SQN Calculation based on disciplined trades
-    const pnls = disciplinedTrades.map((t) => t.netPnl);
-    const avgPnl = totalDisciplined > 0 ? totalPnl / totalDisciplined : 0;
-    const stdDev = totalDisciplined > 0 
-      ? Math.sqrt(pnls.map((p) => Math.pow(p - avgPnl, 2)).reduce((a, b) => a + b, 0) / totalDisciplined)
-      : 0;
-    const sqn = stdDev > 0 ? (avgPnl / stdDev) * Math.sqrt(totalDisciplined) : 0;
+    const pnls = cohort.map((t) => t.netPnl);
+    const avgPnl = cohort.length > 0 ? pnls.reduce((a, b) => a + b, 0) / cohort.length : 0;
+    const stdDev =
+      cohort.length > 0
+        ? Math.sqrt(pnls.map((p) => Math.pow(p - avgPnl, 2)).reduce((a, b) => a + b, 0) / cohort.length)
+        : 0;
+    const sqn = stdDev > 0 ? (avgPnl / stdDev) * Math.sqrt(cohort.length) : 0;
 
-    // Discipline Calculation
     const disciplined = disciplinedTrades.length;
     const discipline = (disciplined / total) * 100;
 
-    // R Calculations
     const totalR = activeTrades.reduce((acc, t) => acc + (t.actualRr || 0), 0);
     const totalMaxR = activeTrades.reduce((acc, t) => acc + (t.maxRr || 0), 0);
 
@@ -133,10 +133,10 @@ export function DashboardPage() {
       discipline,
       disciplined,
     };
-  }, [filteredTrades]);
+  }, [filteredTrades, disciplinedOnly]);
 
   const equityData = useMemo(() => {
-    const sorted = [...trades].sort((a, b) => a.entryTime.localeCompare(b.entryTime));
+    const sorted = [...filteredTrades].sort((a, b) => a.entryTime.localeCompare(b.entryTime));
     let running = 0;
     return sorted.map((t) => {
       running += t.netPnl;
@@ -145,11 +145,11 @@ export function DashboardPage() {
         value: Number(running.toFixed(2)),
       };
     });
-  }, [trades]);
+  }, [filteredTrades]);
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center p-8 bg-slate-50 dark:bg-slate-950">
+      <div className="h-full flex items-center justify-center p-8 bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -157,24 +157,37 @@ export function DashboardPage() {
 
   return (
     <TooltipProvider>
-      <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 p-3 sm:p-8 space-y-5 sm:space-y-10 font-sans mobile-pb">
+      <div className="h-full overflow-y-auto bg-background p-3 sm:p-8 space-y-5 sm:space-y-10 font-sans mobile-pb">
       {/* Page Header with Toggle */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Dashboard Overview
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+          Stats
         </h1>
-        <DateRangePicker date={dateRange} setDate={setDateRange} />
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setDisciplinedOnly((v) => !v)}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+              disciplinedOnly
+                ? "bg-primary text-white border-primary"
+                : "bg-card text-muted-foreground border-border"
+            }`}
+          >
+            {disciplinedOnly ? "Disciplined only" : "All trades"}
+          </button>
+          <DateRangePicker date={dateRange} setDate={setDateRange} />
+        </div>
       </div>
 
       {/* Tier 1: ACCOUNT PERFORMANCE */}
-      <div className="bg-white dark:bg-slate-900 rounded-[20px] sm:rounded-[32px] p-4 sm:p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+      <div className="bg-card rounded-[20px] sm:rounded-[32px] p-4 sm:p-8 border border-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 sm:mb-10">
-          <h2 className="text-[10px] sm:text-sm font-bold tracking-[0.2em] text-slate-900 dark:text-white uppercase">
+          <h2 className="text-[10px] sm:text-sm font-bold tracking-[0.2em] text-foreground uppercase">
             Account Performance
           </h2>
           <button
             onClick={() => setShowAccountModal(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-slate-50 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border border-slate-100 dark:border-slate-700"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-muted rounded-full text-xs font-bold text-muted-foreground hover:bg-muted/80 transition-all border border-border"
           >
             <Wallet className="w-4 h-4 text-primary" />
             <span>MANAGE ACCOUNT</span>
@@ -186,7 +199,7 @@ export function DashboardPage() {
             <EquityCurveChart data={equityData} height={window.innerWidth < 640 ? 250 : 350} />
           </div>
 
-          <div className="grid grid-cols-2 xl:grid-cols-1 gap-6 sm:gap-8 xl:border-l border-slate-50 dark:border-slate-800 xl:pl-12">
+          <div className="grid grid-cols-2 xl:grid-cols-1 gap-6 sm:gap-8 xl:border-l border-border xl:pl-12">
             <StatItem
               label="Total Trades"
               value={stats.total}
@@ -195,7 +208,7 @@ export function DashboardPage() {
             <StatItem
               label="Win Rate"
               value={`${stats.winRate.toFixed(1)}%`}
-              tooltip="Công thức: (Lệnh thắng đúng kỷ luật / Tổng lệnh đúng kỷ luật) × 100. Chỉ tính các lệnh có Compliance Check = True."
+              tooltip="Win rate over the selected cohort (Disciplined only vs All trades)."
             />
             <StatItem
               label="SQN"
@@ -243,9 +256,9 @@ export function DashboardPage() {
       <PlaybookPerformance trades={filteredTrades} playbooks={playbooks} />
 
       {/* Tier 3: Trading Calendar */}
-      <div className="bg-white dark:bg-slate-900 rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
-        <div className="p-5 sm:p-8 border-b border-slate-50 dark:border-slate-800">
-          <h2 className="text-[10px] sm:text-sm font-bold tracking-[0.2em] text-slate-900 dark:text-white uppercase">
+      <div className="bg-card rounded-[24px] sm:rounded-[32px] overflow-hidden border border-border">
+        <div className="p-5 sm:p-8 border-b border-border">
+          <h2 className="text-[10px] sm:text-sm font-bold tracking-[0.2em] text-foreground uppercase">
             Trading Calendar
           </h2>
         </div>
@@ -282,13 +295,13 @@ function StatItem({
   return (
     <div className="flex flex-col group/stat">
       <div className="flex items-center gap-1.5 mb-1">
-        <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+        <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">
           {label}
         </p>
         {tooltip && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="text-slate-300 hover:text-primary transition-colors">
+              <button className="text-muted-foreground hover:text-primary transition-colors">
                 <Info className="w-3 h-3" />
               </button>
             </TooltipTrigger>
@@ -298,7 +311,7 @@ function StatItem({
           </Tooltip>
         )}
       </div>
-      <h4 className={`text-lg sm:text-2xl font-black ${color || "text-slate-900 dark:text-white"}`}>
+      <h4 className={`text-lg sm:text-2xl font-black ${color || "text-foreground"}`}>
         {value}
       </h4>
     </div>
