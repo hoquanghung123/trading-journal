@@ -25,12 +25,11 @@ import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
 import { MonthView } from "./MonthView";
 import { CelebrationModal } from "./CelebrationModal";
-import { onBiasFocus, onShowCelebration } from "@/lib/nav-bus";
+import { onBiasFocus, onShowCelebration, onRequestNewBias, onBiasAssetFocus, navigateToPage } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
 import { SessionChip } from "@/components/shared/SessionChip";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { navigateToPage } from "@/lib/nav-bus";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -159,6 +158,22 @@ export function JournalView() {
       setPendingFocusId(entryId);
     });
   }, []);
+
+  useEffect(() => {
+    return onBiasAssetFocus((name) => {
+      setAsset(name);
+      setMonth("ALL");
+    });
+  }, []);
+
+  useEffect(() => {
+    return onRequestNewBias((name) => {
+      const fallback = ASSETS[0] ?? "XAUUSD";
+      const next = name || fallback;
+      if (name) setAsset(name);
+      setEditing(newEntry(next));
+    });
+  }, [ASSETS]);
 
   // Subscribe to celebration events from extension
   useEffect(() => {

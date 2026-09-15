@@ -12,7 +12,7 @@ interface Props {
 export function AuthGate({ children }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
+  const [mode, setMode] = useState<"signin" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -38,14 +38,6 @@ export function AuthGate({ children }: Props) {
         });
         if (error) throw error;
         toast.success("Check your email for a reset link.");
-      } else if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Account created. Check your email to verify.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -69,14 +61,11 @@ export function AuthGate({ children }: Props) {
   }
   if (session?.user) return <>{children(session.user)}</>;
 
-  const heading =
-    mode === "forgot" ? "Reset password" : mode === "signup" ? "Create account" : "Welcome back";
+  const heading = mode === "forgot" ? "Reset password" : "Welcome back";
   const sub =
     mode === "forgot"
       ? "We'll email you a link to choose a new password"
-      : mode === "signup"
-        ? "Sign up to start journaling"
-        : "Sign in to your journal";
+      : "Sign in to your journal";
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6 relative overflow-hidden">
@@ -174,25 +163,27 @@ export function AuthGate({ children }: Props) {
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  {mode === "forgot" ? "Send reset link" : mode === "signup" ? "Create account" : "Sign in"}
+                  {mode === "forgot" ? "Send reset link" : "Sign in"}
                 </>
               )}
             </button>
           </form>
 
           <div className="mt-10 pt-8 border-t border-border/50 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setErr(null);
-                setMode(mode === "signin" ? "signup" : "signin");
-              }}
-              className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
-            >
-              {mode === "signup" || mode === "forgot"
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Create one"}
-            </button>
+            {mode === "forgot" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setErr(null);
+                  setMode("signin");
+                }}
+                className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
+              >
+                Back to sign in
+              </button>
+            ) : (
+              <p className="text-xs font-medium text-muted-foreground">Invited accounts only</p>
+            )}
           </div>
         </div>
 

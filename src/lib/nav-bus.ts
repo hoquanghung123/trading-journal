@@ -147,5 +147,58 @@ export function onRequestNewTrade(fn: NewTradeListener): () => void {
 
 export function requestNewTrade() {
   navigateToPage("trades");
-  newTradeListeners.forEach((fn) => fn());
+  window.setTimeout(() => {
+    newTradeListeners.forEach((fn) => fn());
+  }, 80);
+}
+
+type OpenTradeListener = (id: string) => void;
+const openTradeListeners = new Set<OpenTradeListener>();
+
+export function onRequestOpenTrade(fn: OpenTradeListener): () => void {
+  openTradeListeners.add(fn);
+  return () => {
+    openTradeListeners.delete(fn);
+  };
+}
+
+export function requestOpenTrade(id: string) {
+  navigateToPage("trades");
+  window.setTimeout(() => {
+    openTradeListeners.forEach((fn) => fn(id));
+  }, 80);
+}
+
+type NewBiasListener = (asset?: string) => void;
+const newBiasListeners = new Set<NewBiasListener>();
+
+export function onRequestNewBias(fn: NewBiasListener): () => void {
+  newBiasListeners.add(fn);
+  return () => {
+    newBiasListeners.delete(fn);
+  };
+}
+
+export function requestNewBias(asset?: string) {
+  navigateToPage("bias");
+  window.setTimeout(() => {
+    newBiasListeners.forEach((fn) => fn(asset));
+  }, 80);
+}
+
+type BiasAssetListener = (asset: string) => void;
+const biasAssetListeners = new Set<BiasAssetListener>();
+
+export function onBiasAssetFocus(fn: BiasAssetListener): () => void {
+  biasAssetListeners.add(fn);
+  return () => {
+    biasAssetListeners.delete(fn);
+  };
+}
+
+export function focusBiasAsset(asset: string) {
+  navigateToPage("bias");
+  window.setTimeout(() => {
+    biasAssetListeners.forEach((fn) => fn(asset));
+  }, 80);
 }

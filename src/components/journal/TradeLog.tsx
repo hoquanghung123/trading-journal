@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   ExternalLink,
@@ -24,7 +24,13 @@ import {
 import { isWithinInterval, startOfDay, endOfDay, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { DateRangePicker } from "../shared/DateRangePicker";
 import { DateRange } from "react-day-picker";
-import { focusBiasEntry, focusPlaybookModel, navigateToPage, onRequestNewTrade } from "@/lib/nav-bus";
+import {
+  focusBiasEntry,
+  focusPlaybookModel,
+  navigateToPage,
+  onRequestNewTrade,
+  onRequestOpenTrade,
+} from "@/lib/nav-bus";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { CheckCircle2, ShieldAlert, AlertCircle, BookOpen } from "lucide-react";
 import { getAssetIconUrl } from "@/lib/symbols";
@@ -77,23 +83,67 @@ const gradeStyle: Record<string, string> = {
   B: "bg-destructive text-destructive-foreground shadow-destructive/20",
 };
 
+const FILTERS_KEY = "trade-log-filters";
+
+type SideFilter = "ALL" | "buy" | "sell";
+type OutcomeFilter = "ALL" | "Win" | "Loss" | "BE";
+type ComplianceFilter = "ALL" | "yes" | "no";
+
+interface PersistedFilters {
+  query?: string;
+  symbolFilter?: string;
+  sideFilter?: SideFilter;
+  outcomeFilter?: OutcomeFilter;
+  setupFilter?: string;
+  complianceFilter?: ComplianceFilter;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+function loadFilters(): PersistedFilters {
+  try {
+    const raw = localStorage.getItem(FILTERS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as PersistedFilters;
+  } catch {
+    return {};
+  }
+}
+
+function dateRangeFromSaved(saved: PersistedFilters): DateRange | undefined {
+  if (!saved.dateFrom) return undefined;
+  const from = parseISO(saved.dateFrom);
+  const to = saved.dateTo ? parseISO(saved.dateTo) : from;
+  if (Number.isNaN(+from)) return undefined;
+  return { from, to: Number.isNaN(+to) ? from : to };
+}
+
 export function TradeLog() {
+  const savedFilters = useMemo(() => loadFilters(), []);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
+    dateRangeFromSaved(savedFilters),
+  );
   const [loading, setLoading] = useState(true);
   const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [symbolFilter, setSymbolFilter] = useState("ALL");
-  const [sideFilter, setSideFilter] = useState<"ALL" | "buy" | "sell">("ALL");
-  const [outcomeFilter, setOutcomeFilter] = useState<"ALL" | "Win" | "Loss" | "BE">("ALL");
-  const [setupFilter, setSetupFilter] = useState("ALL");
-  const [complianceFilter, setComplianceFilter] = useState<"ALL" | "yes" | "no">("ALL");
+  const [query, setQuery] = useState(savedFilters.query ?? "");
+  const [symbolFilter, setSymbolFilter] = useState(savedFilters.symbolFilter ?? "ALL");
+  const [sideFilter, setSideFilter] = useState<SideFilter>(savedFilters.sideFilter ?? "ALL");
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>(
+    savedFilters.outcomeFilter ?? "ALL",
+  );
+  const [setupFilter, setSetupFilter] = useState(savedFilters.setupFilter ?? "ALL");
+  const [complianceFilter, setComplianceFilter] = useState<ComplianceFilter>(
+    savedFilters.complianceFilter ?? "ALL",
+  );
   const [viewOverride, setViewOverride] = useState<"table" | "gallery" | null>(() =>
     typeof window !== "undefined" && window.innerWidth < 1024 ? "gallery" : null,
   );
   const queryClient = useQueryClient();
+  const tradesRef = useRef(trades);
+  tradesRef.current = trades;
 
   const handleUpdateView = async (view: "table" | "gallery") => {
     setViewOverride(view);
@@ -146,6 +196,20 @@ export function TradeLog() {
     localStorage.setItem("trade-log-cols", JSON.stringify(cols));
   }, [cols]);
 
+  useEffect(() => {
+    const payload: PersistedFilters = {
+      query,
+      symbolFilter,
+      sideFilter,
+      outcomeFilter,
+      setupFilter,
+      complianceFilter,
+      dateFrom: dateRange?.from ? dateRange.from.toISOString() : undefined,
+      dateTo: dateRange?.to ? dateRange.to.toISOString() : undefined,
+    };
+    localStorage.setItem(FILTERS_KEY, JSON.stringify(payload));
+  }, [query, symbolFilter, sideFilter, outcomeFilter, setupFilter, complianceFilter, dateRange]);
+
   const reload = async () => {
     setLoading(true);
     try {
@@ -167,6 +231,27 @@ export function TradeLog() {
   };
 
   useEffect(() => onRequestNewTrade(openNew), []);
+
+  useEffect(
+    () =>
+      onRequestOpenTrade(async (id) => {
+        let list = tradesRef.current;
+        if (!list.length) {
+          try {
+            list = await fetchTrades();
+            setTrades(list);
+          } catch {
+            return;
+          }
+        }
+        const t = list.find((x) => x.id === id);
+        if (t) {
+          setEditing(t);
+          setOpen(true);
+        }
+      }),
+    [],
+  );
 
   const openEdit = (t: Trade) => {
     setEditing(t);

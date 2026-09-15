@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,8 +10,11 @@ import {
 } from "@/components/ui/command";
 import {
   PAGE_TITLES,
+  focusBiasAsset,
   navigateToPage,
+  requestNewBias,
   requestNewTrade,
+  requestOpenTrade,
   type PageId,
 } from "@/lib/nav-bus";
 import {
@@ -25,6 +28,10 @@ import {
   Plus,
   UserCircle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchTrades, tradesQueryKey, computeOutcome } from "@/lib/trades";
+import { fetchSymbols, symbolsQueryKey } from "@/lib/symbols";
+import { format, parseISO } from "date-fns";
 
 const PAGES: { id: PageId; icon: typeof Crosshair }[] = [
   { id: "bias", icon: Crosshair },
@@ -39,6 +46,22 @@ const PAGES: { id: PageId; icon: typeof Crosshair }[] = [
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
+
+  const { data: trades = [] } = useQuery({
+    queryKey: tradesQueryKey,
+    queryFn: fetchTrades,
+    enabled: open,
+  });
+  const { data: symbols = [] } = useQuery({
+    queryKey: symbolsQueryKey,
+    queryFn: fetchSymbols,
+    enabled: open,
+  });
+
+  const recentTrades = useMemo(
+    () => [...trades].sort((a, b) => b.entryTime.localeCompare(a.entryTime)).slice(0, 40),
+    [trades],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -57,7 +80,7 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Jump to a page or run an action…" />
+      <CommandInput placeholder="Jump, add bias, or search symbol / trade…" />
       <CommandList>
         <CommandEmpty>No results.</CommandEmpty>
         <CommandGroup heading="Actions">
@@ -69,6 +92,15 @@ export function CommandPalette() {
           >
             <Plus className="w-4 h-4" />
             New trade
+          </CommandItem>
+          <CommandItem
+            onSelect={() => {
+              setOpen(false);
+              requestNewBias();
+            }}
+          >
+            <Crosshair className="w-4 h-4" />
+            Add bias
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
@@ -89,6 +121,50 @@ export function CommandPalette() {
             );
           })}
         </CommandGroup>
+        {symbols.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Symbols">
+              {symbols.map((s) => (
+                <CommandItem
+                  key={s.id}
+                  value={`symbol ${s.name}`}
+                  onSelect={() => {
+                    setOpen(false);
+                    focusBiasAsset(s.name);
+                  }}
+                >
+                  <Crosshair className="w-4 h-4" />
+                  {s.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+        {recentTrades.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Trades">
+              {recentTrades.map((t) => {
+                const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl).label;
+                const when = format(parseISO(t.entryTime), "MMM d HH:mm");
+                return (
+                  <CommandItem
+                    key={t.id}
+                    value={`trade ${t.symbol} ${t.side} ${outcome} ${t.notes ?? ""} ${when}`}
+                    onSelect={() => {
+                      setOpen(false);
+                      requestOpenTrade(t.id);
+                    }}
+                  >
+                    <FileText className="w-4 h-4" />
+                    {t.symbol} {t.side} · {outcome} · {when}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </CommandDialog>
   );
