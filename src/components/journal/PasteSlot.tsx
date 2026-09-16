@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { ImageIcon, Loader2, Maximize2, Replace, Trash2 } from "lucide-react";
 import {
   deleteChartImage,
   getChartUrl,
@@ -18,6 +18,10 @@ interface Props {
   onFocus?: () => void;
   className?: string;
   children?: React.ReactNode;
+  /** Hover/touch toolbar: replace, expand, remove. Off on tape slots. */
+  showChartActions?: boolean;
+  /** Chip that marks this slot as the Cmd+V target. */
+  showPasteTarget?: boolean;
 }
 
 export function PasteSlot({
@@ -29,6 +33,8 @@ export function PasteSlot({
   onFocus,
   className,
   children,
+  showChartActions = false,
+  showPasteTarget = false,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -65,6 +71,13 @@ export function PasteSlot({
       setBusy(false);
       onBusyChangeRef.current?.(false);
     }
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const old = image;
+    onChange(undefined);
+    if (old) deleteChartImage(old).catch(() => {});
   };
 
   const handleDataUrl = async (dataUrl: string) => {
@@ -184,9 +197,51 @@ export function PasteSlot({
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       )}
-      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-card/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-widest text-primary font-black border border-primary/10">
-        {label}
-      </div>
+      {displayUrl && (
+        <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-card/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-widest text-primary font-black border border-primary/10">
+          {label}
+        </div>
+      )}
+      {showPasteTarget && focused && (
+        <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg bg-primary text-primary-foreground shadow-sm text-[9px] uppercase tracking-widest font-black">
+          Paste target
+        </div>
+      )}
+      {showChartActions && displayUrl && !busy && (
+        <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
+          <button
+            type="button"
+            title="Replace chart"
+            onClick={(e) => {
+              e.stopPropagation();
+              onFocus?.();
+              fileRef.current?.click();
+            }}
+            className="w-8 h-8 rounded-lg bg-card/95 border border-border shadow-sm flex items-center justify-center text-foreground hover:border-primary/50"
+          >
+            <Replace className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Expand chart"
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoom(true);
+            }}
+            className="w-8 h-8 rounded-lg bg-card/95 border border-border shadow-sm flex items-center justify-center text-foreground hover:border-primary/50"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Remove chart"
+            onClick={handleRemove}
+            className="w-8 h-8 rounded-lg bg-card/95 border border-destructive/30 shadow-sm flex items-center justify-center text-destructive hover:bg-destructive hover:text-white"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {children}
       {zoom && displayUrl && (
         <Lightbox

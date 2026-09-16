@@ -17,6 +17,8 @@ import {
   isPrepDay,
   calculateStreak,
   journalTradingDate,
+  previousEntryForAsset,
+  applyHtfCarry,
 } from "@/lib/journal";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
@@ -35,9 +37,9 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
 import { supabase } from "@/integrations/supabase/client";
 
-const newEntry = (asset: string): DayEntry => ({
+const emptyEntry = (asset: string, date = journalTradingDate()): DayEntry => ({
   id: uid(),
-  date: journalTradingDate(),
+  date,
   asset,
   yearlyBias: "consolidation",
   weeklyBias: "consolidation",
@@ -48,6 +50,12 @@ const newEntry = (asset: string): DayEntry => ({
   dailyCorrect: false,
   h4: {},
 });
+
+const newEntry = (asset: string, prior: DayEntry[] = [], date = journalTradingDate()): DayEntry => {
+  const base = emptyEntry(asset, date);
+  const prev = previousEntryForAsset(prior, asset, date);
+  return prev ? applyHtfCarry(base, prev, "bias") : base;
+};
 
 export function JournalView() {
   const { data: assetList = [] } = useSymbols();
@@ -259,9 +267,9 @@ export function JournalView() {
       const fallback = ASSETS[0] ?? "XAUUSD";
       const next = name || fallback;
       if (name) setAsset(name);
-      setEditing(newEntry(next));
+      setEditing(newEntry(next, entries));
     });
-  }, [ASSETS]);
+  }, [ASSETS, entries]);
 
   // Subscribe to celebration events from extension
   useEffect(() => {
@@ -398,12 +406,12 @@ export function JournalView() {
     const today = journalTradingDate();
     const targetAsset = asset === "ALL" ? fallback : asset;
     const existing = entries.find((e) => e.date === today && e.asset === targetAsset);
-    setEditing(existing ?? newEntry(targetAsset));
+    setEditing(existing ?? newEntry(targetAsset, entries));
     setTimeout(jumpRight, 100);
   };
 
   const createTodayDraft = (assetName: string) => {
-    const draft = newEntry(assetName);
+    const draft = newEntry(assetName, entries);
     setTodayDrafts((d) => ({ ...d, [assetName]: draft }));
     setExpandTapeId(draft.id);
   };
@@ -651,8 +659,9 @@ export function JournalView() {
       {editing && (
         <EditDayModal
           entry={editing}
+          priorEntries={entries}
           onSave={upsert}
-          onDelete={remove}
+          onDelete={entries.some((e) => e.id === editing.id) ? remove : undefined}
           onClose={() => setEditing(null)}
         />
       )}

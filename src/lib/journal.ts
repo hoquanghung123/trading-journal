@@ -259,7 +259,7 @@ export interface DayEntry {
   dailyImg?: string;
   dailyBias: Bias;
   dailyCorrect: boolean;
-  h4: Record<string, { img?: string; bias?: Bias }>;
+  h4: Record<string, { img?: string; bias?: Bias; notes?: string }>;
   notes?: string;
 }
 
@@ -301,7 +301,7 @@ const parseH4 = (val: any) => {
   for (const s of ["ASIA", "LDN", "NY", "NY AM", "NY PM"] as const) {
     const v = val[s];
     if (typeof v === "string") res[s] = { img: v };
-    else if (v && typeof v === "object") res[s] = { img: v.img, bias: v.bias };
+    else if (v && typeof v === "object") res[s] = { img: v.img, bias: v.bias, notes: v.notes };
   }
   return res;
 };
@@ -459,6 +459,67 @@ export function monthKey(date: string): string {
   return date.slice(0, 7);
 }
 
+export function isMonthlyOutlookDay(date: string): boolean {
+  return weekdayOf(date) === "MON" || date.endsWith("-01");
+}
+
+/** ISO week key, e.g. 2026-W38. */
+export function isoWeekKey(date: string): string {
+  const d = new Date(date + "T00:00:00");
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - day);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+export function previousEntryForAsset(
+  entries: DayEntry[],
+  asset: string,
+  date: string,
+  excludeId?: string,
+): DayEntry | undefined {
+  return entries
+    .filter((e) => e.asset === asset && e.date < date && e.id !== excludeId)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+}
+
+export function lastMondayEntryForAsset(
+  entries: DayEntry[],
+  asset: string,
+  date: string,
+  excludeId?: string,
+): DayEntry | undefined {
+  return entries
+    .filter(
+      (e) =>
+        e.asset === asset &&
+        e.date <= date &&
+        e.id !== excludeId &&
+        weekdayOf(e.date) === "MON",
+    )
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+}
+
+/** Copy HTF biases (and optionally chart paths) from a prior entry. */
+export function applyHtfCarry(
+  target: DayEntry,
+  source: DayEntry,
+  mode: "bias" | "full" = "bias",
+): DayEntry {
+  const weekly = isoWeekKey(target.date) === isoWeekKey(source.date);
+  const monthly = monthKey(target.date) === monthKey(source.date);
+  return {
+    ...target,
+    yearlyBias: source.yearlyBias,
+    yearlyImg: mode === "full" ? source.yearlyImg : target.yearlyImg,
+    weeklyBias: weekly ? source.weeklyBias : target.weeklyBias,
+    weeklyImg: mode === "full" && weekly ? source.weeklyImg : target.weeklyImg,
+    monthlyBias: monthly ? source.monthlyBias : target.monthlyBias,
+    monthlyImg: mode === "full" && monthly ? source.monthlyImg : target.monthlyImg,
+  };
+}
+
 export function uid() {
   return generateId();
 }
@@ -586,6 +647,18 @@ export function getChartUrl(path: string): string {
 export async function deleteChartImage(path?: string): Promise<void> {
   if (!path || path.startsWith("data:") || path.startsWith("http")) return;
   await deleteFromR2({ data: path });
+}
+
+/** Re-upload an existing chart so two days never share one storage path. */
+export async function duplicateChartImage(path?: string): Promise<string | undefined> {
+  if (!path) return undefined;
+  if (path.startsWith("data:")) return uploadChartImage(path);
+  const url = getChartUrl(path);
+  const absolute =
+    url.startsWith("http") || url.startsWith("data:")
+      ? url
+      : `${typeof window !== "undefined" ? window.location.origin : ""}${url}`;
+  return uploadChartImage(absolute);
 }
 
 /**
