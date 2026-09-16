@@ -7,6 +7,7 @@ import {
   ACHIEVEMENT_CONFIG,
   fetchUserAchievements,
 } from "@/lib/achievements";
+import { journalTradingDate } from "@/lib/journal";
 import { toast } from "sonner";
 
 export function useAchievementTracker() {
@@ -21,9 +22,9 @@ export function useAchievementTracker() {
 
       // 0. Discipline Check (Specific to the current trade)
       if (currentTrade) {
-        const date = new Date(currentTrade.entryTime).toISOString().split("T")[0];
+        const date = journalTradingDate(currentTrade.entryTime);
         const tradesToday = trades.filter(
-          (t) => new Date(t.entryTime).toISOString().split("T")[0] === date,
+          (t) => journalTradingDate(t.entryTime) === date,
         );
 
         if (currentTrade.riskPercent && currentTrade.riskPercent > 1) {
@@ -51,7 +52,7 @@ export function useAchievementTracker() {
       );
 
       for (const trade of sortedTrades) {
-        const date = new Date(trade.entryTime).toISOString().split("T")[0];
+        const date = journalTradingDate(trade.entryTime);
         tradesByDate[date] = (tradesByDate[date] || 0) + 1;
 
         const isLowRisk = (trade.riskPercent || 0) <= 1;

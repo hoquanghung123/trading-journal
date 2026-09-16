@@ -11,7 +11,7 @@ import {
 import { useEffect } from "react";
 import type { PsychologyLog } from "@/lib/psychology";
 import type { Trade } from "@/lib/trades";
-import { format } from "date-fns";
+import { journalTradingDate } from "@/lib/journal";
 
 interface Props {
   date: string;
@@ -38,7 +38,7 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
 
   const daily = logs.find((l) => l.date === date && l.tradeId === null);
   const dayTrades = trades
-    .filter((t) => format(new Date(t.entryTime), "yyyy-MM-dd") === date)
+    .filter((t) => journalTradingDate(t.entryTime) === date)
     .sort((a, b) => +new Date(a.entryTime) - +new Date(b.entryTime));
   const tradeLogsById = new Map(logs.filter((l) => l.tradeId).map((l) => [l.tradeId as string, l]));
 

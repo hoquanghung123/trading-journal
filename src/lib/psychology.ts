@@ -7,6 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "./utils";
+import { journalTradingDate } from "./journal";
 
 export interface PsychologyLog {
   id: string;
@@ -221,5 +222,5 @@ export function toNyDateStr(d: Date | string): string {
 }
 
 export function todayNyDateStr(): string {
-  return toNyDateStr(new Date());
+  return journalTradingDate();
 }

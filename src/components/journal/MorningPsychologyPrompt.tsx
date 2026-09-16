@@ -5,8 +5,8 @@ import {
   type PsychologyLog,
   upsertPsychologyLog,
   newDailyLog,
-  toLocalDateStr,
 } from "@/lib/psychology";
+import { journalTradingDate } from "@/lib/journal";
 import { toast } from "sonner";
 
 interface Props {
@@ -31,7 +31,7 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
 
     setSaving(true);
     try {
-      const log = existingLog ?? newDailyLog(toLocalDateStr(new Date()));
+      const log = existingLog ?? newDailyLog(journalTradingDate());
       await upsertPsychologyLog({
         ...log,
         morningMood: mood,

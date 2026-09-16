@@ -6,6 +6,7 @@ import {
   type DayEntry,
   type StreakStats,
   ddmm,
+  journalTradingDate,
 } from "@/lib/journal";
 import { motion } from "framer-motion";
 import {
@@ -28,8 +29,6 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameDay,
-  isToday,
   addMonths,
   subMonths,
   startOfWeek,
@@ -260,7 +259,7 @@ export function ProgressView() {
                     const dateStr = format(day, "yyyy-MM-dd");
                     const isStreak = stats.streakDays.includes(dateStr);
                     const isCurrMonth = day.getMonth() === currentMonth.getMonth();
-                    const today = isToday(day);
+                    const today = format(day, "yyyy-MM-dd") === journalTradingDate();
 
                     return (
                       <div
@@ -297,19 +296,19 @@ export function ProgressView() {
                   <CompactCheck
                     label="W"
                     active={entries.some(
-                      (e) => isToday(new Date(e.date + "T00:00:00")) && !!e.weeklyImg,
+                      (e) => e.date === journalTradingDate() && !!e.weeklyImg,
                     )}
                   />
                   <CompactCheck
                     label="D"
                     active={entries.some(
-                      (e) => isToday(new Date(e.date + "T00:00:00")) && !!e.dailyImg,
+                      (e) => e.date === journalTradingDate() && !!e.dailyImg,
                     )}
                   />
                   <CompactCheck
                     label="H4"
                     active={entries.some(
-                      (e) => isToday(new Date(e.date + "T00:00:00")) && !!e.h4["ASIA"]?.img,
+                      (e) => e.date === journalTradingDate() && !!e.h4["ASIA"]?.img,
                     )}
                   />
                 </div>

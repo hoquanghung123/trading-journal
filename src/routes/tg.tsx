@@ -10,6 +10,10 @@ import {
   uploadChartImage,
   getChartUrl,
   weekdayOf,
+  journalTradingDate,
+  secondsUntilJournalReset,
+  isBeforeJournalReset,
+  addCalendarDays,
   type DayEntry,
   type Bias,
 } from "../lib/journal";
@@ -34,20 +38,13 @@ type AuthState = "loading" | "ok" | "unlinked" | "error";
 const TODAY_CHIP = "__today__";
 
 // ─── Day Reset helpers ────────────────────────────────────────────────────────
-/** Cutoff = 07:00 AM VN (GMT+7) = 00:00 UTC — synced with Web App */
+/** Journal day rolls at 17:00 America/New_York. */
 function getTradingDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return journalTradingDate();
 }
 
 function getSecondsUntilCutoff(): number {
-  const now = new Date();
-  const vnMs = now.getTime() + 7 * 3600 * 1000;
-  const vnNow = new Date(vnMs);
-  const todayCutoff = new Date(vnMs);
-  todayCutoff.setUTCHours(7, 0, 0, 0);
-  let diff = (todayCutoff.getTime() - vnNow.getTime()) / 1000;
-  if (diff <= 0) diff += 86400;
-  return Math.floor(diff);
+  return secondsUntilJournalReset();
 }
 
 function fmtCountdown(secs: number): string {
@@ -526,10 +523,9 @@ function StreakScreen({ entries }: { entries: DayEntry[] }) {
 
   // Last 28 days calendar
   const days: { date: string; done: boolean }[] = [];
+  const today = journalTradingDate();
   for (let i = 27; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
+    const dateStr = addCalendarDays(today, -i);
     days.push({ date: dateStr, done: stats.streakDays.includes(dateStr) });
   }
 
@@ -778,7 +774,7 @@ function TgMiniApp() {
 
   // ── Streak stats ──────────────────────────────────────────────────────────────
   const stats = calculateStreak(entries);
-  const isBeforeCutoff = new Date().getUTCHours() + 7 < 7;
+  const isBeforeCutoff = isBeforeJournalReset();
   const cutoffLabel = `Ngày GD: ${tradingDate}`;
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -871,7 +867,7 @@ function TgMiniApp() {
           }}
         >
           <div>
-            <div style={{ color: "#778792", fontSize: 11, marginBottom: 2 }}>Daily Reset (07:00 AM VN)</div>
+            <div style={{ color: "#778792", fontSize: 11, marginBottom: 2 }}>Daily Reset (5:00 PM NY)</div>
             <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#2cc7b4" }}>
               {fmtCountdown(countdown)}
             </div>

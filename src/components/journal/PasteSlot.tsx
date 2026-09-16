@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ImageIcon, ClipboardPaste, Loader2, Maximize2 } from "lucide-react";
+import { ImageIcon, Loader2 } from "lucide-react";
 import {
   deleteChartImage,
   getChartUrl,
@@ -31,6 +31,7 @@ export function PasteSlot({
   children,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
   const [displayUrl, setDisplayUrl] = useState<string>("");
@@ -124,7 +125,10 @@ export function PasteSlot({
     <div
       ref={ref}
       tabIndex={0}
-      onClick={() => onFocus?.()}
+      onClick={() => {
+        onFocus?.();
+        if (!displayUrl) fileRef.current?.click();
+      }}
       onDoubleClick={() => displayUrl && setZoom(true)}
       onFocus={onFocus}
       onDragOver={(e) => {
@@ -159,11 +163,22 @@ export function PasteSlot({
             {label}
           </span>
           <span className="flex flex-col items-center gap-1 opacity-60 text-[9px] font-bold text-center px-4">
-            <span className="flex items-center gap-1.5">CLICK TO SELECT</span>
-            <span className="hidden sm:inline">THEN CTRL+V TO PASTE</span>
+            <span>Tap to upload</span>
+            <span className="hidden sm:inline">or paste image / TradingView URL</span>
           </span>
         </div>
       )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f && f.type.startsWith("image/")) void handleFile(f);
+        }}
+      />
       {busy && (
         <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />

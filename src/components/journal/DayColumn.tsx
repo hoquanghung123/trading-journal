@@ -1,7 +1,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { Edit3, Check } from "lucide-react";
-import type { DayEntry, Session, SlotKind } from "@/lib/journal";
-import { biasStyle, biasLabel, ddmm, weekdayOf, getSessionsForAsset } from "@/lib/journal";
+import {
+  type DayEntry,
+  type Session,
+  type SlotKind,
+  biasStyle,
+  biasLabel,
+  ddmm,
+  weekdayOf,
+  getSessionsForAsset,
+  isHtfBiasSet,
+} from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -136,7 +145,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
                 >
                   <div className="flex items-center justify-center gap-1">
                     {s}
-                    {entry.h4[s]?.bias ? (
+                    {isHtfBiasSet(entry.h4[s]?.bias, entry.h4[s]?.img) ? (
                       <span
                         className="px-1 py-0.5 rounded-[4px] text-[7px] font-black leading-none shrink-0"
                         style={biasStyle(entry.h4[s]!.bias!)}
@@ -166,9 +175,9 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             onFocus={() => focus(`h4-${session}` as SlotKind)}
             className="h-52 rounded-xl overflow-hidden border border-border/50"
           >
-            {entry.h4[session]?.bias && (
+            {isHtfBiasSet(entry.h4[session]?.bias, entry.h4[session]?.img) && (
               <span
-                className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
+                className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-black uppercase tracking-[0.18em] shadow-md leading-none"
                 style={biasStyle(entry.h4[session]!.bias!)}
               >
                 {biasLabel(entry.h4[session]!.bias!)}
@@ -213,12 +222,14 @@ function SlotWithBias({
     >
       {!hideBiasAndTick && (
         <>
-          <span
-            className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
-            style={biasStyle(bias)}
-          >
-            {biasLabel(bias)}
-          </span>
+          {isHtfBiasSet(bias, image) && (
+            <span
+              className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
+              style={biasStyle(bias)}
+            >
+              {biasLabel(bias)}
+            </span>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();

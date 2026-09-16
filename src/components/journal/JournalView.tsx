@@ -15,6 +15,7 @@ import {
   uid,
   isPrepDay,
   calculateStreak,
+  journalTradingDate,
 } from "@/lib/journal";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
@@ -27,7 +28,7 @@ import { MonthView } from "./MonthView";
 import { CelebrationModal } from "./CelebrationModal";
 import { onBiasFocus, onShowCelebration, onRequestNewBias, onBiasAssetFocus, navigateToPage } from "@/lib/nav-bus";
 import { toast } from "sonner";
-import { fetchPsychologyForDate, toLocalDateStr, type PsychologyLog } from "@/lib/psychology";
+import { fetchPsychologyForDate, type PsychologyLog } from "@/lib/psychology";
 import { SessionChip } from "@/components/shared/SessionChip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
@@ -35,7 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const newEntry = (asset: string): DayEntry => ({
   id: uid(),
-  date: new Date().toISOString().slice(0, 10),
+  date: journalTradingDate(),
   asset,
   yearlyBias: "consolidation",
   weeklyBias: "consolidation",
@@ -51,7 +52,12 @@ export function JournalView() {
   const { data: assetList = [] } = useSymbols();
   const ASSETS = useMemo(() => assetList.filter((s) => !s.isForex).map((s) => s.name), [assetList]);
 
-  const { data: entries = [] } = useQuery({
+  const {
+    data: entries = [],
+    isPending: entriesPending,
+    isError: entriesError,
+    refetch: refetchEntries,
+  } = useQuery({
     queryKey: ["journal_entries"],
     queryFn: () => fetchEntries(),
   });
@@ -95,7 +101,7 @@ export function JournalView() {
 
         if (!isTimePassed && !isTest) return;
 
-        const today = toLocalDateStr(new Date());
+        const today = journalTradingDate();
         const logs = await fetchPsychologyForDate(today);
         const daily = logs.find((l) => l.tradeId === null);
         setTodayLog(daily);
@@ -219,7 +225,7 @@ export function JournalView() {
   }, [entries]);
 
   const filtered = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = journalTradingDate();
     const forexNames = new Set(assetList.filter((s) => s.isForex).map((s) => s.name));
     return [...entries]
       .filter((e) => !forexNames.has(e.asset))
@@ -417,7 +423,7 @@ export function JournalView() {
           Today
         </span>
         <CheckChip
-          done={entries.some((e) => e.date === toLocalDateStr(new Date()))}
+          done={entries.some((e) => e.date === journalTradingDate())}
           label="Bias logged"
         />
         <CheckChip done={!!todayLog?.morningMood} label="Psych check-in" onClick={() => navigateToPage("psychology")} />
@@ -431,8 +437,32 @@ export function JournalView() {
       </div>
 
       <main className="px-4 py-5">
-        {filtered.length === 0 ? (
+        {entriesPending ? (
+          <BiasSkeleton today={asset === "TODAY" && viewMode !== "month"} />
+        ) : entriesError ? (
+          <EmptyState
+            icon={Activity}
+            title="Couldn't load bias"
+            description="Check your connection and try again."
+            actionLabel="Retry"
+            onAction={() => refetchEntries()}
+            className="mt-20"
+          />
+        ) : entries.length === 0 ? (
           <Empty onAdd={addEntry} />
+        ) : filtered.length === 0 ? (
+          <FilterEmpty
+            asset={asset}
+            month={month}
+            onAdd={addEntry}
+            onClear={() => {
+              setMonth("ALL");
+              if (asset === "TODAY") {
+                const first = ASSETS.find((a) => entries.some((e) => e.asset === a));
+                setAsset(first ?? ASSETS[0] ?? "TODAY");
+              }
+            }}
+          />
         ) : viewMode === "month" ? (
           <MonthView entries={filtered} onUpdate={upsert} asset={asset} />
         ) : asset === "TODAY" ? (
@@ -518,5 +548,63 @@ function Empty({ onAdd }: { onAdd: () => void }) {
       onAction={onAdd}
       className="mt-20"
     />
+  );
+}
+
+function FilterEmpty({
+  asset,
+  month,
+  onAdd,
+  onClear,
+}: {
+  asset: string;
+  month: string;
+  onAdd: () => void;
+  onClear: () => void;
+}) {
+  const monthLabel =
+    month === "ALL"
+      ? null
+      : new Date(`${month}-01T12:00:00`).toLocaleString("en-US", { month: "long", year: "numeric" });
+  const title =
+    asset === "TODAY" ? "No bias for today" : monthLabel ? `No bias for ${asset} in ${monthLabel}` : `No bias for ${asset}`;
+  const description =
+    asset === "TODAY"
+      ? "Nothing logged for this trading day yet. Add a day or show your existing journal."
+      : "This filter doesn't match any entries. Clear it to see the rest of your journal.";
+
+  return (
+    <EmptyState
+      icon={Filter}
+      title={title}
+      description={description}
+      actionLabel="Add Day"
+      onAction={onAdd}
+      secondaryLabel={asset === "TODAY" ? "Show all days" : "Clear filters"}
+      onSecondary={onClear}
+      className="mt-20"
+    />
+  );
+}
+
+function BiasSkeleton({ today }: { today: boolean }) {
+  if (today) {
+    return (
+      <div className="space-y-3 max-w-4xl">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-20 rounded-2xl border border-border bg-muted/40 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="flex gap-3 overflow-hidden">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-[28rem] w-[85vw] md:w-[calc((100vw-var(--sidebar-width)-64px)/3)] shrink-0 rounded-2xl border border-border bg-muted/40 animate-pulse"
+        />
+      ))}
+    </div>
   );
 }

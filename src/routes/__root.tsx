@@ -16,10 +16,12 @@ import {
   uploadChartImage,
   upsertEntry,
   fetchEntries,
-  Session,
   weekdayOf,
   isPrepDay,
   calculateStreak,
+  journalTradingDate,
+  getActiveKillzone,
+  getSessionsForAsset,
   type DayEntry,
 } from "../lib/journal";
 import { focusBiasEntry, navigateToPage, triggerCelebration } from "../lib/nav-bus";
@@ -125,7 +127,7 @@ function RootComponent() {
         return;
       }
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = journalTradingDate();
       const tf = timeframe.toUpperCase();
 
       // Early validation for Monthly
@@ -187,20 +189,13 @@ function RootComponent() {
           toast.info("Đang lưu vào khung DAILY...");
           updatedEntry.dailyImg = path;
         } else {
-          const hour = new Date().getHours();
-          const SPLIT_NY_ASSETS = ["ES1!", "YM1!", "NQ1!"];
-          let session: Session = "ASIA";
-
-          if (hour >= 12 && hour < 18) {
-            session = "LDN";
-          } else if (hour >= 18 || hour < 5) {
-            if (SPLIT_NY_ASSETS.includes(targetAsset)) {
-              if (hour >= 18 && hour < 23) session = "NY AM";
-              else session = "NY PM";
-            } else {
-              session = "NY";
-            }
-          }
+          const kz = getActiveKillzone().session;
+          const sessions = getSessionsForAsset(targetAsset);
+          const session = sessions.includes(kz)
+            ? kz
+            : kz === "NY AM" || kz === "NY PM"
+              ? "NY"
+              : sessions[0] ?? "ASIA";
 
           toast.info(`Đang lưu vào khung H4 (${session})...`);
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };

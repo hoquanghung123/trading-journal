@@ -11,14 +11,13 @@ import {
   POST_EMOTIONS,
   type PsychologyLog,
 } from "@/lib/psychology";
-import { format } from "date-fns";
-import { nyDateString } from "@/lib/journal";
+import { journalTradingDate } from "@/lib/journal";
 import { PsychologyCalendar } from "./PsychologyCalendar";
 import { PsychologyDayTimeline } from "./PsychologyDayTimeline";
 import { toast } from "sonner";
 
 export function PsychologyView() {
-  const [date, setDate] = useState<string>(() => format(new Date(), "yyyy-MM-dd"));
+  const [date, setDate] = useState<string>(() => journalTradingDate());
   const [trades, setTrades] = useState<Trade[]>([]);
   const [logs, setLogs] = useState<PsychologyLog[]>([]);
   const [selectedTradeId, setSelectedTradeId] = useState<string>("");
@@ -49,7 +48,7 @@ export function PsychologyView() {
   // Trades placed on the selected date — compared in **New York** timezone
   // because users enter entry_time in NY local time.
   const tradesForDate = useMemo(
-    () => trades.filter((t) => nyDateString(t.entryTime) === date),
+    () => trades.filter((t) => journalTradingDate(t.entryTime) === date),
     [trades, date],
   );
 

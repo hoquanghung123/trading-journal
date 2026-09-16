@@ -7,6 +7,7 @@ import {
   weekdayOf,
   biasStyle,
   biasLabel,
+  isHtfBiasSet,
 } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
@@ -130,7 +131,9 @@ function MonthBox({
             {firstEntry && (
               <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
                 {BIASES.map((b) => {
-                  const active = firstEntry.yearlyBias === b;
+                  const active =
+                    firstEntry.yearlyBias === b &&
+                    (b !== "consolidation" || isHtfBiasSet(firstEntry.yearlyBias, yearlyImg));
                   return (
                     <button
                       key={b}
@@ -164,7 +167,7 @@ function MonthBox({
             }}
             className="h-[300px] rounded-2xl border border-border/50"
           >
-            {firstEntry?.yearlyBias && (
+            {isHtfBiasSet(firstEntry?.yearlyBias, yearlyImg) && (
               <span
                 className="bias-tag absolute bottom-2 right-2 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
                 style={biasStyle(firstEntry.yearlyBias)}
@@ -199,12 +202,14 @@ function MonthBox({
                     onChange={(u) => onUpdate({ ...e, monthlyImg: u })}
                     className="h-[180px] rounded-xl border border-border/50"
                   >
+                    {isHtfBiasSet(e.monthlyBias, e.monthlyImg) && (
                     <span
                       className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
                       style={biasStyle(e.monthlyBias)}
                     >
                       {biasLabel(e.monthlyBias)}
                     </span>
+                    )}
                   </PasteSlot>
                 </div>
               ))}

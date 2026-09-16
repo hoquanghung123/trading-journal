@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Edit3, Check, ChevronDown, ChevronUp } from "lucide-react";
 import type { DayEntry, Session, Bias } from "@/lib/journal";
-import { getSessionsForAsset, biasStyle, biasLabel, weekdayOf } from "@/lib/journal";
+import { getSessionsForAsset, biasStyle, biasLabel, weekdayOf, isHtfBiasSet } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -117,7 +117,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
               {/* Timeframe Badges & General Chevron */}
               <div className="flex items-center gap-3">
                 {/* Monthly Badge */}
-                {showMonthly && (
+                {showMonthly && isHtfBiasSet(entry.monthlyBias, entry.monthlyImg) && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">
                       M:
@@ -131,7 +131,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                   </div>
                 )}
 
-                {/* Weekly Badge */}
+                {isHtfBiasSet(entry.weeklyBias, entry.weeklyImg) && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">W:</span>
                   <span
@@ -141,8 +141,9 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                     {biasLabel(entry.weeklyBias)}
                   </span>
                 </div>
+                )}
 
-                {/* Daily Badge */}
+                {isHtfBiasSet(entry.dailyBias, entry.dailyImg) && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">D:</span>
                   <span
@@ -152,12 +153,13 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                     {biasLabel(entry.dailyBias)}
                   </span>
                 </div>
+                )}
 
                 {/* Dynamic H4 Session Badges */}
                 {sessions.map((sessionName) => {
                   const sessionData = entry.h4[sessionName];
                   const sessionBias = sessionData?.bias;
-                  if (!sessionBias) return null; // Only show if bias is set
+                  if (!sessionBias || !isHtfBiasSet(sessionBias, sessionData?.img)) return null;
                   return (
                     <div
                       key={sessionName}
@@ -213,7 +215,8 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                                 key={b}
                                 onClick={() => onUpdate({ ...entry, monthlyBias: b })}
                                 className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
-                                  entry.monthlyBias === b
+                                  entry.monthlyBias === b &&
+                                  (b !== "consolidation" || isHtfBiasSet(entry.monthlyBias, entry.monthlyImg))
                                     ? b === "bullish"
                                       ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                                       : b === "bearish"
@@ -273,7 +276,8 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                               key={b}
                               onClick={() => onUpdate({ ...entry, weeklyBias: b })}
                               className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
-                                entry.weeklyBias === b
+                                entry.weeklyBias === b &&
+                                (b !== "consolidation" || isHtfBiasSet(entry.weeklyBias, entry.weeklyImg))
                                   ? b === "bullish"
                                     ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                                     : b === "bearish"
@@ -332,7 +336,8 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                               key={b}
                               onClick={() => onUpdate({ ...entry, dailyBias: b })}
                               className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
-                                entry.dailyBias === b
+                                entry.dailyBias === b &&
+                                (b !== "consolidation" || isHtfBiasSet(entry.dailyBias, entry.dailyImg))
                                   ? b === "bullish"
                                     ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                                     : b === "bearish"
@@ -390,7 +395,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                   >
                     {sessions.map((sessionName) => {
                       const sessionData = entry.h4[sessionName] || {};
-                      const sessionBias = sessionData.bias || "consolidation";
+                      const sessionBias = sessionData?.bias;
                       const displaySessionLabel = sessionName.replace("_", " ");
 
                       return (
@@ -419,7 +424,9 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                                     });
                                   }}
                                   className={`flex-1 py-1 text-[9px] font-extrabold uppercase rounded border transition-all ${
-                                    sessionBias === b
+                                    sessionBias === b &&
+                                    (b !== "consolidation" ||
+                                      isHtfBiasSet(sessionBias, sessionData?.img))
                                       ? b === "bullish"
                                         ? "bg-emerald-500 text-white border-emerald-500"
                                         : b === "bearish"

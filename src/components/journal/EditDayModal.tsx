@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { X, Trash2, Save, Plus, Loader2 } from "lucide-react";
 import type { Bias, DayEntry, Session } from "@/lib/journal";
-import { biasStyle, biasLabel, weekdayOf, getSessionsForAsset } from "@/lib/journal";
+import { biasLabel, weekdayOf, getSessionsForAsset, isHtfBiasSet } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
@@ -22,6 +22,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const [session, setSession] = useState<Session>("ASIA");
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingSlots, setUploadingSlots] = useState<Record<string, boolean>>({});
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
 
   const isUploading = useMemo(
     () => Object.values(uploadingSlots).some(Boolean),
@@ -147,7 +148,12 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   />
                   <BiasPicker
                     value={draft.monthlyBias}
-                    onChange={(v) => update("monthlyBias", v)}
+                    image={draft.monthlyImg}
+                    committed={picked.monthly}
+                    onChange={(v) => {
+                      setPicked((p) => ({ ...p, monthly: true }));
+                      update("monthlyBias", v);
+                    }}
                   />
                 </div>
               </Section>
@@ -167,7 +173,15 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   onFocus={() => setFocusKey("weekly")}
                   className="h-48"
                 />
-                <BiasPicker value={draft.weeklyBias} onChange={(v) => update("weeklyBias", v)} />
+                <BiasPicker
+                  value={draft.weeklyBias}
+                  image={draft.weeklyImg}
+                  committed={picked.weekly}
+                  onChange={(v) => {
+                    setPicked((p) => ({ ...p, weekly: true }));
+                    update("weeklyBias", v);
+                  }}
+                />
               </div>
             </Section>
 
@@ -185,7 +199,15 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   onFocus={() => setFocusKey("daily")}
                   className="h-48"
                 />
-                <BiasPicker value={draft.dailyBias} onChange={(v) => update("dailyBias", v)} />
+                <BiasPicker
+                  value={draft.dailyBias}
+                  image={draft.dailyImg}
+                  committed={picked.daily}
+                  onChange={(v) => {
+                    setPicked((p) => ({ ...p, daily: true }));
+                    update("dailyBias", v);
+                  }}
+                />
               </div>
             </Section>
 
@@ -231,8 +253,12 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                 />
                 <BiasPicker
                   value={draft.h4[session]?.bias as Bias}
+                  image={draft.h4[session]?.img}
+                  committed={picked[`h4-${session}`]}
                   onChange={(v) =>
-                    setDraft((d) => ({
+                    {
+                      setPicked((p) => ({ ...p, [`h4-${session}`]: true }));
+                      setDraft((d) => ({
                       ...d,
                       h4: {
                         ...d.h4,
@@ -242,6 +268,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                         },
                       },
                     }))
+                    }
                   }
                 />
               </div>
@@ -322,11 +349,22 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
-function BiasPicker({ value, onChange }: { value: Bias; onChange: (v: Bias) => void }) {
+function BiasPicker({
+  value,
+  image,
+  committed,
+  onChange,
+}: {
+  value: Bias;
+  image?: string;
+  committed?: boolean;
+  onChange: (v: Bias) => void;
+}) {
+  const shown = committed || isHtfBiasSet(value, image) ? value : undefined;
   return (
     <div className="flex flex-col gap-2">
       {BIASES.map((b) => {
-        const active = value === b;
+        const active = shown === b;
         return (
           <button
             key={b}

@@ -61,6 +61,107 @@ export function nyDateString(iso: string | Date): string {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
+const NY_TZ = "America/New_York";
+/** RTH close — journal day becomes the next NY calendar date. */
+export const JOURNAL_RESET_HOUR_NY = 17;
+
+function nyWallParts(d: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: NY_TZ,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })
+    .formatToParts(d)
+    .reduce<Record<string, string>>((acc, p) => {
+      if (p.type !== "literal") acc[p.type] = p.value;
+      return acc;
+    }, {});
+  const hourRaw = parts.hour === "24" ? "0" : parts.hour;
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(hourRaw),
+    minute: Number(parts.minute),
+    second: Number(parts.second),
+  };
+}
+
+export function addCalendarDays(yyyyMmDd: string, days: number): string {
+  const [y, m, d] = yyyyMmDd.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function nyYmd(p: { year: number; month: number; day: number }) {
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}`;
+}
+
+/** Instant whose NY wall clock is `year-month-day hour:minute:second`. */
+function nyWallToUtcMs(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second = 0,
+): number {
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second);
+  const offsetOf = (instant: number) => {
+    const p = nyWallParts(new Date(instant));
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - instant;
+  };
+  const utc = utcGuess - offsetOf(utcGuess);
+  return utcGuess - offsetOf(utc);
+}
+
+/**
+ * Trading / journal date: NY calendar date, rolling forward at 17:00 America/New_York.
+ * Pass a trade timestamp to bucket it onto the same day as Bias Today.
+ */
+export function journalTradingDate(input: Date | string = new Date()): string {
+  const d = typeof input === "string" ? new Date(input) : input;
+  const p = nyWallParts(d);
+  const date = nyYmd(p);
+  return p.hour >= JOURNAL_RESET_HOUR_NY ? addCalendarDays(date, 1) : date;
+}
+
+export function secondsUntilJournalReset(now = new Date()): number {
+  const p = nyWallParts(now);
+  let y = p.year;
+  let m = p.month;
+  let day = p.day;
+  if (p.hour >= JOURNAL_RESET_HOUR_NY) {
+    const next = addCalendarDays(nyYmd(p), 1);
+    const [ny, nm, nd] = next.split("-").map(Number);
+    y = ny;
+    m = nm;
+    day = nd;
+  }
+  const target = nyWallToUtcMs(y, m, day, JOURNAL_RESET_HOUR_NY, 0, 0);
+  return Math.max(0, Math.ceil((target - now.getTime()) / 1000));
+}
+
+/** True while NY wall clock is before 17:00 (same calendar day not yet rolled). */
+export function isBeforeJournalReset(now = new Date()): boolean {
+  return nyWallParts(now).hour < JOURNAL_RESET_HOUR_NY;
+}
+
+/** CONS + no chart looks unset; any other bias (or CONS with a chart) is marked. */
+export function isHtfBiasSet(bias: Bias | undefined, image?: string): boolean {
+  if (!bias) return false;
+  if (bias !== "consolidation") return true;
+  return Boolean(image);
+}
+
 export interface DayEntry {
   id: string;
   date: string; // YYYY-MM-DD
@@ -473,14 +574,14 @@ export function calculateStreak(allEntries: DayEntry[]): StreakStats {
   });
 
   // 4. Calculate current streak (working backwards from today/last entry)
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = journalTradingDate();
   const isTodayComplete = isPrepDay(byDate[todayStr] ?? []);
 
   let current = 0;
   const reversedPrepDates = [...prepDates].reverse();
 
   if (reversedPrepDates.length > 0) {
-    const lastCheckedDate = new Date().toISOString().split("T")[0];
+    const lastCheckedDate = todayStr;
     const latestPrepDate = reversedPrepDates[0];
 
     // If the latest prep was today or yesterday, the streak is alive

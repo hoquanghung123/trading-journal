@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { computeOutcome, outcomeStyle, type Trade } from "@/lib/trades";
 import { useSymbols } from "@/lib/symbols";
-import { fetchEntries, type DayEntry, ddmm } from "@/lib/journal";
+import { fetchEntries, type DayEntry, ddmm, journalTradingDate } from "@/lib/journal";
 import { PasteSlot } from "./PasteSlot";
 import {
   ExternalLink,
@@ -96,8 +96,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
       biasEntries
         .filter((e) => {
           const tradeDate = t?.entryTime
-            ? t.entryTime.slice(0, 10)
-            : new Date().toISOString().slice(0, 10);
+            ? journalTradingDate(t.entryTime)
+            : journalTradingDate();
           const isSameDay = e.date === tradeDate;
           const isMatchingSymbol = !t?.symbol || e.asset === t.symbol;
           return isSameDay && isMatchingSymbol;

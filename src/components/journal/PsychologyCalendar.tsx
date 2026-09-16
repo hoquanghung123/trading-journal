@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { format } from "date-fns";
 import type { PsychologyLog } from "@/lib/psychology";
-import { todayNyDateStr } from "@/lib/psychology";
+import { journalTradingDate } from "@/lib/journal";
 import type { Trade } from "@/lib/trades";
 
 interface Props {
@@ -70,7 +69,7 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
       map.set(l.date, cur);
     }
     for (const t of trades) {
-      const k = format(new Date(t.entryTime), "yyyy-MM-dd");
+      const k = journalTradingDate(t.entryTime);
       const cur = map.get(k) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0, netPnl: 0 };
       cur.tradeCount += 1;
       cur.netPnl += Number(t.netPnl) || 0;
@@ -79,14 +78,14 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
     return map;
   }, [logs, trades]);
 
-  const today = todayNyDateStr();
+  const today = journalTradingDate();
   const monthLabel = anchor.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   const goPrev = () => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1));
   const goNext = () => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1));
   const goToday = () => {
-    const now = new Date();
-    setAnchor(new Date(now.getFullYear(), now.getMonth(), 1));
+    const [y, m] = today.split("-").map(Number);
+    setAnchor(new Date(y, m - 1, 1));
     onSelectDate(today);
   };
 

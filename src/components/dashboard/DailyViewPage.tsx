@@ -9,6 +9,7 @@ import {
   outcomeStyle,
 } from "@/lib/trades";
 import { onDailyFocus, navigateToPage, parseNavFromUrl } from "@/lib/nav-bus";
+import { journalTradingDate } from "@/lib/journal";
 import { format, parseISO } from "date-fns";
 import { TradeModal } from "@/components/journal/TradeModal";
 import { toast } from "sonner";
@@ -29,7 +30,7 @@ export function DailyViewPage() {
     try {
       const allTrades = await fetchTrades();
       const filtered = allTrades.filter((t) => {
-        const localDate = format(new Date(t.entryTime), "yyyy-MM-dd");
+        const localDate = journalTradingDate(t.entryTime);
         return localDate === selectedDate;
       });
       setTrades(filtered);

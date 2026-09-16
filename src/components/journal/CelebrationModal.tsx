@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, X, Check } from "lucide-react";
-import { format, subDays, addDays, isToday, isSameDay } from "date-fns";
+import { format, addDays } from "date-fns";
+import { journalTradingDate } from "@/lib/journal";
 
 interface Props {
   isOpen: boolean;
@@ -46,7 +47,8 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
 
   // Option C: Hybrid 7-day strip (Today at position 5, 2 future days)
   const weekStrip = useMemo(() => {
-    const today = new Date();
+    const [y, m, d] = journalTradingDate().split("-").map(Number);
+    const today = new Date(y, m - 1, d);
     const days = [];
     for (let i = -4; i <= 2; i++) {
       days.push(addDays(today, i));
@@ -114,7 +116,7 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                   {weekStrip.map((day, i) => {
                     const dateStr = format(day, "yyyy-MM-dd");
                     const completed = streakDays.includes(dateStr);
-                    const isTodayDay = isToday(day);
+                    const isTodayDay = dateStr === journalTradingDate();
 
                     return (
                       <div key={i} className="flex flex-col items-center gap-2">

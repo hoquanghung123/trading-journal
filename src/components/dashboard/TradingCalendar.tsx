@@ -8,7 +8,6 @@ import {
   eachDayOfInterval,
   format,
   isSameMonth,
-  isSameDay,
   addMonths,
   subMonths,
   addYears,
@@ -19,6 +18,7 @@ import {
 } from "date-fns";
 import { fetchTrades, tradesQueryKey, type Trade } from "@/lib/trades";
 import { focusDailyView } from "@/lib/nav-bus";
+import { journalTradingDate } from "@/lib/journal";
 import { useQuery } from "@tanstack/react-query";
 
 export function TradingCalendar() {
@@ -73,7 +73,7 @@ export function TradingCalendar() {
   const tradesByDay = useMemo(() => {
     const map = new Map<string, { pnl: number; count: number }>();
     trades.forEach((t) => {
-      const dateStr = format(new Date(t.entryTime), "yyyy-MM-dd");
+      const dateStr = journalTradingDate(t.entryTime);
       const existing = map.get(dateStr) || { pnl: 0, count: 0 };
       map.set(dateStr, {
         pnl: existing.pnl + t.netPnl,
@@ -86,8 +86,7 @@ export function TradingCalendar() {
   const statsByMonth = useMemo(() => {
     const map = new Map<string, { pnl: number; actualRr: number; count: number }>();
     trades.forEach((t) => {
-      const date = new Date(t.entryTime);
-      const key = format(date, "yyyy-MM");
+      const key = journalTradingDate(t.entryTime).slice(0, 7);
       const existing = map.get(key) || { pnl: 0, actualRr: 0, count: 0 };
       map.set(key, {
         pnl: existing.pnl + t.netPnl,
@@ -101,8 +100,7 @@ export function TradingCalendar() {
   const statsByYear = useMemo(() => {
     const map = new Map<string, { pnl: number; actualRr: number; count: number }>();
     trades.forEach((t) => {
-      const date = new Date(t.entryTime);
-      const key = format(date, "yyyy");
+      const key = journalTradingDate(t.entryTime).slice(0, 4);
       const existing = map.get(key) || { pnl: 0, actualRr: 0, count: 0 };
       map.set(key, {
         pnl: existing.pnl + t.netPnl,
@@ -117,11 +115,13 @@ export function TradingCalendar() {
     let pnl = 0;
     let actualRr = 0;
     trades.forEach((t) => {
-      const date = new Date(t.entryTime);
-      if (viewMode === "day" && isSameMonth(date, currentDate)) {
+      const jd = journalTradingDate(t.entryTime);
+      const [jy, jm] = jd.split("-").map(Number);
+      const jDate = new Date(jy, jm - 1, 1);
+      if (viewMode === "day" && isSameMonth(jDate, currentDate)) {
         pnl += t.netPnl;
         actualRr += t.actualRr;
-      } else if (viewMode === "month" && isSameYear(date, currentDate)) {
+      } else if (viewMode === "month" && isSameYear(jDate, currentDate)) {
         pnl += t.netPnl;
         actualRr += t.actualRr;
       } else if (viewMode === "year") {
@@ -257,7 +257,7 @@ export function TradingCalendar() {
                         const dateStr = format(day, "yyyy-MM-dd");
                         const dayInfo = tradesByDay.get(dateStr);
                         const isCurrentMonth = isSameMonth(day, monthStart);
-                        const isToday = isSameDay(day, new Date());
+                        const isToday = dateStr === journalTradingDate();
                         const pnl = dayInfo?.pnl;
 
                         return (
