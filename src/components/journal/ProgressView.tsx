@@ -212,7 +212,7 @@ export function ProgressView() {
                       icon={<Target className="w-4 h-4" />}
                       label="Monthly Goal"
                       value={`${stats.streakDays.length}/20`}
-                      color="text-blue-500"
+                      color="text-primary"
                     />
                   </div>
                 </div>

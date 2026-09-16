@@ -34,9 +34,9 @@ const PRESET_COLORS = [
 
 const CURRENCIES = ["USD", "EUR", "GBP", "CHF", "AUD", "NZD", "JPY", "CAD"];
 const IMPACTS = [
-  { id: "high", name: "High Impact (Red)", color: "bg-rose-500", text: "text-rose-600" },
+  { id: "high", name: "High Impact (Red)", color: "bg-destructive", text: "text-destructive" },
   { id: "medium", name: "Medium Impact (Orange)", color: "bg-orange-500", text: "text-orange-600" },
-  { id: "low", name: "Low Impact (Yellow)", color: "bg-amber-400", text: "text-amber-600", desc: "Special: Only Crude Oil Inventories" },
+  { id: "low", name: "Low Impact (Yellow)", color: "bg-amber-400", text: "text-warning", desc: "Special: Only Crude Oil Inventories" },
   { id: "holiday", name: "Holiday (Grey)", color: "bg-slate-400", text: "text-slate-600" }
 ];
 
@@ -94,7 +94,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
               <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden forest-gradient transition-transform group-hover:scale-105">
                 <UserCircle className="w-16 h-16 text-white opacity-90" strokeWidth={1.5} />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 border-4 border-white shadow-lg flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary border-4 border-white shadow-lg flex items-center justify-center">
                 <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
               </div>
             </div>
@@ -259,7 +259,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
                     <div className="absolute bottom-full right-0 mb-3 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 font-medium leading-relaxed border border-white/10 scale-95 group-hover:scale-100 origin-bottom-right">
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-2">
-                          <div className="w-1 h-1 rounded-full bg-emerald-400" />
+                          <div className="w-1 h-1 rounded-full bg-primary" />
                           <span className="font-bold">Web Popup:</span> Theo giờ máy tính của bạn.
                         </p>
                         <p className="flex items-center gap-2">
@@ -527,7 +527,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
                                 {impact.name}
                               </span>
                               {impact.desc && (
-                                <span className="text-[10px] font-medium text-amber-600 block mt-0.5 uppercase tracking-wider">
+                                <span className="text-[10px] font-medium text-warning block mt-0.5 uppercase tracking-wider">
                                   {impact.desc}
                                 </span>
                               )}
@@ -636,10 +636,10 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
             </div>
 
             <div className="space-y-4">
-              <div className={`p-6 rounded-2xl border transition-all ${localSettings.telegramChatId ? "bg-emerald-50 border-emerald-100" : "bg-muted/20 border-border/50"}`}>
+              <div className={`p-6 rounded-2xl border transition-all ${localSettings.telegramChatId ? "bg-primary/10 border-primary/20" : "bg-muted/20 border-border/50"}`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${localSettings.telegramChatId ? "bg-emerald-500 shadow-emerald-500/20" : "bg-[#0088cc] shadow-[#0088cc]/20"}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${localSettings.telegramChatId ? "bg-primary shadow-primary/20" : "bg-[#0088cc] shadow-[#0088cc]/20"}`}>
                       <Send className="w-6 h-6" />
                     </div>
                     <div>
@@ -657,7 +657,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
                   {localSettings.telegramChatId ? (
                     <button 
                       onClick={() => setLocalSettings({ ...localSettings, telegramChatId: "" })}
-                      className="px-6 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all"
+                      className="px-6 py-2.5 bg-white border border-destructive/30 text-destructive rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-destructive/10 transition-all"
                     >
                       Disconnect
                     </button>
@@ -676,7 +676,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
 
               {!localSettings.telegramChatId && (
                 <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
-                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <Sparkles className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                   <p className="text-[10px] text-amber-800 font-medium leading-relaxed uppercase tracking-wider">
                     Tip: Click "Connect Now" to open our Telegram Bot. 
                     Press "Start" in the chat to automatically link your account.
@@ -688,24 +688,24 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
 
           {/* Admin Zone — only visible to admin email */}
           {user?.email === ADMIN_EMAIL && (
-            <section className="bg-rose-50 dark:bg-rose-950/20 rounded-[32px] border border-rose-200 dark:border-rose-800/40 p-8 shadow-sm space-y-5">
+            <section className="bg-destructive/10 dark:bg-destructive/10 rounded-[32px] border border-destructive/30 dark:border-destructive/30 p-8 shadow-sm space-y-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
+                <div className="p-2.5 rounded-xl bg-destructive/15 dark:bg-destructive/20 text-destructive dark:text-destructive">
                   <ShieldAlert className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-rose-700 dark:text-rose-300">Admin Zone</h2>
-                  <p className="text-xs text-rose-500 dark:text-rose-400 font-medium">
+                  <h2 className="text-xl font-bold text-destructive dark:text-destructive">Admin Zone</h2>
+                  <p className="text-xs text-destructive dark:text-destructive font-medium">
                     Visible only to system administrator
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 dark:text-rose-400">
+                <p className="text-[10px] font-black uppercase tracking-widest text-destructive dark:text-destructive">
                   Database Backup
                 </p>
-                <p className="text-xs text-rose-600/70 dark:text-rose-400/70 font-medium leading-relaxed">
+                <p className="text-xs text-destructive/70 dark:text-destructive/70 font-medium leading-relaxed">
                   Export toàn bộ database thành file SQL và lưu đồng thời lên Cloudflare R2.
                   File sẽ được tải về máy ngay sau khi hoàn tất.
                 </p>

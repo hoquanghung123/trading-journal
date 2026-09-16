@@ -409,7 +409,7 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
                     variant="ghost" 
                     size="sm" 
                     onClick={removeLink} 
-                    className="w-full rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-[10px] font-bold uppercase h-8"
+                    className="w-full rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 text-[10px] font-bold uppercase h-8"
                   >
                     <Unlink size={14} className="mr-2" /> Remove Link
                   </Button>
@@ -487,7 +487,7 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
               <DropdownMenuItem onClick={() => editor.chain().focus().setHorizontalRule().run()} className="rounded-xl font-black uppercase text-xs p-3 flex items-center gap-2">
                 <Minus size={14} /> Horizontal Line
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="rounded-xl font-black uppercase text-xs p-3 flex items-center gap-2 text-rose-500">
+              <DropdownMenuItem onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} className="rounded-xl font-black uppercase text-xs p-3 flex items-center gap-2 text-destructive">
                 <Eraser size={14} /> Clear Format
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -558,7 +558,7 @@ export function RichEditor({ value, onChange, placeholder, className, uploadImag
           cursor: pointer;
         }
         .tiptap img.ProseMirror-selectednode {
-          outline: 1px solid #6366f1;
+          outline: 1px solid var(--primary);
           outline-offset: 4px;
         }
         .tiptap h1 {

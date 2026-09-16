@@ -153,16 +153,16 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
                         <Activity className="w-4 h-4" />
                       )
                     }
-                    color={win ? "#10B981" : loss ? "#F43F5E" : "#94A3B8"}
+                    color={win ? "var(--bull)" : loss ? "var(--destructive)" : "#94A3B8"}
                     time={`${fmtTime(t.entryTime)} NY`}
                     title={`Trade #${String(i + 1).padStart(2, "0")} • ${t.symbol}`}
                     badge={
                       <span
                         className={`text-[10px] font-black px-2 py-1 rounded-lg border shadow-sm ${
                           win
-                            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                            ? "bg-primary/10 text-bull border-primary/20"
                             : loss
-                              ? "bg-rose-50 text-rose-600 border-rose-100"
+                              ? "bg-destructive/10 text-destructive border-destructive/20"
                               : "bg-muted/30 text-muted-foreground border-border/50"
                         }`}
                       >
@@ -193,7 +193,7 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
                           <Row
                             icon={<Activity className="w-3.5 h-3.5" />}
                             label="Post-Trade"
-                            color="text-amber-600"
+                            color="text-warning"
                           >
                             {tl.postTradeEmotion}
                           </Row>
@@ -230,7 +230,7 @@ function Stat({
   tone?: "pos" | "neg" | "neutral";
 }) {
   const color =
-    tone === "pos" ? "text-emerald-600" : tone === "neg" ? "text-rose-600" : "text-foreground";
+    tone === "pos" ? "text-bull" : tone === "neg" ? "text-destructive" : "text-foreground";
   return (
     <div className="px-10 py-6 bg-white">
       <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">

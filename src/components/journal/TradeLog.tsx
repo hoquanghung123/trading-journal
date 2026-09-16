@@ -79,7 +79,7 @@ const COL_LABELS: Record<ColKey, string> = {
 
 const gradeStyle: Record<string, string> = {
   "A+": "bg-primary text-primary-foreground shadow-primary/20",
-  A: "bg-amber-500 text-white shadow-amber-500/20",
+  A: "bg-warning text-warning-foreground shadow-warning/20",
   B: "bg-destructive text-destructive-foreground shadow-destructive/20",
 };
 
@@ -667,9 +667,9 @@ export function TradeLog() {
                                             <div key={tf} className="flex items-center gap-0.5">
                                               <span className="text-[9px] font-black uppercase">{tf}</span>
                                               {b === "bull" ? (
-                                                <TrendingUp className="w-2.5 h-2.5 text-emerald-500" />
+                                                <TrendingUp className="w-2.5 h-2.5 text-bull" />
                                               ) : (
-                                                <TrendingDown className="w-2.5 h-2.5 text-rose-500" />
+                                                <TrendingDown className="w-2.5 h-2.5 text-destructive" />
                                               )}
                                             </div>
                                           ))}
@@ -761,13 +761,13 @@ export function TradeLog() {
                                         {t.missedConfluences.slice(0, 2).map((c) => (
                                           <span
                                             key={c}
-                                            className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[8px] font-bold text-rose-500 uppercase tracking-tighter whitespace-nowrap"
+                                            className="px-1.5 py-0.5 rounded bg-destructive/10 border border-destructive/20 text-[8px] font-bold text-destructive uppercase tracking-tighter whitespace-nowrap"
                                           >
                                             {c}
                                           </span>
                                         ))}
                                         {t.missedConfluences.length > 2 && (
-                                          <span className="text-[8px] font-black text-rose-400 uppercase tracking-tighter px-1">
+                                          <span className="text-[8px] font-black text-destructive uppercase tracking-tighter px-1">
                                             +{t.missedConfluences.length - 2} more
                                           </span>
                                         )}
@@ -787,7 +787,7 @@ export function TradeLog() {
                                     ? "bg-destructive text-destructive-foreground shadow-destructive/20"
                                     : t.status === "Opened"
                                       ? "bg-primary text-primary-foreground shadow-primary/20"
-                                      : "bg-amber-500 text-white shadow-amber-500/20"
+                                      : "bg-warning text-warning-foreground shadow-warning/20"
                                 }`}
                               >
                                 {t.status}

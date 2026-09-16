@@ -48,7 +48,7 @@ export function FigmaStatCard({
         {trend && (
           <div
             className={`flex items-center gap-0.5 text-[10px] font-bold ${
-              isPositive ? "text-emerald-500" : "text-rose-500"
+              isPositive ? "text-bull" : "text-destructive"
             }`}
           >
             {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}

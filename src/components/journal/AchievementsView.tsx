@@ -136,7 +136,7 @@ export function AchievementsView() {
                 <span className="text-xs font-black uppercase tracking-widest text-slate-500">
                   Danh hiệu hiện tại:
                 </span>
-                <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-sm font-black uppercase tracking-tight border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                <span className="px-3 py-1 bg-primary/10 text-primary rounded-lg text-sm font-black uppercase tracking-tight border border-primary/20 shadow-[0_0_15px_color-mix(in_oklch,var(--primary),transparent_90%)]">
                   {profile.active_title}
                 </span>
               </motion.div>
@@ -148,8 +148,8 @@ export function AchievementsView() {
           </p>
         </div>
         {/* Abstract Background Shapes */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/20 blur-[120px] -mr-32 -mt-32 rounded-full" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/10 blur-[100px] -ml-32 -mb-32 rounded-full" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[120px] -mr-32 -mt-32 rounded-full" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/10 blur-[100px] -ml-32 -mb-32 rounded-full" />
       </div>
 
       {(["Psychology", "Performance", "Knowledge"] as const).map((category, idx) => (
@@ -226,13 +226,13 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
         };
       case "Diamond":
         return {
-          card: "bg-[#0f172a] border-blue-500/30 shadow-blue-900/20",
-          container: "bg-gradient-to-br from-blue-400 via-blue-600 to-indigo-700 shadow-[0_0_25px_rgba(37,99,235,0.4)] animate-pulse-subtle",
-          icon: "text-blue-50",
-          badge: "bg-blue-500/20 border-blue-500/30 text-blue-300",
-          bar: "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]",
+          card: "bg-[#0f172a] border-primary/30 shadow-primary/20",
+          container: "bg-gradient-to-br from-primary via-bull to-[#3A5C2D] shadow-[0_0_25px_color-mix(in_oklch,var(--primary),transparent_60%)] animate-pulse-subtle",
+          icon: "text-primary-foreground",
+          badge: "bg-primary/20 border-primary/30 text-primary",
+          bar: "bg-primary shadow-[0_0_10px_color-mix(in_oklch,var(--primary),transparent_50%)]",
           title: "text-white",
-          desc: "text-blue-100/60",
+          desc: "text-primary-foreground/60",
         };
       default:
         return {
@@ -278,7 +278,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
             {/* Dynamic Background Glow for high levels */}
             {achievement.level !== "None" && achievement.level !== "Bronze" && (
               <div className={`absolute -top-24 -left-24 w-48 h-48 blur-[80px] opacity-20 transition-all duration-700 group-hover:scale-150 ${
-                achievement.level === "Diamond" ? "bg-blue-500" : achievement.level === "Gold" ? "bg-yellow-500" : "bg-slate-400"
+                achievement.level === "Diamond" ? "bg-primary" : achievement.level === "Gold" ? "bg-yellow-500" : "bg-slate-400"
               }`} />
             )}
 
@@ -311,8 +311,8 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                           }}
                           className={`relative flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-all overflow-hidden ${
                             isActive 
-                              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" 
-                              : "bg-slate-100 text-slate-500 hover:bg-blue-500 hover:text-white"
+                              ? "bg-primary text-white shadow-lg shadow-primary/30" 
+                              : "bg-slate-100 text-slate-500 hover:bg-primary hover:text-white"
                           }`}
                         >
                           {/* Shimmer Effect for Diamond Title */}
@@ -336,7 +336,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                 <motion.div 
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center border border-emerald-100 shadow-sm"
+                  className="w-10 h-10 bg-primary/10 text-bull rounded-full flex items-center justify-center border border-primary/20 shadow-sm"
                 >
                   <CheckCircle2 className="w-6 h-6" />
                 </motion.div>
@@ -395,7 +395,7 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                 <span className="text-xs font-black text-slate-100">{achievement.milestones.Gold.toLocaleString()}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Diamond</span>
+                <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">Diamond</span>
                 <span className="text-xs font-black text-slate-100">{achievement.milestones.Diamond.toLocaleString()}</span>
               </div>
             </div>

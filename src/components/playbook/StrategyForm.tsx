@@ -453,7 +453,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                             <button
                               type="button"
                               onClick={() => setThumbnail("")}
-                              className="p-4 bg-rose-500/20 hover:bg-rose-500/40 rounded-2xl text-rose-500 transition-all active:scale-95"
+                              className="p-4 bg-destructive/20 hover:bg-destructive/40 rounded-2xl text-destructive transition-all active:scale-95"
                             >
                               <Trash2 className="w-6 h-6" />
                             </button>
@@ -687,7 +687,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                               value={newResource.type}
                               onChange={(e) => setNewResource(prev => ({ ...prev, type: e.target.value as any }))}
                               className={`h-14 w-full rounded-2xl bg-white border px-4 text-[10px] font-black uppercase tracking-widest outline-none appearance-none transition-colors ${
-                                editingResourceId ? 'border-amber-500/40' : 'border-primary/10'
+                                editingResourceId ? 'border-warning/40' : 'border-primary/10'
                               }`}
                             >
                               <option value="video">📹 VIDEO</option>
@@ -701,7 +701,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                             type="button"
                             onClick={addResource}
                             className={`w-14 h-14 rounded-2xl text-white flex items-center justify-center hover:opacity-95 transition-all shrink-0 shadow-lg ${
-                              editingResourceId ? 'bg-amber-500 shadow-amber-500/20' : 'bg-primary shadow-primary/20'
+                              editingResourceId ? 'bg-warning shadow-warning/20' : 'bg-primary shadow-primary/20'
                             }`}
                           >
                             {editingResourceId ? <CheckCircle2 className="w-6 h-6" /> : <Plus className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />}
@@ -740,7 +740,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                           <button 
                             type="button"
                             onClick={() => setNewResource(prev => ({ ...prev, subLinks: prev.subLinks?.filter(l => l.id !== link.id) }))}
-                            className="text-rose-500/40 hover:text-rose-500 transition-colors"
+                            className="text-destructive/40 hover:text-destructive transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -782,11 +782,11 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                       <div className="flex items-center gap-6 min-w-0">
                         <div className="w-14 h-14 rounded-[22px] bg-primary/5 flex items-center justify-center text-primary shrink-0 group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500">
                           {res.type === 'video' ? (
-                            <Zap className="w-6 h-6 text-amber-500 fill-amber-500/20" />
+                            <Zap className="w-6 h-6 text-warning fill-warning/20" />
                           ) : res.type === 'reading' ? (
-                            <FileText className="w-6 h-6 text-indigo-500" />
+                            <FileText className="w-6 h-6 text-primary" />
                           ) : res.type === 'quiz' ? (
-                            <Shield className="w-6 h-6 text-emerald-500" />
+                            <Shield className="w-6 h-6 text-bull" />
                           ) : (
                             <Link className="w-6 h-6 text-primary" />
                           )}
@@ -809,7 +809,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                           <button
                             type="button"
                             onClick={() => startEditResource(res)}
-                            className="p-3 text-amber-500/60 hover:text-amber-500 hover:bg-amber-500/10 rounded-2xl transition-all active:scale-90"
+                            className="p-3 text-warning/60 hover:text-warning hover:bg-warning/10 rounded-2xl transition-all active:scale-90"
                             title="Edit Resource"
                           >
                             <Edit className="w-5 h-5" />
@@ -817,7 +817,7 @@ export function StrategyForm({ initialData, onSave, onCancel }: StrategyFormProp
                           <button
                             type="button"
                             onClick={() => removeResource(res.id)}
-                            className="p-3 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all active:scale-90"
+                            className="p-3 text-destructive/40 hover:text-destructive hover:bg-destructive/10 rounded-2xl transition-all active:scale-90"
                             title="Remove Resource"
                           >
                             <Trash2 className="w-5 h-5" />

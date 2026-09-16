@@ -189,7 +189,7 @@ export function computeOutcome(actualRr: number, _maxRr: number, _netPnl: number
 export const outcomeStyle: Record<OutcomeColor, string> = {
   green: "bg-primary text-primary-foreground shadow-primary/20",
   red: "bg-destructive text-destructive-foreground shadow-destructive/20",
-  amber: "bg-amber-500 text-white shadow-amber-500/20",
+  amber: "bg-warning text-warning-foreground shadow-warning/20",
   blue: "bg-blue-500 text-white shadow-blue-500/20",
   yellow: "bg-yellow-500 text-white shadow-yellow-500/20",
 };

@@ -317,7 +317,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                               ? "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
                               : s === "Opened"
                                 ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
-                                : "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
+                                : "bg-warning text-white border-warning shadow-warning/20 scale-[1.02]"
                             : "bg-background border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
@@ -340,7 +340,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                               ? g === "A+"
                                 ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
                                 : g === "A"
-                                  ? "bg-amber-500 text-white border-amber-500 shadow-amber-500/20 scale-[1.02]"
+                                  ? "bg-warning text-white border-warning shadow-warning/20 scale-[1.02]"
                                   : "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
                               : "bg-background border-border text-muted-foreground hover:border-primary/30"
                           }`}
@@ -375,8 +375,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black tracking-widest uppercase transition-all shadow-sm ${
                           t.side === s
                             ? s === "buy"
-                              ? "bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20 scale-[1.02]"
-                              : "bg-rose-500 text-white border-rose-500 shadow-rose-500/20 scale-[1.02]"
+                              ? "bg-primary text-white border-primary shadow-primary/20 scale-[1.02]"
+                              : "bg-destructive text-white border-destructive shadow-destructive/20 scale-[1.02]"
                             : "bg-background border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
@@ -469,16 +469,16 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
               {/* Missed Confluences Checklist */}
               {!t.complianceCheck && t.setupId && (
-                <div className="bg-rose-500/5 border border-rose-500/10 rounded-[32px] p-8 space-y-6 animate-in slide-in-from-top-2 duration-300">
+                <div className="bg-destructive/5 border border-destructive/10 rounded-[32px] p-8 space-y-6 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
-                      <AlertCircle className="w-5 h-5 text-rose-500" />
+                    <div className="w-8 h-8 rounded-lg bg-destructive/20 flex items-center justify-center">
+                      <AlertCircle className="w-5 h-5 text-destructive" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-rose-600 uppercase tracking-widest">
+                      <h4 className="text-sm font-black text-destructive uppercase tracking-widest">
                         Missed Confluences
                       </h4>
-                      <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mt-0.5">
+                      <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-0.5">
                         Specify what rules were not followed in this execution
                       </p>
                     </div>
@@ -517,13 +517,13 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                             }}
                             className={`flex items-center gap-3 p-4 rounded-xl border transition-all cursor-pointer select-none ${
                               isMissed
-                                ? "bg-rose-500/10 border-rose-500/30 text-rose-500 shadow-sm"
-                                : "bg-background border hover:border-rose-500/20"
+                                ? "bg-destructive/10 border-destructive/30 text-destructive shadow-sm"
+                                : "bg-background border hover:border-destructive/20"
                             }`}
                           >
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                                isMissed ? "bg-rose-500 border-rose-500" : "bg-background border-muted"
+                                isMissed ? "bg-destructive border-destructive" : "bg-background border-muted"
                               }`}
                             >
                               {isMissed && (
@@ -531,7 +531,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                               )}
                             </div>
                             <span
-                              className={`text-xs font-bold ${isMissed ? "text-rose-500" : "text-muted-foreground"}`}
+                              className={`text-xs font-bold ${isMissed ? "text-destructive" : "text-muted-foreground"}`}
                             >
                               {c}
                             </span>
@@ -580,7 +580,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </Field>
                 <Field label="Net PnL (Calculated)">
                   <div
-                    className={`h-12 w-full rounded-xl flex items-center px-4 text-sm font-black border transition-all ${t.netPnl > 0 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : t.netPnl < 0 ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-muted/30 border-border"}`}
+                    className={`h-12 w-full rounded-xl flex items-center px-4 text-sm font-black border transition-all ${t.netPnl > 0 ? "bg-primary/10 border-primary/20 text-bull" : t.netPnl < 0 ? "bg-destructive/10 border-destructive/20 text-destructive" : "bg-muted/30 border-border"}`}
                   >
                     {t.netPnl > 0 ? "+" : ""}
                     {t.netPnl.toFixed(2)}

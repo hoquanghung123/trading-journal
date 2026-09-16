@@ -13,10 +13,10 @@ export function DisciplineGauge({ score, totalTrades, compliantTrades }: Discipl
   const offset = circumference - (score / 100) * circumference;
 
   const getStatus = (s: number) => {
-    if (s >= 90) return { label: "Elite", color: "text-emerald-500" };
+    if (s >= 90) return { label: "Elite", color: "text-bull" };
     if (s >= 75) return { label: "Disciplined", color: "text-primary" };
-    if (s >= 50) return { label: "Average", color: "text-amber-500" };
-    return { label: "Poor", color: "text-rose-500" };
+    if (s >= 50) return { label: "Average", color: "text-warning" };
+    return { label: "Poor", color: "text-destructive" };
   };
 
   const status = getStatus(score);
@@ -83,7 +83,7 @@ export function DisciplineGauge({ score, totalTrades, compliantTrades }: Discipl
                   Thresholds
                 </p>
                 <div className="flex items-center justify-between gap-8">
-                  <span className="text-xs font-bold text-emerald-400">Elite</span>
+                  <span className="text-xs font-bold text-primary">Elite</span>
                   <span className="text-xs font-medium text-slate-300">&gt; 90%</span>
                 </div>
                 <div className="flex items-center justify-between gap-8">
@@ -91,11 +91,11 @@ export function DisciplineGauge({ score, totalTrades, compliantTrades }: Discipl
                   <span className="text-xs font-medium text-slate-300">&gt; 75%</span>
                 </div>
                 <div className="flex items-center justify-between gap-8">
-                  <span className="text-xs font-bold text-amber-400">Average</span>
+                  <span className="text-xs font-bold text-warning">Average</span>
                   <span className="text-xs font-medium text-slate-300">&gt; 50%</span>
                 </div>
                 <div className="flex items-center justify-between gap-8">
-                  <span className="text-xs font-bold text-rose-400">Poor</span>
+                  <span className="text-xs font-bold text-destructive">Poor</span>
                   <span className="text-xs font-medium text-slate-300">&lt; 50%</span>
                 </div>
               </div>
@@ -116,7 +116,7 @@ export function DisciplineGauge({ score, totalTrades, compliantTrades }: Discipl
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Target
             </span>
-            <span className="text-sm font-black text-emerald-500">90%+</span>
+            <span className="text-sm font-black text-bull">90%+</span>
           </div>
         </div>
       </div>
@@ -196,9 +196,9 @@ interface ActionPlanProps {
 
 export function ActionPlanCard({ plan, period }: ActionPlanProps) {
   const categories = [
-    { label: "Hard Rules", items: plan.hardRules, color: "text-rose-500" },
+    { label: "Hard Rules", items: plan.hardRules, color: "text-destructive" },
     { label: "Optimization", items: plan.optimization, color: "text-primary" },
-    { label: "Training", items: plan.training, color: "text-amber-500" },
+    { label: "Training", items: plan.training, color: "text-warning" },
   ];
 
   return (

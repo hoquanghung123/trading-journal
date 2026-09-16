@@ -125,7 +125,7 @@ function Step({
     <li className="flex items-start gap-4 p-4 rounded-2xl border border-border bg-muted/20">
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-          done ? "bg-emerald-500/15 text-emerald-600" : "bg-primary/10 text-primary"
+          done ? "bg-primary/15 text-bull" : "bg-primary/10 text-primary"
         }`}
       >
         <Icon className="w-5 h-5" />

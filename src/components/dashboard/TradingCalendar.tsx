@@ -149,12 +149,12 @@ export function TradingCalendar() {
             <div className="flex items-center gap-3">
               <div className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-slate-100 flex items-center gap-2">
                 <span
-                  className={`text-sm sm:text-lg font-bold ${periodTotal.pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                  className={`text-sm sm:text-lg font-bold ${periodTotal.pnl >= 0 ? "text-bull" : "text-destructive"}`}
                 >
                   {periodTotal.pnl >= 0 ? "+" : ""}${Math.abs(periodTotal.pnl).toLocaleString()}
                 </span>
                 <span
-                  className={`text-xs sm:text-sm font-bold opacity-60 ${periodTotal.actualRr >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                  className={`text-xs sm:text-sm font-bold opacity-60 ${periodTotal.actualRr >= 0 ? "text-bull" : "text-destructive"}`}
                 >
                   {periodTotal.actualRr >= 0 ? "+" : ""}
                   {periodTotal.actualRr.toFixed(1)}R
@@ -265,7 +265,7 @@ export function TradingCalendar() {
                             key={j}
                             onClick={() => handleDayClick(day)}
                             className={`p-2 sm:p-4 flex flex-col justify-between cursor-pointer transition-all min-h-[80px] sm:min-h-[120px] relative
-                              ${pnl !== undefined ? (pnl >= 0 ? "bg-[#00C08B]" : "bg-[#FF2D55]") : "bg-white hover:bg-slate-50"}
+                              ${pnl !== undefined ? (pnl >= 0 ? "bg-bull" : "bg-destructive") : "bg-white hover:bg-slate-50"}
                               ${!isCurrentMonth ? "opacity-30" : ""}
                             `}
                           >
@@ -299,7 +299,7 @@ export function TradingCalendar() {
                       })}
                       <div className="hidden md:flex flex-col items-center justify-center bg-slate-50/50">
                         <span
-                          className={`text-sm font-bold font-mono ${weeklyPnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                          className={`text-sm font-bold font-mono ${weeklyPnl >= 0 ? "text-bull" : "text-destructive"}`}
                         >
                           {weeklyPnl >= 0 ? "+" : ""}${Math.abs(weeklyPnl).toLocaleString()}
                         </span>
@@ -327,7 +327,7 @@ export function TradingCalendar() {
                       setViewMode("day");
                     }}
                     className={`p-4 sm:p-8 flex flex-col justify-between cursor-pointer transition-all min-h-[120px] relative
-                      ${stats ? (stats.pnl >= 0 ? "bg-[#00C08B]" : "bg-[#FF2D55]") : "bg-white hover:bg-slate-50"}
+                      ${stats ? (stats.pnl >= 0 ? "bg-bull" : "bg-destructive") : "bg-white hover:bg-slate-50"}
                     `}
                   >
                     <div className="flex justify-between items-start">
@@ -382,7 +382,7 @@ export function TradingCalendar() {
                       setViewMode("month");
                     }}
                     className={`p-4 sm:p-8 flex flex-col justify-between cursor-pointer transition-all min-h-[120px] relative
-                      ${stats ? (stats.pnl >= 0 ? "bg-[#00C08B]" : "bg-[#FF2D55]") : "bg-white hover:bg-slate-50"}
+                      ${stats ? (stats.pnl >= 0 ? "bg-bull" : "bg-destructive") : "bg-white hover:bg-slate-50"}
                     `}
                   >
                     <div className="flex justify-between items-start">

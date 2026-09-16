@@ -19,8 +19,8 @@ import {
 const COLORS = {
   primary: "var(--primary)", // Dynamic Theme Color
   primaryLight: "var(--primary)", // Fallback or could be color-mix
-  emerald: "#10b981",
-  red: "#f43f5e",
+  emerald: "var(--bull)",
+  red: "var(--destructive)",
   grid: "rgba(0, 0, 0, 0.05)",
   gridDark: "rgba(255, 255, 255, 0.05)",
   text: "#64748B",
@@ -326,14 +326,14 @@ export function WinrateBarChart({ data, height = 250 }: ChartProps) {
 }
 
 const DISTRIBUTION_COLORS = [
-  "var(--primary)", // Dynamic Theme Color
-  "#10b981", // Emerald
-  "#3b82f6", // Blue
-  "#f59e0b", // Amber
-  "#f43f5e", // Rose
-  "#8b5cf6", // Violet
-  "#ec4899", // Pink
-  "#06b6d4", // Cyan
+  "var(--primary)",
+  "var(--bull)",
+  "var(--chart-3)",
+  "var(--warning)",
+  "var(--destructive)",
+  "var(--chart-2)",
+  "var(--chart-5)",
+  "var(--chart-4)",
 ];
 
 export function DistributionDonutChart({ data, height = 250 }: ChartProps) {

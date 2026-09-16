@@ -26,7 +26,7 @@ interface TradeGalleryCardProps {
 
 const gradeStyle: Record<string, string> = {
   "A+": "bg-primary text-primary-foreground shadow-primary/20",
-  A: "bg-amber-500 text-white shadow-amber-500/20",
+  A: "bg-warning text-warning-foreground shadow-warning/20",
   B: "bg-destructive text-destructive-foreground shadow-destructive/20",
 };
 
@@ -208,13 +208,13 @@ export function TradeGalleryCard({
                       {trade.missedConfluences.slice(0, 2).map((c) => (
                         <span
                           key={c}
-                          className="px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[8px] font-bold text-rose-500 uppercase tracking-tighter whitespace-nowrap"
+                          className="px-1.5 py-0.5 rounded bg-destructive/10 border border-destructive/20 text-[8px] font-bold text-destructive uppercase tracking-tighter whitespace-nowrap"
                         >
                           {c}
                         </span>
                       ))}
                       {trade.missedConfluences.length > 2 && (
-                        <span className="text-[8px] font-black text-rose-400 uppercase tracking-tighter px-1">
+                        <span className="text-[8px] font-black text-destructive uppercase tracking-tighter px-1">
                           +{trade.missedConfluences.length - 2} more
                         </span>
                       )}
@@ -269,9 +269,9 @@ export function TradeGalleryCard({
                         <div key={tf} className="flex items-center gap-1">
                           <span className="text-[9px] font-black uppercase text-foreground">{tf}</span>
                           {b === "bull" ? (
-                            <TrendingUp className="w-3 h-3 text-emerald-500" />
+                            <TrendingUp className="w-3 h-3 text-bull" />
                           ) : (
-                            <TrendingDown className="w-3 h-3 text-rose-500" />
+                            <TrendingDown className="w-3 h-3 text-destructive" />
                           )}
                         </div>
                       ))}

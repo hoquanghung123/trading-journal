@@ -358,7 +358,7 @@ export function StrategyDetail({
       ? '<p style="color:#94a3b8;font-style:italic">No lab notes yet.</p>'
       : (model.labNotes ?? []).map((n, i) => `
         <article style="margin-bottom:3rem;padding:2rem;background:#f8fafc;border-radius:24px;border:1px solid #e2e8f0">
-          <h3 style="font-size:1rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#6366f1;margin:0 0 1.5rem">
+          <h3 style="font-size:1rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#4C763B;margin:0 0 1.5rem">
             Note ${i + 1} · ${n.title || 'Untitled'}
           </h3>
           <div class="rich-content">${absolutizeHtml(n.content ?? '')}</div>
@@ -375,11 +375,11 @@ export function StrategyDetail({
     body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; padding: 3rem 1rem; }
     .wrapper { max-width: 900px; margin: 0 auto; }
     .header { background: #fff; border-radius: 32px; padding: 2.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
-    .header h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: -.04em; text-transform: uppercase; color: #6366f1; }
+    .header h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: -.04em; text-transform: uppercase; color: #4C763B; }
     .header .meta { font-size: .75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .1em; margin-top: .75rem; }
     .section { background: #fff; border-radius: 32px; padding: 2.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
-    .section-title { font-size: .65rem; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; color: #6366f1; margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem; }
-    .section-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #6366f1; border-radius: 50%; }
+    .section-title { font-size: .65rem; font-weight: 900; text-transform: uppercase; letter-spacing: .2em; color: #4C763B; margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem; }
+    .section-title::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #4C763B; border-radius: 50%; }
     .rich-content h1 { font-size: 2rem; font-weight: 700; margin: 2rem 0 1rem; }
     .rich-content h2 { font-size: 1.5rem; font-weight: 700; margin: 1.5rem 0 .75rem; }
     .rich-content h3 { font-size: 1.2rem; font-weight: 700; margin: 1.25rem 0 .5rem; }
@@ -387,9 +387,9 @@ export function StrategyDetail({
     .rich-content img { max-width: 100%; border-radius: 16px; margin: 1.5rem 0; box-shadow: 0 8px 32px rgba(0,0,0,.08); }
     .rich-content ul, .rich-content ol { padding-left: 1.5rem; margin-bottom: 1rem; }
     .rich-content li { line-height: 1.7; margin-bottom: .25rem; }
-    .rich-content blockquote { border-left: 4px solid #6366f1; padding-left: 1.5rem; color: #475569; font-style: italic; margin: 1.5rem 0; }
+    .rich-content blockquote { border-left: 4px solid #4C763B; padding-left: 1.5rem; color: #475569; font-style: italic; margin: 1.5rem 0; }
     .rich-content strong { font-weight: 800; }
-    .rich-content a { color: #6366f1; text-decoration: underline; }
+    .rich-content a { color: #4C763B; text-decoration: underline; }
     .empty { color: #94a3b8; font-style: italic; font-size: .875rem; }
   </style>
 </head>
@@ -491,7 +491,7 @@ export function StrategyDetail({
                 onClick={handleExportHtml}
                 className="rounded-xl font-black uppercase text-[10px] p-3 flex items-center gap-3 cursor-pointer"
               >
-                <Globe className="w-4 h-4 text-emerald-500" />
+                <Globe className="w-4 h-4 text-bull" />
                 <div>
                   <div>Export HTML</div>
                   <div className="text-[9px] font-medium normal-case text-muted-foreground tracking-normal">Đọc offline / lưu trữ</div>
@@ -502,7 +502,7 @@ export function StrategyDetail({
                 onClick={() => importFileRef.current?.click()}
                 className="rounded-xl font-black uppercase text-[10px] p-3 flex items-center gap-3 cursor-pointer"
               >
-                <Upload className="w-4 h-4 text-amber-500" />
+                <Upload className="w-4 h-4 text-warning" />
                 <div>
                   <div>Import JSON</div>
                   <div className="text-[9px] font-medium normal-case text-muted-foreground tracking-normal">Khôi phục từ backup</div>
@@ -529,7 +529,7 @@ export function StrategyDetail({
           </button>
           <button
             onClick={() => onDelete(model.id)}
-            className="p-2.5 hover:bg-rose-500/5 rounded-xl text-muted-foreground hover:text-rose-500 transition-all active:scale-95 border border-transparent hover:border-rose-500/10"
+            className="p-2.5 hover:bg-destructive/5 rounded-xl text-muted-foreground hover:text-destructive transition-all active:scale-95 border border-transparent hover:border-destructive/10"
             title="Delete Setup"
           >
             <Trash2 className="w-4 h-4" />
@@ -575,9 +575,9 @@ export function StrategyDetail({
                 <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mb-2">Win Rate</p>
                 <p className="text-4xl font-black text-primary">64%</p>
               </div>
-              <div className="px-10 py-8 rounded-[32px] bg-emerald-500/[0.03] border border-emerald-500/5 text-center min-w-[160px] shadow-sm">
+              <div className="px-10 py-8 rounded-[32px] bg-primary/[0.03] border border-primary/5 text-center min-w-[160px] shadow-sm">
                 <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mb-2">Avg RR</p>
-                <p className="text-4xl font-black text-emerald-500">2.4</p>
+                <p className="text-4xl font-black text-bull">2.4</p>
               </div>
             </div>
           </div>
@@ -733,7 +733,7 @@ export function StrategyDetail({
                           <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Syncing...
                         </div>
                       ) : lastSavedAtDef ? (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] bg-emerald-500/5 px-4 py-2 rounded-full border border-emerald-500/10">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-bull uppercase tracking-[0.2em] bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Saved at {lastSavedAtDef}
                         </div>
                       ) : null}
@@ -763,7 +763,7 @@ export function StrategyDetail({
                           return (
                             <div key={groupKey} className="space-y-3">
                               <p className="text-[10px] font-bold text-primary uppercase tracking-widest opacity-70 flex items-center gap-2">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                <CheckCircle2 className="w-3.5 h-3.5 text-bull" />
                                 {groupKey}
                               </p>
                               {items.length === 0 ? (
@@ -772,7 +772,7 @@ export function StrategyDetail({
                                 <ul className="space-y-2">
                                   {items.map((item) => (
                                     <li key={item} className="flex items-start gap-2 p-3 rounded-2xl bg-primary/[0.01] border border-primary/5 hover:bg-primary/[0.03] transition-all">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+                                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
                                       <span className="text-sm font-medium text-foreground leading-relaxed">{item}</span>
                                     </li>
                                   ))}
@@ -879,7 +879,7 @@ export function StrategyDetail({
                               e.stopPropagation();
                               deleteLabNote(note.id);
                             }}
-                            className="absolute -right-1 -top-1 w-8 h-8 bg-white border border-primary/10 shadow-xl flex items-center justify-center opacity-0 group-hover/item:opacity-100 text-rose-500 hover:bg-rose-500 hover:text-white rounded-full transition-all scale-75 group-hover/item:scale-100"
+                            className="absolute -right-1 -top-1 w-8 h-8 bg-white border border-primary/10 shadow-xl flex items-center justify-center opacity-0 group-hover/item:opacity-100 text-destructive hover:bg-destructive/100 hover:text-white rounded-full transition-all scale-75 group-hover/item:scale-100"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </button>
@@ -911,7 +911,7 @@ export function StrategyDetail({
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Syncing...
                               </div>
                             ) : lastSavedAt ? (
-                              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] bg-emerald-500/5 px-4 py-2 rounded-full border border-emerald-500/10">
+                              <div className="flex items-center gap-2 text-[10px] font-black text-bull uppercase tracking-[0.2em] bg-primary/5 px-4 py-2 rounded-full border border-primary/10">
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Saved at {lastSavedAt}
                               </div>
                             ) : null}
@@ -986,13 +986,13 @@ export function StrategyDetail({
                           <div className="flex items-center gap-12">
                             <div className="text-right">
                               <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 mb-1">Result</p>
-                              <p className={`text-lg font-black ${trade.actualRr > 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                              <p className={`text-lg font-black ${trade.actualRr > 0 ? "text-bull" : "text-destructive"}`}>
                                 {trade.actualRr > 0 ? "+" : ""}{trade.actualRr.toFixed(1)}R
                               </p>
                             </div>
                             <div className="text-right">
                               <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-40 mb-1">Compliance</p>
-                              <div className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${trade.complianceCheck ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                              <div className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${trade.complianceCheck ? "bg-primary/10 text-bull" : "bg-destructive/10 text-destructive"}`}>
                                 {trade.complianceCheck ? "Pass" : "Fail"}
                               </div>
                             </div>
@@ -1041,7 +1041,7 @@ export function StrategyDetail({
                                 });
                                 toast.success("Module removed");
                               }}
-                              className="p-3 bg-white border border-rose-500/5 rounded-xl text-muted-foreground hover:text-rose-500 hover:border-rose-500/20 transition-all shadow-sm"
+                              className="p-3 bg-white border border-destructive/5 rounded-xl text-muted-foreground hover:text-destructive hover:border-destructive/20 transition-all shadow-sm"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1200,7 +1200,7 @@ export function StrategyDetail({
                           ...prev,
                           subLinks: prev.subLinks.filter(l => l.id !== link.id)
                         }))}
-                        className="text-rose-500 p-1 hover:bg-rose-50 rounded-lg"
+                        className="text-destructive p-1 hover:bg-destructive/10 rounded-lg"
                       >
                         <X className="w-4 h-4" />
                       </button>

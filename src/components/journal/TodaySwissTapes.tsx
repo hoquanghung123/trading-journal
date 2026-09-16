@@ -40,6 +40,41 @@ function AssetIcon({
   );
 }
 
+function BiasChoice({
+  value,
+  image,
+  onChange,
+  stretch,
+}: {
+  value: Bias | undefined;
+  image?: string;
+  onChange: (b: Bias) => void;
+  stretch?: boolean;
+}) {
+  return (
+    <div className="flex gap-1">
+      {(["bullish", "bearish", "consolidation"] as Bias[]).map((b) => {
+        const active = value === b && (b !== "consolidation" || isHtfBiasSet(value, image));
+        return (
+          <button
+            key={b}
+            type="button"
+            onClick={() => onChange(b)}
+            className={`${stretch ? "flex-1 py-1 rounded" : "px-2.5 py-1 rounded-lg"} text-[9px] font-extrabold uppercase border transition-all ${
+              active
+                ? "border-transparent shadow-sm"
+                : "bg-card text-muted-foreground border-border hover:bg-muted"
+            }`}
+            style={active ? biasStyle(b) : undefined}
+          >
+            {b === "bullish" ? "Bull" : b === "bearish" ? "Bear" : "Cons"}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface Props {
   entries: DayEntry[];
   watchlist: string[];
@@ -304,26 +339,11 @@ export function TodaySwissTapes({
 
                         {/* Monthly Controls */}
                         <div className="flex items-center gap-3">
-                          <div className="flex gap-1">
-                            {(["bullish", "bearish", "consolidation"] as Bias[]).map((b) => (
-                              <button
-                                key={b}
-                                onClick={() => onUpdate({ ...entry, monthlyBias: b })}
-                                className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
-                                  entry.monthlyBias === b &&
-                                  (b !== "consolidation" || isHtfBiasSet(entry.monthlyBias, entry.monthlyImg))
-                                    ? b === "bullish"
-                                      ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                                      : b === "bearish"
-                                        ? "bg-rose-500 text-white border-rose-500 shadow-sm"
-                                        : "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                    : "bg-card text-muted-foreground border-border hover:bg-muted"
-                                }`}
-                              >
-                                {b === "bullish" ? "Bull" : b === "bearish" ? "Bear" : "Cons"}
-                              </button>
-                            ))}
-                          </div>
+                          <BiasChoice
+                            value={entry.monthlyBias}
+                            image={entry.monthlyImg}
+                            onChange={(b) => onUpdate({ ...entry, monthlyBias: b })}
+                          />
 
                           <div className="flex items-center gap-1.5 pl-3 border-l border-border/60">
                             <span className="text-[9px] font-bold text-muted-foreground uppercase">
@@ -365,26 +385,11 @@ export function TodaySwissTapes({
 
                       {/* Weekly Controls */}
                       <div className="flex items-center gap-3">
-                        <div className="flex gap-1">
-                          {(["bullish", "bearish", "consolidation"] as Bias[]).map((b) => (
-                            <button
-                              key={b}
-                              onClick={() => onUpdate({ ...entry, weeklyBias: b })}
-                              className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
-                                entry.weeklyBias === b &&
-                                (b !== "consolidation" || isHtfBiasSet(entry.weeklyBias, entry.weeklyImg))
-                                  ? b === "bullish"
-                                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                                    : b === "bearish"
-                                      ? "bg-rose-500 text-white border-rose-500 shadow-sm"
-                                      : "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                  : "bg-card text-muted-foreground border-border hover:bg-muted"
-                              }`}
-                            >
-                              {b === "bullish" ? "Bull" : b === "bearish" ? "Bear" : "Cons"}
-                            </button>
-                          ))}
-                        </div>
+                        <BiasChoice
+                          value={entry.weeklyBias}
+                          image={entry.weeklyImg}
+                          onChange={(b) => onUpdate({ ...entry, weeklyBias: b })}
+                        />
 
                         <div className="flex items-center gap-1.5 pl-3 border-l border-border/60">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase">
@@ -425,26 +430,11 @@ export function TodaySwissTapes({
 
                       {/* Daily Controls */}
                       <div className="flex items-center gap-3">
-                        <div className="flex gap-1">
-                          {(["bullish", "bearish", "consolidation"] as Bias[]).map((b) => (
-                            <button
-                              key={b}
-                              onClick={() => onUpdate({ ...entry, dailyBias: b })}
-                              className={`px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-lg border transition-all ${
-                                entry.dailyBias === b &&
-                                (b !== "consolidation" || isHtfBiasSet(entry.dailyBias, entry.dailyImg))
-                                  ? b === "bullish"
-                                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                                    : b === "bearish"
-                                      ? "bg-rose-500 text-white border-rose-500 shadow-sm"
-                                      : "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                  : "bg-card text-muted-foreground border-border hover:bg-muted"
-                              }`}
-                            >
-                              {b === "bullish" ? "Bull" : b === "bearish" ? "Bear" : "Cons"}
-                            </button>
-                          ))}
-                        </div>
+                        <BiasChoice
+                          value={entry.dailyBias}
+                          image={entry.dailyImg}
+                          onChange={(b) => onUpdate({ ...entry, dailyBias: b })}
+                        />
 
                         <div className="flex items-center gap-1.5 pl-3 border-l border-border/60">
                           <span className="text-[9px] font-bold text-muted-foreground uppercase">
@@ -512,36 +502,21 @@ export function TodaySwissTapes({
                             </span>
 
                             {/* Session Bias Controls */}
-                            <div className="flex gap-1">
-                              {(["bullish", "bearish", "consolidation"] as Bias[]).map((b) => (
-                                <button
-                                  key={b}
-                                  onClick={() => {
-                                    const currentH4 = entry.h4[sessionName] || {};
-                                    onUpdate({
-                                      ...entry,
-                                      h4: {
-                                        ...entry.h4,
-                                        [sessionName]: { ...currentH4, bias: b },
-                                      },
-                                    });
-                                  }}
-                                  className={`flex-1 py-1 text-[9px] font-extrabold uppercase rounded border transition-all ${
-                                    sessionBias === b &&
-                                    (b !== "consolidation" ||
-                                      isHtfBiasSet(sessionBias, sessionData?.img))
-                                      ? b === "bullish"
-                                        ? "bg-emerald-500 text-white border-emerald-500"
-                                        : b === "bearish"
-                                          ? "bg-rose-500 text-white border-rose-500"
-                                          : "bg-amber-500 text-white border-amber-500"
-                                      : "bg-card text-muted-foreground border-border hover:bg-muted"
-                                  }`}
-                                >
-                                  {b === "bullish" ? "Bull" : b === "bearish" ? "Bear" : "Cons"}
-                                </button>
-                              ))}
-                            </div>
+                            <BiasChoice
+                              stretch
+                              value={sessionBias}
+                              image={sessionData?.img}
+                              onChange={(b) => {
+                                const currentH4 = entry.h4[sessionName] || {};
+                                onUpdate({
+                                  ...entry,
+                                  h4: {
+                                    ...entry.h4,
+                                    [sessionName]: { ...currentH4, bias: b },
+                                  },
+                                });
+                              }}
+                            />
                           </div>
 
                           <PasteSlot

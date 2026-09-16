@@ -52,8 +52,8 @@ button {
 .glow {
   height: 132px;
   margin: -16px -16px 0;
-  background: radial-gradient(circle at 8% -15%, #123d4388, transparent 46%),
-              radial-gradient(circle at 95% 5%, #10323a55, transparent 42%),
+  background: radial-gradient(circle at 8% -15%, #1A3D2288, transparent 46%),
+              radial-gradient(circle at 95% 5%, #14281A55, transparent 42%),
               linear-gradient(180deg, #09141b, #050a10);
 }
 
@@ -108,8 +108,8 @@ button {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: linear-gradient(145deg, #21c7ae, #087f79);
-  box-shadow: 0 0 22px #18b9a34d;
+  background: linear-gradient(145deg, #4C763B, #3A5C2D);
+  box-shadow: 0 0 22px #4C763B4d;
   color: white;
   font-weight: bold;
 }
@@ -119,7 +119,7 @@ button {
   height: 34px;
   border-radius: 10px;
   background: #17262d;
-  color: #8fe4d8;
+  color: #6B9A5C;
 }
 
 .title {
@@ -227,8 +227,8 @@ button {
 
 .chip.active, .navbtn.active, .subbtn.active, .control.active {
   background: #17242b;
-  border-color: #2cc7b4;
-  box-shadow: 0 0 0 1px #2cc7b433 inset, 0 0 16px #16b8a229;
+  border-color: #4C763B;
+  box-shadow: 0 0 0 1px #4C763B33 inset, 0 0 16px #4C763B29;
 }
 
 .badge {
@@ -236,7 +236,7 @@ button {
   padding: 4px 8px;
   border-radius: 999px;
   background: #142329;
-  color: #8fe4d8;
+  color: #6B9A5C;
 }
 
 /* Asset Item Cards */
@@ -299,7 +299,7 @@ button {
   background: #172616;
   border: 1px solid #416f35;
   border-bottom: 3px solid #5b9148;
-  box-shadow: 0 5px 12px #0005, 0 0 10px #47763a18;
+  box-shadow: 0 5px 12px #0005, 0 0 10px #4C763B18;
 }
 
 .tf.bear {
@@ -376,10 +376,10 @@ button {
 }
 
 .directions button:nth-child(1).active {
-  background: #47763a;
-  border-color: #47763a;
+  background: #4C763B;
+  border-color: #4C763B;
   color: #fff;
-  box-shadow: 0 0 18px #47763a4d;
+  box-shadow: 0 0 18px #4C763B4d;
 }
 
 .directions button:nth-child(2).active {
@@ -467,7 +467,7 @@ button {
 
 .url-input-container button {
   background: #17242b;
-  border: 1px solid #2cc7b4;
+  border: 1px solid #4C763B;
   color: white;
   border-radius: 8px;
   padding: 8px 12px;
@@ -495,11 +495,11 @@ button {
 }
 
 .hero {
-  background: linear-gradient(135deg, #12343a, #126d68);
+  background: linear-gradient(135deg, #1A2E16, #3A5C2D);
   border-radius: 20px;
   padding: 18px;
   text-align: center;
-  box-shadow: 0 15px 34px #0ca89533;
+  box-shadow: 0 15px 34px #3A5C2D33;
 }
 
 .ring {
@@ -509,7 +509,7 @@ button {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: conic-gradient(#34d5bd 0 62%, #ffffff1a 62%);
+  background: conic-gradient(#6B9A5C 0 62%, #ffffff1a 62%);
   position: relative;
 }
 
@@ -518,7 +518,7 @@ button {
   position: absolute;
   inset: 11px;
   border-radius: 50%;
-  background: #15534f;
+  background: #3A5C2D;
 }
 
 .ring b {
@@ -565,9 +565,9 @@ button {
 }
 
 .day.done {
-  background: #1db8a3;
+  background: #4C763B;
   color: #fff;
-  box-shadow: 0 0 12px #1db8a355;
+  box-shadow: 0 0 12px #4C763B55;
 }
 
 .badges {
@@ -622,7 +622,7 @@ button {
 }
 
 .profit {
-  color: #27cbb2;
+  color: #6B9A5C;
 }
 
 .loss {
@@ -632,18 +632,18 @@ button {
 .new {
   width: 100%;
   margin-top: 13px;
-  background: linear-gradient(135deg, #25c7ae, #0f958c);
+  background: linear-gradient(135deg, #4C763B, #3A5C2D);
   border: 0;
   color: #fff;
   border-radius: 11px;
   padding: 11px;
-  box-shadow: 0 8px 22px #12b6a13d;
+  box-shadow: 0 8px 22px #4C763B3d;
   transition: all 0.3s ease;
 }
 
 .new.saved {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.24);
+  background: linear-gradient(135deg, #4C763B, #3A5C2D);
+  box-shadow: 0 8px 22px rgba(76, 118, 59, 0.24);
   animation: pulse-scale 0.4s ease-out;
 }
 
@@ -705,10 +705,10 @@ button {
 }
 
 .bottom .navbtn.active {
-  color: #45dbc8;
-  background: linear-gradient(145deg, #18322f, #102522);
-  border: 1px solid #2ebba8;
-  box-shadow: 0 0 0 1px #45dbc81a inset, 0 7px 18px #0fb9a12e;
+  color: #6B9A5C;
+  background: linear-gradient(145deg, #1A2E16, #14281A);
+  border: 1px solid #4C763B;
+  box-shadow: 0 0 0 1px #6B9A5C1a inset, 0 7px 18px #4C763B2e;
 }
 
 .bottom .navbtn.active:after {
@@ -718,8 +718,8 @@ button {
   width: 18px;
   height: 2px;
   border-radius: 99px;
-  background: #45dbc8;
-  box-shadow: 0 0 8px #45dbc8;
+  background: #6B9A5C;
+  box-shadow: 0 0 8px #6B9A5C;
 }
 
 .bottom .navbtn:active {
@@ -795,12 +795,12 @@ button {
   height: 38px;
   border: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, #25c7ae, #0f958c);
+  background: linear-gradient(135deg, #4C763B, #3A5C2D);
   color: #fff;
   font-size: 24px;
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 22px #12b6a13d;
+  box-shadow: 0 8px 22px #4C763B3d;
 }
 
 .form {

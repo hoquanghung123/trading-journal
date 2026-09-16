@@ -164,13 +164,13 @@ export function AccountModal({ onClose, onRefresh }: AccountModalProps) {
                       <button
                         onClick={() => handleSave(f)}
                         disabled={saving}
-                        className="p-2 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-xl transition-all"
+                        className="p-2 text-bull hover:bg-primary/10 dark:hover:bg-primary/10 rounded-xl transition-all"
                       >
                         <Save className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(f.id)}
-                        className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                        className="p-2 text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/10 rounded-xl transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

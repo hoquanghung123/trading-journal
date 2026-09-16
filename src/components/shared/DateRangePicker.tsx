@@ -78,7 +78,7 @@ export function DateRangePicker({
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 text-emerald-500" />
+            <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
             {date?.from ? (
               date.to ? (
                 <>
@@ -104,7 +104,7 @@ export function DateRangePicker({
                 variant="ghost"
                 className={cn(
                   "justify-between font-normal text-sm px-2 py-1.5 h-auto",
-                  isPresetSelected(preset.value) ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" : "hover:bg-white/5"
+                  isPresetSelected(preset.value) ? "bg-primary/10 text-primary hover:bg-primary/20" : "hover:bg-white/5"
                 )}
                 onClick={() => {
                   setDate(preset.value)
@@ -125,9 +125,9 @@ export function DateRangePicker({
               onSelect={setDate}
               numberOfMonths={2}
               classNames={{
-                range_start: "bg-emerald-600 text-white rounded-l-md",
-                range_end: "bg-emerald-600 text-white rounded-r-md",
-                range_middle: "bg-emerald-500/20 text-emerald-900 dark:text-emerald-100",
+                range_start: "bg-primary text-primary-foreground rounded-l-md",
+                range_end: "bg-primary text-primary-foreground rounded-r-md",
+                range_middle: "bg-primary/20 text-primary",
               }}
             />
           </div>

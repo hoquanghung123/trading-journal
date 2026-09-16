@@ -248,7 +248,7 @@ function AdminUsersDashboard() {
     <div className="min-h-screen bg-background text-foreground p-6 md:p-10 font-sans relative overflow-hidden">
       {/* Light glows */}
       <div className="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
@@ -389,12 +389,12 @@ function AdminUsersDashboard() {
                       {/* Role Badge */}
                       <td className="px-6 py-4 text-center whitespace-nowrap">
                         {user.role === "admin" ? (
-                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
                             <Shield size={10} />
                             Admin
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                             <UserCheck size={10} />
                             Member
                           </span>

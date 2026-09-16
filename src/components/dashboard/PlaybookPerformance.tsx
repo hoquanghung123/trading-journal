@@ -115,7 +115,7 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
               label="Playbook Winrate"
               value={`${stats.winRate.toFixed(1)}%`}
               subValue={`${stats.wins} Wins / ${stats.total} Trades`}
-              icon={<TrendingUp className="w-4 h-4 text-emerald-500" />}
+              icon={<TrendingUp className="w-4 h-4 text-bull" />}
               tooltip="Tỉ lệ thắng chỉ tính riêng cho các lệnh tuân thủ đúng Playbook (Compliance Check = True)."
             />
           </div>

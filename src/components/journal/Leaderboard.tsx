@@ -105,7 +105,7 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
     You: "#94A3B8",
   };
 
-  const palette = ["#EAB308", "#3B82F6", "#10B981", "#F43F5E", "#8B5CF6"];
+  const palette = ["var(--warning)", "var(--chart-3)", "var(--bull)", "var(--destructive)", "var(--chart-2)"];
   usernames
     .filter((u) => u !== "You")
     .forEach((u, i) => {
@@ -119,12 +119,12 @@ function WeeklyActivityChart({ data }: { data: WeeklyActivity[] }) {
       className="space-y-4"
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Trophy className="w-6 h-6 text-blue-500" />
+            <Trophy className="w-6 h-6 text-primary" />
           </motion.div>
         </div>
         <div className="flex items-center gap-2">
@@ -247,7 +247,7 @@ function LeaderboardItem({
         ) : rank === 2 ? (
           <Medal className="w-6 h-6 text-slate-400" />
         ) : rank === 3 ? (
-          <Medal className="w-6 h-6 text-amber-700" />
+          <Medal className="w-6 h-6 text-warning" />
         ) : (
           <span className="text-sm font-black text-muted-foreground">#{rank}</span>
         )}
@@ -273,7 +273,7 @@ function LeaderboardItem({
             {profile.displayName}
           </span>
           {profile.activeTitle && (
-            <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-[8px] font-black text-blue-600 uppercase border border-blue-500/20 whitespace-nowrap">
+            <span className="px-2 py-0.5 rounded-md bg-primary/10 text-[8px] font-black text-primary uppercase border border-primary/20 whitespace-nowrap">
               {profile.activeTitle}
             </span>
           )}

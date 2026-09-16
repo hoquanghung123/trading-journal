@@ -212,8 +212,8 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
                                 }
                                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                                   bias === "bull"
-                                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                                    : "text-muted-foreground/30 hover:text-emerald-500"
+                                    ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                    : "text-muted-foreground/30 hover:text-primary"
                                 }`}
                               >
                                 <TrendingUp className="w-3.5 h-3.5" />
@@ -224,8 +224,8 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
                                 }
                                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                                   bias === "bear"
-                                    ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
-                                    : "text-muted-foreground/30 hover:text-rose-500"
+                                    ? "bg-destructive text-white shadow-lg shadow-destructive/20"
+                                    : "text-muted-foreground/30 hover:text-destructive"
                                 }`}
                               >
                                 <TrendingUp className="w-3.5 h-3.5 rotate-180" />
@@ -276,7 +276,7 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
                             values[metric.id] === p.toLowerCase()
                               ? p === "High"
                                 ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                : "bg-amber-500 text-white shadow-lg shadow-amber-500/20"
+                                : "bg-warning text-white shadow-lg shadow-warning/20"
                               : "bg-white border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/20"
                           }`}
                         >

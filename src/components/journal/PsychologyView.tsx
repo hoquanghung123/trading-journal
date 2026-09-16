@@ -139,7 +139,7 @@ export function PsychologyView() {
         disabled={disabled || saving}
         className={`flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
           justSaved
-            ? "bg-emerald-500 text-white shadow-emerald-500/20"
+            ? "bg-primary text-white shadow-primary/20"
             : "forest-gradient text-white shadow-primary/20 hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
         }`}
       >
@@ -335,7 +335,7 @@ export function PsychologyView() {
                 <p className="italic text-muted-foreground text-sm leading-relaxed font-medium px-2">
                   "You don't trade the markets, you trade your beliefs about the markets."
                 </p>
-                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs font-bold leading-relaxed shadow-sm">
+                <div className="p-4 rounded-xl bg-warning/10 border border-warning/20 text-warning text-xs font-bold leading-relaxed shadow-sm">
                   <ShieldAlert className="w-4 h-4 inline-block mr-2 -mt-0.5" />
                   REMINDER: If your heart rate is high, your position size is likely too big.
                 </div>

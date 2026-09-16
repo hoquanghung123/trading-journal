@@ -363,7 +363,7 @@ function AdminBackupsDashboard() {
     <div className="min-h-screen bg-background text-foreground p-6 md:p-10 font-sans relative overflow-hidden">
       {/* Dynamic light glows */}
       <div className="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
@@ -481,8 +481,8 @@ function AdminBackupsDashboard() {
           >
             Chart Sync Monitor (Real-time)
             <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
             {activeTab === "realtime" && (
               <span className="absolute bottom-[-2px] left-0 w-full h-[2px] bg-primary blur-[2px]" />
@@ -526,18 +526,18 @@ function AdminBackupsDashboard() {
                   {lastSync ? (
                     lastSync.db_status === "running" ? (
                       <>
-                        <Loader2 size={16} className="animate-spin text-amber-500" />
-                        <span className="text-lg font-black text-amber-500 uppercase tracking-wider">Đang đồng bộ</span>
+                        <Loader2 size={16} className="animate-spin text-warning" />
+                        <span className="text-lg font-black text-warning uppercase tracking-wider">Đang đồng bộ</span>
                       </>
                     ) : lastSync.db_status === "success" && lastSync.r2_status === "success" ? (
                       <>
-                        <CheckCircle2 size={18} className="text-emerald-500" />
-                        <span className="text-lg font-black text-emerald-500 uppercase tracking-wider">Đồng bộ xong</span>
+                        <CheckCircle2 size={18} className="text-bull" />
+                        <span className="text-lg font-black text-bull uppercase tracking-wider">Đồng bộ xong</span>
                       </>
                     ) : (
                       <>
-                        <XCircle size={18} className="text-rose-500" />
-                        <span className="text-lg font-black text-rose-500 uppercase tracking-wider">Gặp lỗi</span>
+                        <XCircle size={18} className="text-destructive" />
+                        <span className="text-lg font-black text-destructive uppercase tracking-wider">Gặp lỗi</span>
                       </>
                     )
                   ) : (
@@ -651,16 +651,16 @@ function AdminBackupsDashboard() {
 
                           <td className="px-6 py-4 text-center whitespace-nowrap">
                             {log.db_status === "success" ? (
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                                 Success
                               </span>
                             ) : log.db_status === "running" ? (
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
                                 <Loader2 size={10} className="animate-spin" />
                                 Running
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-destructive/10 text-destructive border border-destructive/20">
                                 Failed
                               </span>
                             )}
@@ -668,16 +668,16 @@ function AdminBackupsDashboard() {
 
                           <td className="px-6 py-4 text-center whitespace-nowrap">
                             {log.r2_status === "success" ? (
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                                 Synced
                               </span>
                             ) : log.r2_status === "running" ? (
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
                                 <Loader2 size={10} className="animate-spin" />
                                 Syncing
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-destructive/10 text-destructive border border-destructive/20">
                                 Failed
                               </span>
                             )}
@@ -734,14 +734,14 @@ function AdminBackupsDashboard() {
               {/* Stat 1: Success Today */}
               <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform">
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
                     <CheckCircle2 size={18} />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Đồng bộ hôm nay
                   </span>
                 </div>
-                <div className="text-2xl font-black tracking-tight text-emerald-400 mt-2">
+                <div className="text-2xl font-black tracking-tight text-primary mt-2">
                   {countSuccessToday} <span className="text-xs text-muted-foreground/60 font-semibold font-sans uppercase">Tệp tin</span>
                 </div>
                 <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
@@ -752,14 +752,14 @@ function AdminBackupsDashboard() {
               {/* Stat 2: Failed Today */}
               <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${countFailedToday > 0 ? "bg-rose-500/10 text-rose-400" : "bg-primary/10 text-primary"}`}>
+                  <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${countFailedToday > 0 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
                     {countFailedToday > 0 ? <AlertTriangle size={18} /> : <XCircle size={18} />}
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     Lỗi đồng bộ hôm nay
                   </span>
                 </div>
-                <div className={`text-2xl font-black tracking-tight mt-2 ${countFailedToday > 0 ? "text-rose-400 animate-pulse" : "text-foreground"}`}>
+                <div className={`text-2xl font-black tracking-tight mt-2 ${countFailedToday > 0 ? "text-destructive animate-pulse" : "text-foreground"}`}>
                   {countFailedToday} <span className="text-xs text-muted-foreground/60 font-semibold font-sans uppercase">Tệp tin</span>
                 </div>
                 <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
@@ -797,10 +797,10 @@ function AdminBackupsDashboard() {
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
                   </span>
-                  <span className="text-lg font-black text-emerald-400 uppercase tracking-wider">Hoạt động</span>
+                  <span className="text-lg font-black text-primary uppercase tracking-wider">Hoạt động</span>
                 </div>
                 <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
                   Tự động chuyển tiếp khi paste ảnh
@@ -903,16 +903,16 @@ function AdminBackupsDashboard() {
                             {/* Status */}
                             <td className="px-6 py-4 text-center whitespace-nowrap">
                               {log.status === "success" ? (
-                                <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                                   Success
                                 </span>
                               ) : log.status === "starting" ? (
-                                <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
                                   <Loader2 size={10} className="animate-spin" />
                                   Syncing
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-destructive/10 text-destructive border border-destructive/20">
                                   Failed
                                 </span>
                               )}
@@ -1076,11 +1076,11 @@ function AdminBackupsDashboard() {
                                       {formatDateTime(group.history_timestamp)}
                                     </span>
                                     {group.history_action === "UPDATE" ? (
-                                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
                                         UPDATE
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                      <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-destructive/10 text-destructive border border-destructive/20">
                                         DELETE
                                       </span>
                                     )}
@@ -1133,7 +1133,7 @@ function AdminBackupsDashboard() {
                                         }
                                       }}
                                       disabled={restoreVersionMutation.isPending}
-                                      className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
+                                      className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary/100 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
                                     >
                                       {restoreVersionMutation.isPending ? (
                                         <Loader2 size={12} className="animate-spin" />
@@ -1180,7 +1180,7 @@ function AdminBackupsDashboard() {
                                               }
                                             }}
                                             disabled={restoreVersionMutation.isPending}
-                                            className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-emerald-500/20 dark:border-emerald-500/10 bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
+                                            className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-primary/20 dark:border-primary/10 bg-primary/5 dark:bg-primary/10 text-bull dark:text-primary hover:bg-primary/100 hover:text-white dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
                                           >
                                             <RefreshCw size={10} />
                                             Rollback
@@ -1322,15 +1322,15 @@ function AdminBackupsDashboard() {
                     </span>
                     <span className="mt-1 block">
                       {selectedRealtimeLog.status === "success" ? (
-                        <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                           Success
                         </span>
                       ) : selectedRealtimeLog.status === "starting" ? (
-                        <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
                           Syncing
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-destructive/10 text-destructive border border-destructive/20">
                           Failed
                         </span>
                       )}
@@ -1356,10 +1356,10 @@ function AdminBackupsDashboard() {
               {/* Error log if failed */}
               {selectedRealtimeLog.status === "failed" && (
                 <div className="space-y-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-rose-400 block flex items-center gap-1.5">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-destructive block flex items-center gap-1.5">
                     <AlertTriangle size={12} /> Thông tin lỗi từ Microsoft Graph API
                   </span>
-                  <pre className="w-full bg-rose-950/20 border border-rose-900/40 rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed text-rose-300 font-mono whitespace-pre-wrap select-all max-h-[150px]">
+                  <pre className="w-full bg-destructive/10 border border-destructive/30 rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed text-destructive font-mono whitespace-pre-wrap select-all max-h-[150px]">
                     {selectedRealtimeLog.error_message || "Không ghi nhận thông điệp lỗi cụ thể từ API."}
                   </pre>
                 </div>
@@ -1441,7 +1441,7 @@ function AdminBackupsDashboard() {
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
                       Hành động
                     </span>
-                    <span className={`font-bold text-xs uppercase ${selectedHistoryVersion.history_action === 'DELETE' ? 'text-rose-400 text-glow-rose' : 'text-amber-400 text-glow-cyan'}`}>
+                    <span className={`font-bold text-xs uppercase ${selectedHistoryVersion.history_action === 'DELETE' ? 'text-destructive text-glow-rose' : 'text-warning text-glow-cyan'}`}>
                       {selectedHistoryVersion.history_action}
                     </span>
                   </div>
@@ -1595,7 +1595,7 @@ function AdminBackupsDashboard() {
                       </div>
                       <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-center">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Net Profit/Loss</span>
-                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-emerald-600 dark:text-emerald-400 text-glow-cyan" : "text-rose-600 dark:text-rose-400 text-glow-rose"}`}>
+                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-bull dark:text-primary text-glow-cyan" : "text-destructive dark:text-destructive text-glow-rose"}`}>
                           ${snap.net_pnl || "0.00"}
                         </span>
                       </div>
@@ -1621,7 +1621,7 @@ function AdminBackupsDashboard() {
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">Tuân thủ nguyên tắc</span>
-                        <span className={`font-black uppercase text-[10px] mt-1 inline-block px-2 py-0.5 rounded ${snap.compliance_check ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/10 text-rose-600 dark:text-rose-400"}`}>
+                        <span className={`font-black uppercase text-[10px] mt-1 inline-block px-2 py-0.5 rounded ${snap.compliance_check ? "bg-primary/10 text-bull dark:text-primary" : "bg-destructive/10 text-destructive dark:text-destructive"}`}>
                           {snap.compliance_check ? "PASSED" : "FAILED"}
                         </span>
                       </div>
@@ -1763,7 +1763,7 @@ function AdminBackupsDashboard() {
                       }
                     }}
                     disabled={restoreVersionMutation.isPending}
-                    className="inline-flex h-10 px-5 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all active:scale-95 text-xs font-black uppercase tracking-wider disabled:opacity-50"
+                    className="inline-flex h-10 px-5 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary/100 hover:text-white transition-all active:scale-95 text-xs font-black uppercase tracking-wider disabled:opacity-50"
                   >
                     <RefreshCw size={12} className={restoreVersionMutation.isPending ? "animate-spin" : ""} />
                     Khôi phục (Rollback) ngay

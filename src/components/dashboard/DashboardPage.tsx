@@ -213,25 +213,25 @@ export function DashboardPage() {
             <StatItem
               label="SQN"
               value={stats.sqn.toFixed(2)}
-              color={stats.sqn >= 2 ? "text-emerald-500" : undefined}
+              color={stats.sqn >= 2 ? "text-bull" : undefined}
               tooltip="System Quality Number: Đánh giá chất lượng hệ thống (chỉ tính trên các lệnh đúng kỷ luật). Công thức: (Lợi nhuận TB / Độ lệch chuẩn PnL) × √Số lệnh."
             />
             <StatItem
               label="R Achieved"
               value={`${stats.totalR.toFixed(1)}R`}
-              color="text-emerald-500"
+              color="text-bull"
               tooltip="Tổng số đơn vị R (Risk-Reward) thực tế đạt được từ tất cả các lệnh thực hiện (bao gồm follow và không follow playbook)."
             />
             <StatItem
               label="Max RR Reached"
               value={`${stats.totalMaxR.toFixed(1)}R`}
-              color="text-amber-500"
+              color="text-warning"
               tooltip="Tổng số đơn vị R tối đa tiềm năng mà tất cả các lệnh thực hiện (bao gồm follow và không follow playbook) đã chạm tới."
             />
             <StatItem
               label="Total P/L"
               value={`$${stats.totalPnl.toLocaleString()}`}
-              color={stats.totalPnl >= 0 ? "text-emerald-500" : "text-rose-500"}
+              color={stats.totalPnl >= 0 ? "text-bull" : "text-destructive"}
               tooltip="Tổng lợi nhuận ròng thực tế của tài khoản (bao gồm cả lệnh follow và không follow playbook)."
             />
           </div>

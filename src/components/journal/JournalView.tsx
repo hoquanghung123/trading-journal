@@ -686,12 +686,12 @@ function CheckChip({
 }) {
   const inner = (
     <>
-      <span className={`w-1.5 h-1.5 rounded-full ${done ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${done ? "bg-primary" : "bg-muted-foreground/40"}`} />
       {label}
     </>
   );
   const cls = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
-    done ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10" : "border-border text-muted-foreground bg-card"
+    done ? "border-primary/30 text-primary bg-primary/10" : "border-border text-muted-foreground bg-card"
   }`;
   if (onClick) {
     return (

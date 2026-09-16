@@ -44,19 +44,19 @@ export function StrategyCard({ model, onClick, stats }: StrategyCardProps) {
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black tracking-widest uppercase backdrop-blur-md border shadow-sm ${
               model.status === "Approved"
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600"
+                ? "bg-primary/10 border-primary/20 text-bull"
                 : model.status === "Testing"
-                  ? "bg-amber-500/10 border-amber-500/20 text-amber-600"
-                  : "bg-indigo-500/10 border-indigo-500/20 text-indigo-600"
+                  ? "bg-warning/10 border-warning/20 text-warning"
+                  : "bg-primary/10 border-primary/20 text-primary"
             }`}
           >
             <div
               className={`w-1.5 h-1.5 rounded-full ${
                 model.status === "Approved"
-                  ? "bg-emerald-500"
+                  ? "bg-primary"
                   : model.status === "Testing"
-                    ? "bg-amber-500"
-                    : "bg-indigo-500"
+                    ? "bg-warning"
+                    : "bg-primary"
               }`}
             />
             {model.status}
@@ -84,7 +84,7 @@ export function StrategyCard({ model, onClick, stats }: StrategyCardProps) {
               Winrate
             </span>
             <span
-              className={`text-base font-black tabular-nums ${stats && stats.winRate >= 60 ? "text-emerald-500" : stats && stats.winRate < 40 ? "text-rose-500" : "text-foreground"}`}
+              className={`text-base font-black tabular-nums ${stats && stats.winRate >= 60 ? "text-bull" : stats && stats.winRate < 40 ? "text-destructive" : "text-foreground"}`}
             >
               {stats ? `${stats.winRate.toFixed(0)}%` : "N/A"}
             </span>

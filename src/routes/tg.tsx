@@ -112,7 +112,7 @@ function NotLinkedScreen() {
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔗</div>
       <h2 style={{ color: "#f4f7f8", marginBottom: 8, fontSize: 18 }}>Tài khoản chưa liên kết</h2>
       <p style={{ color: "#778792", fontSize: 14, lineHeight: 1.6 }}>
-        Vui lòng truy cập ứng dụng web <strong style={{ color: "#2cc7b4" }}>Trading Journal</strong> trên máy tính hoặc trình duyệt điện thoại,
+        Vui lòng truy cập ứng dụng web <strong style={{ color: "#6B9A5C" }}>Trading Journal</strong> trên máy tính hoặc trình duyệt điện thoại,
         vào mục <strong>Cài đặt tài khoản</strong> và chọn <strong>Liên kết Telegram</strong> để bắt đầu sử dụng.
       </p>
       <a
@@ -123,7 +123,7 @@ function NotLinkedScreen() {
           display: "inline-block",
           marginTop: 20,
           padding: "10px 20px",
-          background: "linear-gradient(135deg, #25c7ae, #0f958c)",
+          background: "linear-gradient(135deg, #4C763B, #3A5C2D)",
           borderRadius: 11,
           color: "#fff",
           fontWeight: 600,
@@ -474,11 +474,11 @@ function AssetCard({ asset, entry, tradingDate, onSave }: AssetCardProps) {
               onError={(e) => {
                 const el = e.currentTarget;
                 el.style.display = "none";
-                el.parentElement!.innerHTML = `<span style="font-size:11px;color:#8fe4d8;font-weight:700">${asset.replace("1!", "").slice(0, 3)}</span>`;
+                el.parentElement!.innerHTML = `<span style="font-size:11px;color:#6B9A5C;font-weight:700">${asset.replace("1!", "").slice(0, 3)}</span>`;
               }}
             />
           ) : (
-            <span style={{ fontSize: 11, color: "#8fe4d8", fontWeight: 700 }}>
+            <span style={{ fontSize: 11, color: "#6B9A5C", fontWeight: 700 }}>
               {asset.replace("1!", "").slice(0, 3)}
             </span>
           )}
@@ -490,7 +490,7 @@ function AssetCard({ asset, entry, tradingDate, onSave }: AssetCardProps) {
             marginLeft: "auto",
             fontSize: 12,
             fontWeight: 600,
-            color: isComplete ? "#2cc7b4" : "#778792",
+            color: isComplete ? "#6B9A5C" : "#778792",
             letterSpacing: 0.2,
             flexShrink: 0,
           }}
@@ -532,11 +532,11 @@ function StreakScreen({ entries }: { entries: DayEntry[] }) {
   return (
     <div className="screen active">
       <div className="hero">
-        <p style={{ color: "#9dd4d0", fontSize: 13, margin: 0 }}>Chuỗi hiện tại</p>
+        <p style={{ color: "#8AAB7C", fontSize: 13, margin: 0 }}>Chuỗi hiện tại</p>
         <div
           className="ring"
           style={{
-            background: `conic-gradient(#34d5bd 0 ${pct}%, #ffffff1a ${pct}%)`,
+            background: `conic-gradient(#6B9A5C 0 ${pct}%, #ffffff1a ${pct}%)`,
           }}
         >
           <div>
@@ -544,7 +544,7 @@ function StreakScreen({ entries }: { entries: DayEntry[] }) {
             <small>ngày</small>
           </div>
         </div>
-        <p style={{ color: "#9dd4d0", fontSize: 12 }}>
+        <p style={{ color: "#8AAB7C", fontSize: 12 }}>
           {stats.isTodayComplete ? "✅ Hôm nay đã hoàn thành!" : "⏳ Chưa có bias hôm nay"}
         </p>
       </div>
@@ -552,11 +552,11 @@ function StreakScreen({ entries }: { entries: DayEntry[] }) {
       <div className="metrics">
         <div className="metric">
           <span style={{ color: "#778792", fontSize: 12 }}>Chuỗi dài nhất</span>
-          <b style={{ fontSize: 22, color: "#2cc7b4" }}>{stats.longestStreak}</b>
+          <b style={{ fontSize: 22, color: "#6B9A5C" }}>{stats.longestStreak}</b>
         </div>
         <div className="metric">
           <span style={{ color: "#778792", fontSize: 12 }}>Tổng ngày prep</span>
-          <b style={{ fontSize: 22, color: "#2cc7b4" }}>{stats.streakDays.length}</b>
+          <b style={{ fontSize: 22, color: "#6B9A5C" }}>{stats.streakDays.length}</b>
         </div>
       </div>
 
@@ -589,7 +589,7 @@ function TradesScreen({ entries, tradingDate }: { entries: DayEntry[]; tradingDa
               <div className="trade">
                 <div
                   className="symbol"
-                  style={{ fontSize: 11, fontWeight: 700, color: "#8fe4d8", width: 38, height: 38 }}
+                  style={{ fontSize: 11, fontWeight: 700, color: "#6B9A5C", width: 38, height: 38 }}
                 >
                   {e.asset.replace("1!", "").slice(0, 3)}
                 </div>
@@ -600,7 +600,7 @@ function TradesScreen({ entries, tradingDate }: { entries: DayEntry[]; tradingDa
                 <div
                   style={{
                     color:
-                      e.dailyBias === "bullish" ? "#27cbb2" : e.dailyBias === "bearish" ? "#ef4055" : "#e8b52b",
+                      e.dailyBias === "bullish" ? "#4C763B" : e.dailyBias === "bearish" ? "#ef4055" : "#e8b52b",
                     fontWeight: 700,
                     fontSize: 13,
                   }}
@@ -835,7 +835,7 @@ function TgMiniApp() {
             style={{
               fontSize: 11,
               fontWeight: 700,
-              color: "#2cc7b4",
+              color: "#6B9A5C",
               textDecoration: "none",
               padding: "6px 10px",
               border: "1px solid #1e3540",
@@ -868,7 +868,7 @@ function TgMiniApp() {
         >
           <div>
             <div style={{ color: "#778792", fontSize: 11, marginBottom: 2 }}>Daily Reset (5:00 PM NY)</div>
-            <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#2cc7b4" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#6B9A5C" }}>
               {fmtCountdown(countdown)}
             </div>
           </div>
@@ -968,9 +968,9 @@ function TgMiniApp() {
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
-                      color: "#2cc7b4",
-                      background: "rgba(44,199,180,0.12)",
-                      border: "1px solid rgba(44,199,180,0.25)",
+                      color: "#6B9A5C",
+                      background: "rgba(76,118,59,0.12)",
+                      border: "1px solid rgba(76,118,59,0.25)",
                       borderRadius: 8,
                       padding: "4px 10px",
                       letterSpacing: 0.5,
@@ -986,7 +986,7 @@ function TgMiniApp() {
                       width: 36,
                       height: 36,
                       borderRadius: 12,
-                      background: "linear-gradient(135deg, #25c7ae, #0f958c)",
+                      background: "linear-gradient(135deg, #4C763B, #3A5C2D)",
                       border: "none",
                       color: "#fff",
                       fontSize: 20,
@@ -996,7 +996,7 @@ function TgMiniApp() {
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                      boxShadow: "0 0 20px rgba(37,199,174,0.4)",
+                      boxShadow: "0 0 20px rgba(76,118,59,0.4)",
                       padding: 0,
                     }}
                   >
@@ -1017,7 +1017,7 @@ function TgMiniApp() {
                 <div style={{ textAlign: "center", color: "#778792", padding: "48px 20px" }}>
                   <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
                   <p style={{ fontSize: 14, marginBottom: 4 }}>Chưa có bias nào hôm nay</p>
-                  <p style={{ fontSize: 12, color: "#4a6070" }}>Bấm <b style={{ color: "#2cc7b4" }}>+</b> để thêm cặp đầu tiên</p>
+                  <p style={{ fontSize: 12, color: "#4a6070" }}>Bấm <b style={{ color: "#6B9A5C" }}>+</b> để thêm cặp đầu tiên</p>
                 </div>
               ) : (
                 visibleAssets.map((asset) => {
@@ -1114,18 +1114,18 @@ function TgMiniApp() {
                             onError={(ev) => {
                               const el = ev.currentTarget;
                               el.style.display = "none";
-                              el.parentElement!.innerHTML = `<span style="font-size:10px;color:#8fe4d8;font-weight:700">${asset.replace("1!", "").slice(0, 3)}</span>`;
+                              el.parentElement!.innerHTML = `<span style="font-size:10px;color:#6B9A5C;font-weight:700">${asset.replace("1!", "").slice(0, 3)}</span>`;
                             }}
                           />
                         ) : (
-                          <span style={{ fontSize: 10, color: "#8fe4d8", fontWeight: 700 }}>
+                          <span style={{ fontSize: 10, color: "#6B9A5C", fontWeight: 700 }}>
                             {asset.replace("1!", "").slice(0, 3)}
                           </span>
                         )}
                       </div>
                       {asset}
                       {addingAsset === asset && (
-                        <span style={{ marginLeft: "auto", color: "#2cc7b4", fontSize: 12 }}>Đang thêm...</span>
+                        <span style={{ marginLeft: "auto", color: "#6B9A5C", fontSize: 12 }}>Đang thêm...</span>
                       )}
                     </button>
                   ))}
