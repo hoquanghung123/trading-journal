@@ -13,6 +13,8 @@ import {
   isHtfBiasSet,
   h4TabForNow,
   cycleBias,
+  type KillzoneChip,
+  assetSessionForChip,
 } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
@@ -23,9 +25,19 @@ interface Props {
   setFocus: (f: { id: string; slot: SlotKind } | null) => void;
   onUpdate: (e: DayEntry) => void;
   onEdit: (e: DayEntry) => void;
+  focusKillzone?: KillzoneChip | null;
+  focusTick?: number;
 }
 
-export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Props) {
+export function DayColumn({
+  entry,
+  focusedSlot,
+  setFocus,
+  onUpdate,
+  onEdit,
+  focusKillzone = null,
+  focusTick = 0,
+}: Props) {
   const [session, setSession] = useState<Session>(() => h4TabForNow(entry.asset));
   const userPickedSession = useRef(false);
   const isFocused = (slot: SlotKind) => focusedSlot?.id === entry.id && focusedSlot?.slot === slot;
@@ -49,6 +61,12 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
     if (userPickedSession.current) return;
     setSession(h4TabForNow(entry.asset));
   }, [entry.asset]);
+
+  useEffect(() => {
+    if (!focusKillzone || !focusTick) return;
+    userPickedSession.current = true;
+    setSession(assetSessionForChip(entry.asset, focusKillzone));
+  }, [focusKillzone, focusTick, entry.asset]);
 
   return (
     <div

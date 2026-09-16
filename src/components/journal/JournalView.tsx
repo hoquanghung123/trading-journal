@@ -8,6 +8,7 @@ import {
 import {
   type DayEntry,
   type SlotKind,
+  type KillzoneChip,
   fetchEntries,
   upsertEntry,
   deleteEntry,
@@ -80,6 +81,8 @@ export function JournalView() {
   });
   const [todayDrafts, setTodayDrafts] = useState<Record<string, DayEntry>>({});
   const [expandTapeId, setExpandTapeId] = useState<string | null>(null);
+  const [killzoneFocus, setKillzoneFocus] = useState<KillzoneChip | null>(null);
+  const [killzoneFocusTick, setKillzoneFocusTick] = useState(0);
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -426,7 +429,13 @@ export function JournalView() {
                   {journalTradingDate()} · rolls 5pm NY
                 </p>
               </div>
-              <SessionChip />
+              <SessionChip
+                selected={killzoneFocus}
+                onSelect={(chip) => {
+                  setKillzoneFocus(chip);
+                  setKillzoneFocusTick((n) => n + 1);
+                }}
+              />
             </div>
             {viewMode !== "today" && (
               <button
@@ -600,6 +609,8 @@ export function JournalView() {
                 onEdit={setEditing}
                 onCreate={createTodayDraft}
                 expandId={expandTapeId}
+                focusKillzone={killzoneFocus}
+                focusTick={killzoneFocusTick}
               />
             )}
           </div>
@@ -628,6 +639,8 @@ export function JournalView() {
                   setFocus={setFocusedSlot}
                   onUpdate={upsert}
                   onEdit={setEditing}
+                  focusKillzone={killzoneFocus}
+                  focusTick={killzoneFocusTick}
                 />
               ))}
             </div>

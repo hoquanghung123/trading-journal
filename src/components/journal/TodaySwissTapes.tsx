@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { Edit3, Check, ChevronDown, ChevronUp } from "lucide-react";
-import type { DayEntry, Session, Bias } from "@/lib/journal";
+import type { DayEntry, Session, Bias, KillzoneChip } from "@/lib/journal";
 import {
   getSessionsForAsset,
   biasStyle,
   biasLabel,
   weekdayOf,
   isHtfBiasSet,
-  getActiveKillzone,
-  h4TabForNow,
+  assetSessionForChip,
 } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
@@ -41,11 +40,6 @@ function AssetIcon({
   );
 }
 
-function emphasizeH4Now() {
-  const s = getActiveKillzone().session;
-  return s === "LDN" || s.startsWith("NY");
-}
-
 interface Props {
   entries: DayEntry[];
   watchlist: string[];
@@ -53,6 +47,8 @@ interface Props {
   onEdit: (e: DayEntry) => void;
   onCreate: (asset: string) => void;
   expandId?: string | null;
+  focusKillzone?: KillzoneChip | null;
+  focusTick?: number;
 }
 
 export function TodaySwissTapes({
@@ -62,9 +58,10 @@ export function TodaySwissTapes({
   onEdit,
   onCreate,
   expandId,
+  focusKillzone = null,
+  focusTick = 0,
 }: Props) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  const h4Session = emphasizeH4Now();
   const loggedAssets = new Set(entries.map((e) => e.asset));
   const dock = watchlist.filter((name) => !loggedAssets.has(name));
 
@@ -72,6 +69,24 @@ export function TodaySwissTapes({
     if (!expandId) return;
     setExpandedRows((prev) => ({ ...prev, [expandId]: true }));
   }, [expandId]);
+
+  useEffect(() => {
+    if (!focusKillzone || !focusTick) return;
+    setExpandedRows((prev) => {
+      const next = { ...prev };
+      for (const e of entries) next[e.id] = true;
+      return next;
+    });
+    const id = window.setTimeout(() => {
+      const first = entries[0];
+      if (!first) return;
+      const sess = assetSessionForChip(first.asset, focusKillzone);
+      document
+        .getElementById(`today-h4-${first.id}-${sess}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+    return () => window.clearTimeout(id);
+  }, [focusKillzone, focusTick]);
 
   // Toggle expanded row
   const toggleRow = (entryId: string) => {
@@ -116,13 +131,21 @@ export function TodaySwissTapes({
           return { bias: "consolidation", session: sessions[0] || "ASIA" };
         };
 
-        const { bias: h4Bias, session: summaryH4Session } = getH4SummaryBias(entry);
+        const { bias: h4Bias } = getH4SummaryBias(entry);
 
         // Check triple confluence (all bullish or all bearish)
         const isTripleBull =
           entry.weeklyBias === "bullish" && entry.dailyBias === "bullish" && h4Bias === "bullish";
         const isTripleBear =
           entry.weeklyBias === "bearish" && entry.dailyBias === "bearish" && h4Bias === "bearish";
+
+        const showW = isHtfBiasSet(entry.weeklyBias, entry.weeklyImg);
+        const showD = isHtfBiasSet(entry.dailyBias, entry.dailyImg);
+        const mSet = isHtfBiasSet(entry.monthlyBias, entry.monthlyImg);
+        const h4Shown = sessions.filter((sessionName) => {
+          const sessionData = entry.h4[sessionName];
+          return isHtfBiasSet(sessionData?.bias, sessionData?.img);
+        });
 
         return (
           <div
@@ -181,9 +204,7 @@ export function TodaySwissTapes({
 
               {/* Timeframe Badges & General Chevron */}
               <div className="flex items-center gap-3 min-w-0 overflow-x-auto hide-scrollbar">
-                {showMonthly &&
-                  isHtfBiasSet(entry.monthlyBias, entry.monthlyImg) &&
-                  !h4Session && (
+                {showMonthly && mSet && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">
                       M:
@@ -197,7 +218,7 @@ export function TodaySwissTapes({
                   </div>
                 )}
 
-                {(!h4Session || isExpanded) && isHtfBiasSet(entry.weeklyBias, entry.weeklyImg) && (
+                {showW && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">W:</span>
                   <span
@@ -209,7 +230,7 @@ export function TodaySwissTapes({
                 </div>
                 )}
 
-                {(!h4Session || isExpanded) && isHtfBiasSet(entry.dailyBias, entry.dailyImg) && (
+                {showD && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">D:</span>
                   <span
@@ -221,14 +242,10 @@ export function TodaySwissTapes({
                 </div>
                 )}
 
-                {(h4Session || isExpanded) &&
-                  sessions.map((sessionName) => {
+                {h4Shown.map((sessionName) => {
                   const sessionData = entry.h4[sessionName];
                   const sessionBias = sessionData?.bias;
-                  if (!sessionBias || !isHtfBiasSet(sessionBias, sessionData?.img)) return null;
-                  if (h4Session && !isExpanded && sessionName !== h4TabForNow(entry.asset)) {
-                    return null;
-                  }
+                  if (!sessionBias) return null;
                   return (
                     <div
                       key={sessionName}
@@ -475,11 +492,19 @@ export function TodaySwissTapes({
                       const sessionData = entry.h4[sessionName] || {};
                       const sessionBias = sessionData?.bias;
                       const displaySessionLabel = sessionName.replace("_", " ");
+                      const focusedH4 = focusKillzone
+                        ? assetSessionForChip(entry.asset, focusKillzone)
+                        : null;
 
                       return (
                         <div
                           key={sessionName}
-                          className="space-y-3 bg-card/40 p-4 rounded-xl border border-border/60"
+                          id={`today-h4-${entry.id}-${sessionName}`}
+                          className={`space-y-3 bg-card/40 p-4 rounded-xl border ${
+                            sessionName === focusedH4
+                              ? "border-primary/50 ring-1 ring-primary/20"
+                              : "border-border/60"
+                          }`}
                         >
                           <div className="flex flex-col gap-2 pb-2 border-b border-border/40">
                             <span className="text-xs font-black uppercase tracking-wider text-foreground">

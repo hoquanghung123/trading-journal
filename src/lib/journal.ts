@@ -24,12 +24,18 @@ export function getSessionsForAsset(asset: string): Session[] {
   return ["ASIA", "LDN", "NY"];
 }
 
-/** NY-time killzones: Asia 18:00–02:00, London 02:00–08:00, NY 08:00–18:00. */
-export function getActiveKillzone(now = new Date()): {
-  session: Session;
-  next: Session;
-  secondsUntilNext: number;
-} {
+/** Killzone walls in America/New_York minutes from midnight. */
+export const KILLZONE_NY = {
+  ASIA_OPEN: 18 * 60, // 18:00
+  LDN_OPEN: 2 * 60, // 02:00
+  NY_OPEN: 8 * 60, // 08:00 session open
+  NY_AM_OPEN: 9 * 60 + 30, // 09:30
+  NY_AM_CLOSE: 11 * 60, // 11:00
+  NY_PM_OPEN: 13 * 60 + 30, // 13:30
+  NY_PM_CLOSE: 16 * 60, // 16:00
+} as const;
+
+function nyWallClock(now: Date): { mins: number; secs: number } {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
     hour: "numeric",
@@ -42,19 +48,75 @@ export function getActiveKillzone(now = new Date()): {
       if (p.type !== "literal") acc[p.type] = Number(p.value === "24" ? "0" : p.value);
       return acc;
     }, {});
-  const mins = (parts.hour ?? 0) * 60 + (parts.minute ?? 0);
-  const secs = (parts.second ?? 0);
+  return {
+    mins: (parts.hour ?? 0) * 60 + (parts.minute ?? 0),
+    secs: parts.second ?? 0,
+  };
+}
 
+function splitNyH4(mins: number): "NY AM" | "NY PM" {
+  return mins >= KILLZONE_NY.NY_PM_OPEN ? "NY PM" : "NY AM";
+}
+
+/**
+ * NY-time killzones:
+ * Asia 18:00–02:00, London 02:00–08:00, NY session from 08:00.
+ * NY AM 09:30–11:00, NY PM 13:30–16:00. Gaps inside NY stay grouped as NY.
+ */
+export function getActiveKillzone(now = new Date()): {
+  session: Session;
+  next: Session;
+  secondsUntilNext: number;
+} {
+  const { mins, secs } = nyWallClock(now);
   const toNext = (endMins: number) => (endMins * 60 - (mins * 60 + secs) + 24 * 3600) % (24 * 3600);
+  const { ASIA_OPEN, LDN_OPEN, NY_OPEN, NY_AM_OPEN, NY_AM_CLOSE, NY_PM_OPEN, NY_PM_CLOSE } =
+    KILLZONE_NY;
 
-  if (mins >= 18 * 60 || mins < 2 * 60) {
-    return { session: "ASIA", next: "LDN", secondsUntilNext: toNext(2 * 60) };
+  if (mins >= ASIA_OPEN || mins < LDN_OPEN) {
+    return { session: "ASIA", next: "LDN", secondsUntilNext: toNext(LDN_OPEN) };
   }
-  if (mins < 8 * 60) {
-    return { session: "LDN", next: "NY", secondsUntilNext: toNext(8 * 60) };
+  if (mins < NY_OPEN) {
+    return { session: "LDN", next: "NY", secondsUntilNext: toNext(NY_OPEN) };
   }
-  const session: Session = mins < 12 * 60 ? "NY AM" : "NY PM";
-  return { session, next: "ASIA", secondsUntilNext: toNext(18 * 60) };
+  if (mins < NY_AM_OPEN) {
+    return { session: "NY", next: "NY AM", secondsUntilNext: toNext(NY_AM_OPEN) };
+  }
+  if (mins < NY_AM_CLOSE) {
+    return { session: "NY AM", next: "NY PM", secondsUntilNext: toNext(NY_PM_OPEN) };
+  }
+  if (mins < NY_PM_OPEN) {
+    return { session: "NY", next: "NY PM", secondsUntilNext: toNext(NY_PM_OPEN) };
+  }
+  if (mins < NY_PM_CLOSE) {
+    return { session: "NY PM", next: "ASIA", secondsUntilNext: toNext(ASIA_OPEN) };
+  }
+  return { session: "NY", next: "ASIA", secondsUntilNext: toNext(ASIA_OPEN) };
+}
+
+export type KillzoneChip = "ASIA" | "LDN" | "NY";
+
+export function killzoneChipGroup(session: Session): KillzoneChip {
+  return session.startsWith("NY") ? "NY" : (session as KillzoneChip);
+}
+
+/** Map a chip click (ASIA/LDN/NY) onto this asset's H4 session key. */
+export function assetSessionForChip(asset: string, chip: KillzoneChip, now = new Date()): Session {
+  const sessions = getSessionsForAsset(asset);
+  if (chip !== "NY") return chip;
+  if (sessions.includes("NY")) return "NY";
+  const kz = getActiveKillzone(now).session;
+  if (kz === "NY AM" || kz === "NY PM") return kz;
+  if (kz === "NY") return splitNyH4(nyWallClock(now).mins);
+  return "NY AM";
+}
+
+export function nextKillzoneOpen(next: Session): { name: string; clock: string } {
+  if (next === "ASIA") return { name: "Asia", clock: "18:00" };
+  if (next === "LDN") return { name: "LDN", clock: "02:00" };
+  if (next === "NY AM") return { name: "NY AM", clock: "09:30" };
+  if (next === "NY PM") return { name: "NY PM", clock: "13:30" };
+  return { name: "NY", clock: "08:00" };
 }
 
 /** H4 tab that matches SessionChip, mapped to the asset's session list. */
@@ -62,6 +124,10 @@ export function h4TabForNow(asset: string, now = new Date()): Session {
   const kz = getActiveKillzone(now).session;
   const sessions = getSessionsForAsset(asset);
   if (sessions.includes(kz)) return kz;
+  if (kz === "NY") {
+    if (sessions.includes("NY")) return "NY";
+    return splitNyH4(nyWallClock(now).mins);
+  }
   if ((kz === "NY AM" || kz === "NY PM") && sessions.includes("NY")) return "NY";
   return sessions[0] ?? "ASIA";
 }

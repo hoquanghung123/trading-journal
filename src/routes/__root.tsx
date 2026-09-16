@@ -20,8 +20,7 @@ import {
   isPrepDay,
   calculateStreak,
   journalTradingDate,
-  getActiveKillzone,
-  getSessionsForAsset,
+  h4TabForNow,
   type DayEntry,
 } from "../lib/journal";
 import { focusBiasEntry, navigateToPage, triggerCelebration } from "../lib/nav-bus";
@@ -189,13 +188,7 @@ function RootComponent() {
           toast.info("Đang lưu vào khung DAILY...");
           updatedEntry.dailyImg = path;
         } else {
-          const kz = getActiveKillzone().session;
-          const sessions = getSessionsForAsset(targetAsset);
-          const session = sessions.includes(kz)
-            ? kz
-            : kz === "NY AM" || kz === "NY PM"
-              ? "NY"
-              : sessions[0] ?? "ASIA";
+          const session = h4TabForNow(targetAsset);
 
           toast.info(`Đang lưu vào khung H4 (${session})...`);
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
