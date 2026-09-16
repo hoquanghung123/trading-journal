@@ -100,9 +100,21 @@ export function JournalView() {
   const urlDateApplied = useRef(false);
   const pinnedDate = useRef<string | null>(null);
 
+  const firstConcreteAsset = useMemo(
+    () => ASSETS[0] ?? entries.find((e) => e.asset)?.asset ?? null,
+    [ASSETS, entries],
+  );
+
   const selectAsset = (next: string) => {
     if (next !== asset) pinnedDate.current = null;
     setAsset(next);
+  };
+
+  const enterAssetView = (mode: "timeline" | "month") => {
+    setViewMode(mode);
+    if (asset === "ALL" || asset === "TODAY") {
+      if (firstConcreteAsset) selectAsset(firstConcreteAsset);
+    }
   };
 
   // Morning Psychology Prompt Logic
@@ -199,6 +211,14 @@ export function JournalView() {
     localStorage.setItem("journal-view-mode", viewMode);
   }, [viewMode]);
 
+  // Timeline / Month always show one asset — never the mixed "All" filter.
+  useEffect(() => {
+    if (viewMode === "today") return;
+    if (asset !== "ALL" && asset !== "TODAY") return;
+    if (!firstConcreteAsset) return;
+    setAsset(firstConcreteAsset);
+  }, [viewMode, asset, firstConcreteAsset]);
+
   // Subscribe to smart-link focus events from Trade Log
   useEffect(() => {
     return onBiasFocus((entryId, assetName) => {
@@ -208,10 +228,10 @@ export function JournalView() {
       const fromList = entries.find((e) => e.id === entryId);
       const name = assetName || fromList?.asset;
       if (name) setAsset(name);
-      else setAsset("ALL");
+      else if (firstConcreteAsset) setAsset(firstConcreteAsset);
       setPendingFocusId(entryId);
     });
-  }, [entries]);
+  }, [entries, firstConcreteAsset]);
 
   useEffect(() => {
     return onBiasAssetFocus((name) => {
@@ -481,20 +501,14 @@ export function JournalView() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setViewMode("timeline");
-                if (asset === "TODAY") selectAsset("ALL");
-              }}
+              onClick={() => enterAssetView("timeline")}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "timeline" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               Timeline
             </button>
             <button
               type="button"
-              onClick={() => {
-                setViewMode("month");
-                if (asset === "TODAY") selectAsset("ALL");
-              }}
+              onClick={() => enterAssetView("month")}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               Month
@@ -508,13 +522,6 @@ export function JournalView() {
               <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                 Asset:
               </span>
-              <button
-                type="button"
-                onClick={() => selectAsset("ALL")}
-                className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "ALL" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-              >
-                All
-              </button>
               {ASSETS.map((a) => (
                 <button
                   key={a}
@@ -633,7 +640,6 @@ export function JournalView() {
             onAdd={addEntry}
             onClear={() => {
               setMonth("ALL");
-              selectAsset("ALL");
             }}
           />
         ) : viewMode === "month" ? (
