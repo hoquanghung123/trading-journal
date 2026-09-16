@@ -314,7 +314,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         className={`flex-1 h-12 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${
                           t.status === s
                             ? s === "Not Started"
-                              ? "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
+                              ? "bg-muted text-muted-foreground border-border scale-[1.02]"
                               : s === "Opened"
                                 ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
                                 : "bg-warning text-white border-warning shadow-warning/20 scale-[1.02]"

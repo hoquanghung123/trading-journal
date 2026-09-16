@@ -4,7 +4,7 @@ export interface UserSettings {
   userId: string;
   showTradeGrade: boolean;
   primaryColor: string;
-  tradeLogView: "table" | "gallery";
+  tradeLogView: "tape" | "ledger" | "tickets" | "killzone" | "table" | "gallery";
   dailyReminder: boolean;
   weeklyReminder: boolean;
   dailyReminderTime: string;
@@ -52,7 +52,7 @@ const fromRow = (r: Row): UserSettings => ({
   userId: r.user_id,
   showTradeGrade: !!r.show_trade_grade,
   primaryColor: r.primary_color || "#4C763B",
-  tradeLogView: (r.trade_log_view as "table" | "gallery") || "table",
+  tradeLogView: (r.trade_log_view as UserSettings["tradeLogView"]) || "ledger",
   dailyReminder: r.daily_reminder ?? false,
   weeklyReminder: r.weekly_reminder ?? false,
   dailyReminderTime: r.daily_reminder_time || "08:00",
@@ -90,7 +90,7 @@ export async function fetchSettings(): Promise<UserSettings> {
       user_id: u.user.id,
       show_trade_grade: false,
       primary_color: "#4C763B",
-      trade_log_view: "table",
+      trade_log_view: "ledger",
       daily_reminder: false,
       weekly_reminder: false,
       daily_reminder_time: "08:00",

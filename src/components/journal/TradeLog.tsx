@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
-  ExternalLink,
   Settings2,
   Loader2,
   FileText,
   LayoutGrid,
   List,
-  Clock,
-  TrendingUp,
-  TrendingDown,
+  Table2,
+  Timer,
   Search,
 } from "lucide-react";
 import {
@@ -17,26 +15,20 @@ import {
   deleteTrade,
   fetchTrades,
   newTrade,
-  outcomeStyle,
+  tradesQueryKey,
   upsertTrade,
   type Trade,
 } from "@/lib/trades";
-import { isWithinInterval, startOfDay, endOfDay, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
 import { DateRangePicker } from "../shared/DateRangePicker";
 import { DateRange } from "react-day-picker";
-import {
-  focusBiasEntry,
-  focusPlaybookModel,
-  navigateToPage,
-  onRequestNewTrade,
-  onRequestOpenTrade,
-} from "@/lib/nav-bus";
+import { onRequestNewTrade, onRequestOpenTrade } from "@/lib/nav-bus";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { CheckCircle2, ShieldAlert, AlertCircle, BookOpen } from "lucide-react";
-import { getAssetIconUrl } from "@/lib/symbols";
 import { TradeModal } from "./TradeModal";
-import { TradeImageThumb } from "./TradeImageThumb";
-import { TradeGalleryCard } from "./TradeGalleryCard";
+import { TradeTapeView } from "./TradeTapeView";
+import { TradeLedgerView } from "./TradeLedgerView";
+import { TradeTicketCard } from "./TradeTicketCard";
+import { TradeKillzoneView } from "./TradeKillzoneView";
 import { toast } from "sonner";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import {
@@ -49,6 +41,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { fetchSettings, updateSettings } from "@/lib/settings";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  computeFilterPulse,
+  formatSigned,
+  normalizeTradeLogView,
+  TRADE_LOG_VIEWS,
+  type TradeLogView,
+} from "@/lib/trade-log";
 
 type ColKey =
   | "entryTime"
@@ -77,13 +77,8 @@ const COL_LABELS: Record<ColKey, string> = {
   analysis: "Analysis",
 };
 
-const gradeStyle: Record<string, string> = {
-  "A+": "bg-primary text-primary-foreground shadow-primary/20",
-  A: "bg-warning text-warning-foreground shadow-warning/20",
-  B: "bg-destructive text-destructive-foreground shadow-destructive/20",
-};
-
 const FILTERS_KEY = "trade-log-filters";
+const COLS_KEY = "trade-log-cols";
 
 type SideFilter = "ALL" | "buy" | "sell";
 type OutcomeFilter = "ALL" | "Win" | "Loss" | "BE";
@@ -99,6 +94,20 @@ interface PersistedFilters {
   dateFrom?: string;
   dateTo?: string;
 }
+
+const DEFAULT_COLS: Record<ColKey, boolean> = {
+  entryTime: true,
+  stats: true,
+  images: true,
+  compliance: true,
+  playbook: true,
+  status: true,
+  grade: true,
+  outcome: true,
+  side: true,
+  bias: true,
+  analysis: true,
+};
 
 function loadFilters(): PersistedFilters {
   try {
@@ -118,13 +127,19 @@ function dateRangeFromSaved(saved: PersistedFilters): DateRange | undefined {
   return { from, to: Number.isNaN(+to) ? from : to };
 }
 
+function loadCols(): Record<ColKey, boolean> {
+  try {
+    const s = localStorage.getItem(COLS_KEY);
+    if (s) return { ...DEFAULT_COLS, ...JSON.parse(s) };
+  } catch {}
+  return { ...DEFAULT_COLS };
+}
+
 export function TradeLog() {
   const savedFilters = useMemo(() => loadFilters(), []);
-  const [trades, setTrades] = useState<Trade[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
     dateRangeFromSaved(savedFilters),
   );
-  const [loading, setLoading] = useState(true);
   const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
@@ -138,62 +153,26 @@ export function TradeLog() {
   const [complianceFilter, setComplianceFilter] = useState<ComplianceFilter>(
     savedFilters.complianceFilter ?? "ALL",
   );
-  const [viewOverride, setViewOverride] = useState<"table" | "gallery" | null>(() =>
-    typeof window !== "undefined" && window.innerWidth < 1024 ? "gallery" : null,
-  );
+  const [viewOverride, setViewOverride] = useState<TradeLogView | null>(null);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
+
+  const { data: trades = [], isLoading: loading, error } = useQuery({
+    queryKey: tradesQueryKey,
+    queryFn: fetchTrades,
+  });
   const tradesRef = useRef(trades);
   tradesRef.current = trades;
-
-  const handleUpdateView = async (view: "table" | "gallery") => {
-    setViewOverride(view);
-    await updateSettings({ tradeLogView: view });
-    queryClient.invalidateQueries({ queryKey: ["user_settings"] });
-  };
 
   const { data: settings } = useQuery({
     queryKey: ["user_settings"],
     queryFn: fetchSettings,
   });
 
-  const [cols, setCols] = useState<Record<ColKey, boolean>>(() => {
-    try {
-      const s = localStorage.getItem("trade-log-cols");
-      if (s) {
-        const saved = JSON.parse(s);
-        return {
-          entryTime: true,
-          stats: true,
-          images: true,
-          compliance: true,
-          playbook: true,
-          status: true,
-          grade: true,
-          outcome: true,
-          side: true,
-          bias: true,
-          analysis: true,
-          ...saved
-        };
-      }
-    } catch {}
-    return {
-      entryTime: true,
-      stats: true,
-      images: true,
-      compliance: true,
-      playbook: true,
-      status: true,
-      grade: true,
-      outcome: true,
-      side: true,
-      bias: true,
-      analysis: true,
-    };
-  });
+  const [cols, setCols] = useState<Record<ColKey, boolean>>(loadCols);
 
   useEffect(() => {
-    localStorage.setItem("trade-log-cols", JSON.stringify(cols));
+    localStorage.setItem(COLS_KEY, JSON.stringify(cols));
   }, [cols]);
 
   useEffect(() => {
@@ -210,20 +189,15 @@ export function TradeLog() {
     localStorage.setItem(FILTERS_KEY, JSON.stringify(payload));
   }, [query, symbolFilter, sideFilter, outcomeFilter, setupFilter, complianceFilter, dateRange]);
 
-  const reload = async () => {
-    setLoading(true);
-    try {
-      setTrades(await fetchTrades());
-    } catch (e: any) {
-      toast.error(e.message ?? "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    reload();
-  }, []);
+    if (error) toast.error(error instanceof Error ? error.message : "Failed to load");
+  }, [error]);
+
+  const handleUpdateView = async (view: TradeLogView) => {
+    setViewOverride(view);
+    await updateSettings({ tradeLogView: view });
+    queryClient.invalidateQueries({ queryKey: ["user_settings"] });
+  };
 
   const openNew = () => {
     setEditing(newTrade());
@@ -239,7 +213,7 @@ export function TradeLog() {
         if (!list.length) {
           try {
             list = await fetchTrades();
-            setTrades(list);
+            queryClient.setQueryData(tradesQueryKey, list);
           } catch {
             return;
           }
@@ -250,7 +224,7 @@ export function TradeLog() {
           setOpen(true);
         }
       }),
-    [],
+    [queryClient],
   );
 
   const openEdit = (t: Trade) => {
@@ -260,12 +234,12 @@ export function TradeLog() {
 
   const save = async (t: Trade) => {
     await upsertTrade(t);
-    await reload();
+    await queryClient.invalidateQueries({ queryKey: tradesQueryKey });
   };
 
   const remove = async (id: string) => {
     await deleteTrade(id);
-    await reload();
+    await queryClient.invalidateQueries({ queryKey: tradesQueryKey });
   };
 
   const filteredTrades = useMemo(() => {
@@ -308,20 +282,65 @@ export function TradeLog() {
     [filteredTrades],
   );
 
-  const viewMode = viewOverride ?? settings?.tradeLogView ?? "table";
+  const savedView = normalizeTradeLogView(settings?.tradeLogView);
+  const viewMode = viewOverride ?? (settings ? savedView : isMobile ? "tickets" : "ledger");
+
   const symbolsInLog = useMemo(
     () => Array.from(new Set(trades.map((t) => t.symbol))).sort(),
     [trades],
   );
+  const pulse = useMemo(() => computeFilterPulse(sorted), [sorted]);
+  const playbookName = (id?: string) => playbookSetups.find((s) => s.id === id)?.name;
+
+  const filtersActive =
+    query.trim() !== "" ||
+    symbolFilter !== "ALL" ||
+    sideFilter !== "ALL" ||
+    outcomeFilter !== "ALL" ||
+    setupFilter !== "ALL" ||
+    complianceFilter !== "ALL" ||
+    !!dateRange?.from;
+
+  const clearFilters = () => {
+    setQuery("");
+    setSymbolFilter("ALL");
+    setSideFilter("ALL");
+    setOutcomeFilter("ALL");
+    setSetupFilter("ALL");
+    setComplianceFilter("ALL");
+    setDateRange(undefined);
+  };
+
   const chip = (active: boolean) =>
     `px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap ${
-      active ? "bg-primary text-white border-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"
+      active
+        ? "bg-primary text-white border-primary"
+        : "border-border bg-card text-muted-foreground hover:text-foreground"
     }`;
+
+  const ticketGroups = useMemo(() => {
+    const map = new Map<string, { name: string; pnl: number; rows: Trade[] }>();
+    for (const t of sorted) {
+      const key = t.setupId ?? "none";
+      const name = playbookName(t.setupId) ?? "Unassigned";
+      const g = map.get(key) ?? { name, pnl: 0, rows: [] };
+      g.pnl += t.netPnl;
+      g.rows.push(t);
+      map.set(key, g);
+    }
+    return Array.from(map.values());
+  }, [sorted, playbookSetups]);
+
+  const viewIcon = (id: TradeLogView) => {
+    if (id === "tape") return List;
+    if (id === "ledger") return Table2;
+    if (id === "tickets") return LayoutGrid;
+    return Timer;
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-10">
       <div className="max-w-[1500px] mx-auto space-y-6 lg:space-y-8">
-        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-border pb-6 lg:pb-8 gap-6">
           <div className="flex items-center justify-between w-full lg:w-auto">
             <div className="flex items-center gap-3">
@@ -333,11 +352,10 @@ export function TradeLog() {
                   Trade Log
                 </h1>
                 <p className="text-[10px] lg:text-sm text-muted-foreground font-medium uppercase tracking-wider">
-                  {filteredTrades.length} Recorded Entries
+                  {filteredTrades.length} recorded entries
                 </p>
               </div>
             </div>
-
             <button
               type="button"
               onClick={openNew}
@@ -350,31 +368,26 @@ export function TradeLog() {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
             <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full sm:w-auto" />
-            
-            {/* View Mode Toggle */}
+
             <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border/50 shrink-0">
-              <button
-                onClick={() => handleUpdateView("table")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "table"
-                    ? "bg-card text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                title="Table View"
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleUpdateView("gallery")}
-                className={`p-2 rounded-lg transition-all ${
-                  viewMode === "gallery"
-                    ? "bg-card text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                title="Gallery View"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
+              {TRADE_LOG_VIEWS.map((v) => {
+                const Icon = viewIcon(v.id);
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => handleUpdateView(v.id)}
+                    className={`p-2 rounded-lg transition-all ${
+                      viewMode === v.id
+                        ? "bg-card text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title={v.label}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                );
+              })}
             </div>
 
             <DropdownMenu>
@@ -403,6 +416,7 @@ export function TradeLog() {
             </DropdownMenu>
 
             <button
+              type="button"
               onClick={openNew}
               className="hidden lg:flex forest-gradient items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap"
             >
@@ -470,9 +484,46 @@ export function TradeLog() {
               {s === "ALL" ? "Playbook" : s === "yes" ? "Followed" : "Broke"}
             </button>
           ))}
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-[10px] font-black uppercase tracking-wider text-destructive underline underline-offset-2"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
-        {/* Content Area */}
+        {sorted.length > 0 && (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="px-3 py-1.5 border-b border-border flex items-center justify-between">
+              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                Pulse of current filter
+              </p>
+            </div>
+            <div className="grid grid-cols-3 lg:grid-cols-5">
+              <PulseCell label="Trades" value={String(pulse.count)} />
+              <PulseCell
+                label="Net PnL"
+                value={formatSigned(pulse.pnl)}
+                tone={pulse.pnl > 0 ? "up" : pulse.pnl < 0 ? "down" : undefined}
+              />
+              <PulseCell label="Win" value={`${pulse.winRate.toFixed(0)}%`} />
+              <PulseCell
+                label="Avg R"
+                value={`${formatSigned(pulse.avgR, 1)}R`}
+                className="hidden lg:block"
+              />
+              <PulseCell
+                label="Playbook"
+                value={`${pulse.followed}/${pulse.count}`}
+                className="hidden lg:block"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="w-full">
           {loading ? (
             <div className="p-20 text-center bg-card rounded-3xl border border-border/50">
@@ -491,320 +542,50 @@ export function TradeLog() {
               icon={Search}
               title="No trades match these filters"
               description="Widen the date range or clear symbol, side, and outcome chips."
+              actionLabel="Clear filters"
+              onAction={clearFilters}
             />
-          ) : viewMode === "gallery" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sorted.map((t) => (
-                <TradeGalleryCard
-                  key={t.id}
-                  trade={t}
-                  onClick={() => openEdit(t)}
-                  showGrade={settings?.showTradeGrade}
-                  cols={cols}
-                  playbookName={playbookSetups.find((s) => s.id === t.setupId)?.name}
-                  executionSchema={settings?.executionSchema as any[]}
-                />
+          ) : viewMode === "tape" ? (
+            <TradeTapeView
+              trades={sorted}
+              playbookName={playbookName}
+              showGrade={settings?.showTradeGrade}
+              onOpen={openEdit}
+            />
+          ) : viewMode === "tickets" ? (
+            <div className="space-y-8">
+              {ticketGroups.map((g) => (
+                <section key={g.name}>
+                  <div className="flex items-baseline justify-between mb-3">
+                    <h3 className="text-sm font-black tracking-tight">{g.name}</h3>
+                    <p className="font-mono tabular-nums text-[11px] font-bold text-primary">
+                      {g.rows.length} trades · {formatSigned(g.pnl)}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {g.rows.map((t) => (
+                      <TradeTicketCard
+                        key={t.id}
+                        trade={t}
+                        playbookName={playbookName(t.setupId)}
+                        onClick={() => openEdit(t)}
+                      />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
+          ) : viewMode === "killzone" ? (
+            <TradeKillzoneView trades={sorted} onOpen={openEdit} />
           ) : (
-            <div className="bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse min-w-[800px]">
-                  <thead>
-                    <tr className="text-[9px] lg:text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
-                      <th className="text-center py-4 px-1 w-[30px]">#</th>
-                      {cols.outcome && <th className="text-left p-2 lg:p-4 w-[160px]">Outcome</th>}
-                      {settings?.showTradeGrade && cols.grade && (
-                        <th className="text-left p-2 lg:p-4 w-[100px]">Grade</th>
-                      )}
-                      {cols.entryTime && <th className="text-left p-2 lg:p-4 w-[180px]">Entry Time</th>}
-                      <th className="text-left p-2 lg:p-4 w-[120px]">Symbol</th>
-                      {cols.bias && <th className="text-left p-2 lg:p-4 w-[120px]">Bias Context</th>}
-                      {cols.side && <th className="text-left p-2 lg:p-4 w-[80px]">Side</th>}
-                      {cols.playbook && <th className="text-left p-2 lg:p-4 w-[100px]">Playbook</th>}
-                      {cols.stats && <th className="text-left p-2 lg:p-4 w-[180px]">Statistics</th>}
-                      {cols.images && <th className="text-left p-2 lg:p-4 w-[180px]">Images</th>}
-                      {cols.compliance && (
-                        <th className="text-left p-2 lg:p-4 w-[200px]">Follow Playbook</th>
-                      )}
-                      {cols.status && <th className="text-left p-2 lg:p-4 w-[140px]">Status</th>}
-                      {cols.analysis && <th className="text-left p-2 lg:p-4 min-w-[200px]">Analysis</th>}
-                      <th className="text-left p-2 lg:p-4">Trade Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50">
-                    {sorted.map((t, i) => {
-                      const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
-                      return (
-                        <tr
-                          key={t.id}
-                          onClick={() => openEdit(t)}
-                          className="group hover:bg-muted/30 cursor-pointer transition-colors"
-                        >
-                          <td className="py-4 px-1 text-center">
-                            <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                              #{String(i + 1).padStart(2, "0")}
-                            </span>
-                          </td>
-                          {cols.outcome && (
-                            <td className="p-2 lg:p-4">
-                              <span
-                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${outcomeStyle[outcome.color]}`}
-                              >
-                                {outcome.label}
-                              </span>
-                            </td>
-                          )}
-
-                          {settings?.showTradeGrade && cols.grade && (
-                            <td className="p-2 lg:p-4">
-                              {t.grade ? (
-                                <span
-                                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${gradeStyle[t.grade]}`}
-                                >
-                                  {t.grade}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-muted-foreground/30">
-                                  —
-                                </span>
-                              )}
-                            </td>
-                          )}
-
-                          {cols.entryTime && (
-                            <td className="p-2 lg:p-4 text-[10px] lg:text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                              {formatTime(t.entryTime)}
-                            </td>
-                          )}
-
-                          <td className="p-4">
-                            <div className="flex items-center gap-1.5">
-                              {getAssetIconUrl(t.symbol) && (
-                                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-background flex items-center justify-center shadow-sm">
-                                  <img
-                                    src={getAssetIconUrl(t.symbol)!}
-                                    alt={t.symbol}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                              )}
-                              <span className="font-black text-foreground text-xs lg:text-sm">{t.symbol}</span>
-                            </div>
-                          </td>
-
-                          {cols.bias && (
-                            <td className="p-2 lg:p-4">
-                              {t.biasEntryId && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigateToPage("bias");
-                                setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 50);
-                                  }}
-                                  className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20"
-                                  title="View Bias Context"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </td>
-                          )}
-
-                          {cols.side && (
-                            <td className="p-2 lg:p-4">
-                              <span
-                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                  t.side === "buy"
-                                    ? "bg-primary text-primary-foreground shadow-primary/20"
-                                    : "bg-destructive text-destructive-foreground shadow-destructive/20"
-                                }`}
-                              >
-                                {t.side}
-                              </span>
-                            </td>
-                          )}
-
-                          {cols.playbook && (
-                            <td className="p-2 lg:p-4">
-                              {t.setupId && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigateToPage("playbook");
-                                    setTimeout(() => focusPlaybookModel(t.setupId!), 50);
-                                  }}
-                                  className="px-3 py-1.5 rounded-lg bg-muted/50 flex items-center gap-2 text-muted-foreground hover:text-primary transition-all shadow-sm border border-border/50"
-                                >
-                                  <BookOpen className="w-3.5 h-3.5" />
-                                  <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
-                                    {playbookSetups.find((s) => s.id === t.setupId)?.name ||
-                                      "Unknown"}
-                                  </span>
-                                </button>
-                              )}
-                            </td>
-                          )}
-
-                          {cols.analysis && (
-                            <td className="p-2 lg:p-4">
-                              <div className="flex flex-wrap gap-1.5 max-w-[300px]">
-                                {((settings?.executionSchema as any[]) || []).map((metric) => {
-                                  const val = t.experimentalArgs?.metrics?.[metric.id];
-                                  if (!val || (Array.isArray(val) && val.length === 0)) return null;
-
-                                  if (metric.type === "bias_matrix") {
-                                    return (
-                                      <div
-                                        key={metric.id}
-                                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/50 whitespace-nowrap"
-                                      >
-                                        <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/60">
-                                          {metric.label}:
-                                        </span>
-                                        <div className="flex items-center gap-2">
-                                          {Object.entries(val as Record<string, string>).map(([tf, b]) => (
-                                            <div key={tf} className="flex items-center gap-0.5">
-                                              <span className="text-[9px] font-black uppercase">{tf}</span>
-                                              {b === "bull" ? (
-                                                <TrendingUp className="w-2.5 h-2.5 text-bull" />
-                                              ) : (
-                                                <TrendingDown className="w-2.5 h-2.5 text-destructive" />
-                                              )}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-
-                                  let displayVal = "";
-                                  if (metric.type === "presence_list") {
-                                    displayVal = (val as string[]).join(", ");
-                                  } else if (metric.type === "probability" || metric.type === "text") {
-                                    displayVal = String(val);
-                                  }
-
-                                  if (!displayVal) return null;
-
-                                  return (
-                                    <div
-                                      key={metric.id}
-                                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/50 whitespace-nowrap"
-                                    >
-                                      <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground/60">
-                                        {metric.label}:
-                                      </span>
-                                      <span className="text-[9px] font-bold text-foreground uppercase tracking-tight">
-                                        {displayVal}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </td>
-                          )}
-
-                          {cols.stats && (
-                            <td className="p-2 lg:p-4">
-                              <div className="flex flex-col gap-0.5">
-                                <span
-                                  className={`text-xs lg:text-sm font-black ${t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"}`}
-                                >
-                                  {t.netPnl > 0 ? "+" : ""}
-                                  {t.netPnl.toFixed(2)}
-                                </span>
-                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-                                  RR {t.actualRr} / {t.maxRr}
-                                </span>
-                              </div>
-                            </td>
-                          )}
-
-                          {cols.images && (
-                            <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex gap-2">
-                                <TradeImageThumb
-                                  path={t.beforeImg}
-                                  label="PRE"
-                                  pair={{ path: t.afterImg, label: "POST" }}
-                                />
-                                <TradeImageThumb
-                                  path={t.afterImg}
-                                  label="POST"
-                                  pair={{ path: t.beforeImg, label: "PRE" }}
-                                />
-                              </div>
-                            </td>
-                          )}
-
-                          {cols.compliance && (
-                            <td className="p-2 lg:p-4">
-                              <div className="flex flex-col gap-2">
-                                {t.complianceCheck ? (
-                                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20 w-fit">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-black uppercase tracking-wider">
-                                      Followed
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive text-destructive-foreground shadow-sm shadow-destructive/20 w-fit">
-                                      <AlertCircle className="w-3.5 h-3.5" />
-                                      <span className="text-[10px] font-black uppercase tracking-wider">
-                                        Incomplete
-                                      </span>
-                                    </div>
-                                    {t.missedConfluences && t.missedConfluences.length > 0 && (
-                                      <div className="flex flex-wrap gap-1">
-                                        {t.missedConfluences.slice(0, 2).map((c) => (
-                                          <span
-                                            key={c}
-                                            className="px-1.5 py-0.5 rounded bg-destructive/10 border border-destructive/20 text-[8px] font-bold text-destructive uppercase tracking-tighter whitespace-nowrap"
-                                          >
-                                            {c}
-                                          </span>
-                                        ))}
-                                        {t.missedConfluences.length > 2 && (
-                                          <span className="text-[8px] font-black text-destructive uppercase tracking-tighter px-1">
-                                            +{t.missedConfluences.length - 2} more
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          )}
-
-                          {cols.status && (
-                            <td className="p-2 lg:p-4">
-                              <span
-                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${
-                                  t.status === "Not Started"
-                                    ? "bg-destructive text-destructive-foreground shadow-destructive/20"
-                                    : t.status === "Opened"
-                                      ? "bg-primary text-primary-foreground shadow-primary/20"
-                                      : "bg-warning text-warning-foreground shadow-warning/20"
-                                }`}
-                              >
-                                {t.status}
-                              </span>
-                            </td>
-                          )}
-
-                          <td className="p-4 text-xs font-medium text-muted-foreground truncate max-w-[300px]">
-                            {t.notes ?? "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <TradeLedgerView
+              trades={sorted}
+              cols={cols}
+              showGrade={settings?.showTradeGrade}
+              playbookName={playbookName}
+              executionSchema={settings?.executionSchema as any[]}
+              onOpen={openEdit}
+            />
           )}
         </div>
       </div>
@@ -820,44 +601,27 @@ export function TradeLog() {
   );
 }
 
-function formatTime(iso: string) {
-  const d = new Date(iso);
-
-  // Create a formatter for NY timezone
-  const formatter = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "America/New_York",
-    year: "2-digit",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(d).reduce<Record<string, string>>((acc, p) => {
-    if (p.type !== "literal") acc[p.type] = p.value;
-    return acc;
-  }, {});
-
-  // Returns format: DD/MM/YY HH:MM
-  return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
-}
-
-function formatTimeShort(iso: string) {
-  const d = new Date(iso);
-  const formatter = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "America/New_York",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(d).reduce<Record<string, string>>((acc, p) => {
-    if (p.type !== "literal") acc[p.type] = p.value;
-    return acc;
-  }, {});
-
-  return `${parts.day}/${parts.month} ${parts.hour}:${parts.minute} NY`;
+function PulseCell({
+  label,
+  value,
+  tone,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  tone?: "up" | "down";
+  className?: string;
+}) {
+  return (
+    <div className={`px-4 py-3 relative after:absolute after:right-0 after:top-2 after:bottom-2 after:w-px after:bg-border last:after:hidden ${className}`}>
+      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p
+        className={`font-mono tabular-nums text-xl font-bold ${
+          tone === "up" ? "text-primary" : tone === "down" ? "text-destructive" : "text-foreground"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
 }
