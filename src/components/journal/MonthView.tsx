@@ -101,7 +101,7 @@ function MonthBox({
   }, [month]);
 
   return (
-    <div className="bg-white rounded-[32px] border border-border shadow-md overflow-hidden flex flex-col w-[85vw] md:w-[800px] shrink-0 snap-center transition-all duration-300 hover:shadow-lg">
+    <div className="bg-card rounded-[32px] border border-border shadow-md overflow-hidden flex flex-col w-[85vw] md:w-[800px] shrink-0 snap-center transition-all duration-300 hover:shadow-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
         <h3 className="text-lg font-black tracking-tight text-foreground flex items-center">
@@ -198,6 +198,10 @@ function MonthBox({
             <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
               {monthlyOutlookEntries.map((e) => (
                 <div key={e.id} className="w-[280px] shrink-0">
+                  <p className="text-[10px] font-bold text-muted-foreground mb-1.5">
+                    {ddmm(e.date)}
+                    {asset === "ALL" ? ` · ${e.asset}` : ""}
+                  </p>
                   <PasteSlot
                     label={`Monthly - ${ddmm(e.date)}`}
                     image={e.monthlyImg}

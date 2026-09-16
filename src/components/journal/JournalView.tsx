@@ -166,12 +166,15 @@ export function JournalView() {
   useEffect(() => {
     return onBiasFocus((entryId, assetName) => {
       pinnedDate.current = null;
-      if (assetName) setAsset(assetName);
-      else setAsset("ALL");
+      setViewMode("timeline");
       setMonth("ALL");
+      const fromList = entries.find((e) => e.id === entryId);
+      const name = assetName || fromList?.asset;
+      if (name) setAsset(name);
+      else setAsset("ALL");
       setPendingFocusId(entryId);
     });
-  }, []);
+  }, [entries]);
 
   useEffect(() => {
     return onBiasAssetFocus((name) => {
@@ -340,8 +343,10 @@ export function JournalView() {
 
   const addEntry = async () => {
     const fallback = ASSETS[0] ?? "XAUUSD";
-    const e = newEntry(asset === "ALL" || asset === "TODAY" ? fallback : asset);
-    setEditing(e);
+    const targetAsset = asset === "ALL" || asset === "TODAY" ? fallback : asset;
+    const today = journalTradingDate();
+    const existing = entries.find((e) => e.date === today && e.asset === targetAsset);
+    setEditing(existing ?? newEntry(targetAsset));
     setTimeout(jumpRight, 100);
   };
 
@@ -401,6 +406,12 @@ export function JournalView() {
                   Today
                 </button>
               )}
+              <button
+                onClick={() => selectAsset("ALL")}
+                className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "ALL" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+              >
+                All
+              </button>
               {ASSETS.map((a) => (
                 <button
                   key={a}
@@ -451,7 +462,7 @@ export function JournalView() {
               <button
                 onClick={() => {
                   setViewMode("month");
-                  if (asset === "TODAY") selectAsset(ASSETS[0] || "ALL");
+                  if (asset === "TODAY") selectAsset("ALL");
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
@@ -510,10 +521,7 @@ export function JournalView() {
             onAdd={addEntry}
             onClear={() => {
               setMonth("ALL");
-              if (asset === "TODAY") {
-                const first = ASSETS.find((a) => entries.some((e) => e.asset === a));
-                selectAsset(first ?? ASSETS[0] ?? "TODAY");
-              }
+              selectAsset("ALL");
             }}
           />
         ) : viewMode === "month" ? (
@@ -550,6 +558,10 @@ export function JournalView() {
       <MorningPsychologyPrompt
         isOpen={showPsychPrompt}
         onClose={() => setShowPsychPrompt(false)}
+        onSaved={(log) => {
+          setTodayLog(log);
+          setShowPsychPrompt(false);
+        }}
         existingLog={todayLog}
       />
 
@@ -620,7 +632,15 @@ function FilterEmpty({
       ? null
       : new Date(`${month}-01T12:00:00`).toLocaleString("en-US", { month: "long", year: "numeric" });
   const title =
-    asset === "TODAY" ? "No bias for today" : monthLabel ? `No bias for ${asset} in ${monthLabel}` : `No bias for ${asset}`;
+    asset === "TODAY"
+      ? "No bias for today"
+      : asset === "ALL" && monthLabel
+        ? `No bias in ${monthLabel}`
+        : asset === "ALL"
+          ? "No bias for this filter"
+          : monthLabel
+            ? `No bias for ${asset} in ${monthLabel}`
+            : `No bias for ${asset}`;
   const description =
     asset === "TODAY"
       ? "Nothing logged for this trading day yet. Add a day or show your existing journal."

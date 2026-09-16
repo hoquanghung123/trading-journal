@@ -600,7 +600,7 @@ export function TradeLog() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     navigateToPage("bias");
-                                    setTimeout(() => focusBiasEntry(t.biasEntryId!), 50);
+                                setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 50);
                                   }}
                                   className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm border border-primary/20"
                                   title="View Bias Context"

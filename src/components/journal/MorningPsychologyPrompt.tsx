@@ -12,10 +12,11 @@ import { toast } from "sonner";
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  onSaved?: (log: PsychologyLog) => void;
   existingLog?: PsychologyLog;
 }
 
-export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props) {
+export function MorningPsychologyPrompt({ isOpen, onClose, onSaved, existingLog }: Props) {
   const [mood, setMood] = useState<string | undefined>(existingLog?.morningMood);
   const [notes, setNotes] = useState<string>(existingLog?.morningNotes ?? "");
   const [saving, setSaving] = useState(false);
@@ -32,12 +33,14 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
     setSaving(true);
     try {
       const log = existingLog ?? newDailyLog(journalTradingDate());
-      await upsertPsychologyLog({
+      const saved = {
         ...log,
         morningMood: mood,
         morningNotes: notes,
-      });
+      };
+      await upsertPsychologyLog(saved);
       toast.success("Mindset saved");
+      onSaved?.(saved);
       onClose();
     } catch (e: any) {
       toast.error(e.message ?? "Couldn't save check-in");
@@ -47,26 +50,31 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
   };
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[110] w-[90%] max-w-2xl animate-in slide-in-from-top-10 duration-500">
-      <div className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[24px] overflow-hidden">
-        {/* Compact Header / Info bar */}
-        <div className="px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl forest-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+    <div className="fixed top-16 sm:top-6 inset-x-3 z-[110] mx-auto w-auto max-w-2xl animate-in slide-in-from-top-10 duration-500">
+      <div className="bg-card/95 backdrop-blur-xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[24px]">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl forest-gradient flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
               <Brain className="w-5 h-5 text-white" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <h3 className="text-sm font-black text-foreground flex items-center gap-2">
-                Morning Ritual <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                Morning Ritual <Sparkles className="w-3 h-3 text-primary animate-pulse shrink-0" />
               </h3>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
                 How are you showing up today?
               </p>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 md:hidden"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5 bg-muted/50 p-1 rounded-xl border border-border/50">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex flex-1 min-w-0 justify-between gap-0.5 bg-muted/50 p-1 rounded-xl border border-border/50">
               {MOOD_OPTIONS.map((m) => {
                 const active = mood === m;
                 return (
@@ -76,10 +84,10 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
                       setMood(m);
                       setIsExpanded(true);
                     }}
-                    className={`text-xl w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-300 ${
+                    className={`text-lg sm:text-xl flex-1 h-9 min-w-0 sm:flex-none sm:h-10 sm:w-10 flex items-center justify-center rounded-lg transition-colors ${
                       active
-                        ? "bg-white shadow-md scale-110 border border-primary/20"
-                        : "hover:bg-white/50 grayscale-[0.5] hover:grayscale-0"
+                        ? "bg-background shadow-md border border-primary/20"
+                        : "hover:bg-muted grayscale-[0.5] hover:grayscale-0"
                     }`}
                   >
                     {m}
@@ -90,7 +98,7 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="hidden md:flex p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
@@ -109,14 +117,14 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
                 rows={2}
                 className="w-full bg-muted/20 border border-border/50 rounded-xl px-4 py-3 text-xs font-medium text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/10 transition-all resize-none"
               />
-              <div className="flex justify-end items-center gap-4">
-                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:items-center gap-3 sm:gap-4">
+                <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-50 text-center sm:text-left">
                   Better psychology, better trades
                 </p>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="forest-gradient text-white px-6 py-2 rounded-xl font-bold text-[11px] uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
+                  className="forest-gradient text-white px-6 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-wider shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   {saving ? (
                     <Loader2 className="w-3 h-3 animate-spin" />

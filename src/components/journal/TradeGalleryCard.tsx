@@ -233,7 +233,7 @@ export function TradeGalleryCard({
               onClick={(e) => {
                 e.stopPropagation();
                 navigateToPage("bias");
-                setTimeout(() => focusBiasEntry(trade.biasEntryId!), 50);
+                setTimeout(() => focusBiasEntry(trade.biasEntryId!, trade.symbol), 50);
               }}
               className="w-7 h-7 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
               title="Go to Bias entry"

@@ -408,7 +408,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       <button
                         onClick={() => {
                           navigateToPage("bias");
-                          setTimeout(() => focusBiasEntry(t.biasEntryId!), 50);
+                          setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 50);
                           onClose();
                         }}
                         className="h-12 w-12 flex items-center justify-center rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"

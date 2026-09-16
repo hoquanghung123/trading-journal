@@ -4,6 +4,7 @@ import {
   type DayEntry,
   type Session,
   type SlotKind,
+  type Bias,
   biasStyle,
   biasLabel,
   ddmm,
@@ -11,6 +12,7 @@ import {
   getSessionsForAsset,
   isHtfBiasSet,
   h4TabForNow,
+  cycleBias,
 } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
@@ -95,16 +97,17 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             correct={entry.monthlyCorrect}
             focused={isFocused("monthly")}
             onFocus={() => focus("monthly")}
-            onImg={(u) => onUpdate({ ...entry, monthlyImg: u })}
-            onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
+          onImg={(u) => onUpdate({ ...entry, monthlyImg: u })}
+          onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
+          onCycle={() => onUpdate({ ...entry, monthlyBias: cycleBias(entry.monthlyBias) })}
           />
         ) : (
           /* Spacer for other days to maintain horizontal alignment */
-          <div className="h-44 rounded-xl border border-terminal-border/10 bg-black/5 flex items-center justify-center relative group/spacer">
-            <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/20 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/20 font-black border border-white/5">
+          <div className="h-44 rounded-xl border border-border/40 bg-muted/20 flex items-center justify-center relative group/spacer">
+            <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-background/60 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/40 font-black border border-border/40">
               M
             </div>
-            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/10 font-bold">
+            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/30 font-bold">
               MON OR 1ST ONLY
             </span>
           </div>
@@ -120,6 +123,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           onFocus={() => focus("weekly")}
           onImg={(u) => onUpdate({ ...entry, weeklyImg: u })}
           onToggle={() => onUpdate({ ...entry, weeklyCorrect: !entry.weeklyCorrect })}
+          onCycle={() => onUpdate({ ...entry, weeklyBias: cycleBias(entry.weeklyBias) })}
           hideBiasAndTick={weekdayOf(entry.date) !== "MON"}
         />
 
@@ -133,6 +137,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
           onFocus={() => focus("daily")}
           onImg={(u) => onUpdate({ ...entry, dailyImg: u })}
           onToggle={() => onUpdate({ ...entry, dailyCorrect: !entry.dailyCorrect })}
+          onCycle={() => onUpdate({ ...entry, dailyBias: cycleBias(entry.dailyBias) })}
         />
 
         {/* 4H */}
@@ -183,14 +188,33 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             onFocus={() => focus(`h4-${session}` as SlotKind)}
             className="h-52 rounded-xl overflow-hidden border border-border/50"
           >
-            {isHtfBiasSet(entry.h4[session]?.bias, entry.h4[session]?.img) && (
-              <span
-                className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-black uppercase tracking-[0.18em] shadow-md leading-none"
-                style={biasStyle(entry.h4[session]!.bias!)}
-              >
-                {biasLabel(entry.h4[session]!.bias!)}
-              </span>
-            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdate({
+                  ...entry,
+                  h4: {
+                    ...entry.h4,
+                    [session]: { ...entry.h4[session], bias: cycleBias(entry.h4[session]?.bias) },
+                  },
+                });
+              }}
+              className={`bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-black uppercase tracking-[0.18em] shadow-md leading-none ${
+                isHtfBiasSet(entry.h4[session]?.bias, entry.h4[session]?.img)
+                  ? ""
+                  : "bg-black/60 text-muted-foreground"
+              }`}
+              style={
+                isHtfBiasSet(entry.h4[session]?.bias, entry.h4[session]?.img)
+                  ? biasStyle(entry.h4[session]!.bias!)
+                  : undefined
+              }
+            >
+              {isHtfBiasSet(entry.h4[session]?.bias, entry.h4[session]?.img)
+                ? biasLabel(entry.h4[session]!.bias!)
+                : "—"}
+            </button>
           </PasteSlot>
         </div>
         {entry.notes?.trim() && (
@@ -216,18 +240,21 @@ function SlotWithBias({
   onFocus,
   onImg,
   onToggle,
+  onCycle,
   hideBiasAndTick,
 }: {
   label: string;
   image?: string;
-  bias: any;
+  bias: Bias;
   correct: boolean;
   focused: boolean;
   onFocus: () => void;
   onImg: (u: string | undefined) => void;
   onToggle: () => void;
+  onCycle?: () => void;
   hideBiasAndTick?: boolean;
 }) {
+  const set = isHtfBiasSet(bias, image);
   return (
     <PasteSlot
       label={label}
@@ -239,14 +266,20 @@ function SlotWithBias({
     >
       {!hideBiasAndTick && (
         <>
-          {isHtfBiasSet(bias, image) && (
-            <span
-              className="bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
-              style={biasStyle(bias)}
-            >
-              {biasLabel(bias)}
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCycle?.();
+            }}
+            className={`bias-tag absolute bottom-1 right-1 px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-[0.18em] shadow-md leading-none ${
+              set ? "" : "bg-black/60 text-muted-foreground"
+            }`}
+            style={set ? biasStyle(bias) : undefined}
+            title="Cycle bias"
+          >
+            {set ? biasLabel(bias) : "—"}
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();

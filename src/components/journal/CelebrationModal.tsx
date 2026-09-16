@@ -73,11 +73,11 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative bg-white rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden"
+            className="relative bg-card rounded-[40px] shadow-2xl w-full max-w-sm overflow-hidden border border-border"
           >
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute top-6 right-6 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -111,7 +111,7 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
               </div>
 
               {/* Weekly Strip */}
-              <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100 space-y-4">
+              <div className="bg-muted/50 rounded-3xl p-5 border border-border space-y-4">
                 <div className="flex justify-between items-center px-1">
                   {weekStrip.map((day, i) => {
                     const dateStr = format(day, "yyyy-MM-dd");
@@ -122,7 +122,7 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                       <div key={i} className="flex flex-col items-center gap-2">
                         <span
                           className={`text-[10px] font-black uppercase tracking-tighter ${
-                            isTodayDay ? "text-orange-500" : "text-slate-400"
+                            isTodayDay ? "text-orange-500" : "text-muted-foreground"
                           }`}
                         >
                           {format(day, "eeeeee")}
@@ -135,8 +135,8 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                             completed
                               ? "bg-orange-500 text-white shadow-sm"
                               : isTodayDay
-                                ? "border-2 border-orange-500 bg-white"
-                                : "bg-slate-200"
+                                ? "border-2 border-orange-500 bg-card"
+                                : "bg-muted"
                           }`}
                         >
                           {completed && <Check className="w-4 h-4" strokeWidth={4} />}
@@ -145,14 +145,14 @@ export function CelebrationModal({ isOpen, onClose, streakCount, streakDays }: P
                     );
                   })}
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 leading-tight px-2">
+                <p className="text-[10px] font-bold text-muted-foreground leading-tight px-2">
                   A <span className="text-orange-500">streak</span> counts how many days you've
                   completed HTF prep in a row
                 </p>
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                <h2 className="text-2xl font-black text-foreground tracking-tight">
                   Consistency is Key!
                 </h2>
               </div>

@@ -180,11 +180,11 @@ export function PasteSlot({
         }}
       />
       {busy && (
-        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
+        <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] flex items-center justify-center">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       )}
-      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-widest text-primary font-black border border-primary/10">
+      <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-card/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-widest text-primary font-black border border-primary/10">
         {label}
       </div>
       {children}

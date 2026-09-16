@@ -171,6 +171,13 @@ export function isHtfBiasSet(bias: Bias | undefined, image?: string): boolean {
   return Boolean(image);
 }
 
+const BIAS_CYCLE: Bias[] = ["bullish", "bearish", "consolidation"];
+
+export function cycleBias(current?: Bias): Bias {
+  const i = current ? BIAS_CYCLE.indexOf(current) : -1;
+  return BIAS_CYCLE[(i + 1) % BIAS_CYCLE.length]!;
+}
+
 export interface DayEntry {
   id: string;
   date: string; // YYYY-MM-DD
@@ -317,7 +324,9 @@ export async function upsertEntry(e: DayEntry, explicitUserId?: string): Promise
 
   const row = toRow(e, uid);
   if (existing) {
-    // Reuse the existing row ID to prevent primary key collision
+    if (existing.id !== e.id) {
+      throw new Error(`A bias for ${e.asset} on ${e.date} already exists.`);
+    }
     row.id = existing.id;
   }
 

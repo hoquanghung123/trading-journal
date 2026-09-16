@@ -17,7 +17,9 @@ const BIASES: Bias[] = ["bullish", "bearish", "consolidation"];
 
 export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const { data: symbols = [] } = useSymbols();
-  const ASSETS = symbols.map((s) => s.name);
+  const ASSETS = symbols
+    .filter((s) => !s.isForex || s.name === entry.asset)
+    .map((s) => s.name);
   const [draft, setDraft] = useState<DayEntry>(entry);
   const [focusKey, setFocusKey] = useState<string>("weekly");
   const [session, setSession] = useState<Session>(() => h4TabForNow(entry.asset));
