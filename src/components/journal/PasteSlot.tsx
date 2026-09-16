@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState, createContext } from "react";
 import { ImageIcon, Loader2, Maximize2, Replace, Trash2 } from "lucide-react";
 import {
   deleteChartImage,
@@ -8,6 +8,35 @@ import {
 } from "@/lib/journal";
 import { toast } from "sonner";
 import { Lightbox } from "./Lightbox";
+import { cn } from "@/lib/utils";
+
+const ChartFitContext = createContext<{
+  height?: number;
+  report: (id: string, height: number | null) => void;
+} | null>(null);
+
+/** Shared slot height = tallest loaded chart at current column width. */
+export function ChartFitProvider({ children }: { children: React.ReactNode }) {
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const report = useCallback((id: string, height: number | null) => {
+    setHeights((prev) => {
+      if (height == null) {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      if (prev[id] === height) return prev;
+      return { ...prev, [id]: height };
+    });
+  }, []);
+  const height = useMemo(() => {
+    const vals = Object.values(heights);
+    return vals.length ? Math.max(...vals) : undefined;
+  }, [heights]);
+  const value = useMemo(() => ({ height, report }), [height, report]);
+  return <ChartFitContext.Provider value={value}>{children}</ChartFitContext.Provider>;
+}
 
 interface Props {
   label: string;
@@ -22,6 +51,8 @@ interface Props {
   showChartActions?: boolean;
   /** Chip that marks this slot as the Cmd+V target. */
   showPasteTarget?: boolean;
+  /** Fill the slot without letterbox. Height follows the tallest Timeline chart. */
+  fitImage?: boolean;
 }
 
 export function PasteSlot({
@@ -35,9 +66,13 @@ export function PasteSlot({
   children,
   showChartActions = false,
   showPasteTarget = false,
+  fitImage = false,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const slotId = useId();
+  const fit = useContext(ChartFitContext);
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
   const [displayUrl, setDisplayUrl] = useState<string>("");
@@ -134,6 +169,36 @@ export function PasteSlot({
     return () => window.removeEventListener("paste", handler);
   }, [focused]);
 
+  const reportFit = fit?.report;
+  const fitHeight = fit?.height;
+  const measureRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    if (!fitImage || !reportFit) return;
+    const box = ref.current;
+    const measure = () => {
+      const img = imgRef.current;
+      if (!img?.naturalWidth || !displayUrl) {
+        reportFit(slotId, null);
+        return;
+      }
+      const w = box?.clientWidth ?? 0;
+      if (!w) return;
+      reportFit(slotId, Math.round((w * img.naturalHeight) / img.naturalWidth));
+    };
+    measureRef.current = measure;
+    if (!box) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    measure();
+    return () => ro.disconnect();
+  }, [displayUrl, fitImage, reportFit, slotId]);
+
+  useEffect(() => {
+    if (!fitImage || !reportFit) return;
+    return () => reportFit(slotId, null);
+  }, [fitImage, reportFit, slotId]);
+
   return (
     <div
       ref={ref}
@@ -155,16 +220,28 @@ export function PasteSlot({
         const f = e.dataTransfer.files?.[0];
         if (f && f.type.startsWith("image/")) await handleFile(f);
       }}
-      className={`relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none ${focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30"} ${className ?? ""}`}
+      className={cn(
+        "relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none",
+        focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30",
+        fitImage && fitHeight == null && "h-44",
+        className,
+      )}
+      style={fitImage && fitHeight ? { height: fitHeight } : undefined}
     >
       {displayUrl ? (
         <>
           <img
+            ref={imgRef}
             src={displayUrl}
             alt={label}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-contain bg-muted/5"
+            onLoad={() => measureRef.current()}
+            className={
+              fitImage
+                ? "w-full h-full object-cover"
+                : "w-full h-full object-contain bg-muted/5"
+            }
           />
         </>
       ) : (

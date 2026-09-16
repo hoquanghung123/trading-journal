@@ -24,6 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { useSymbols, getAssetIconUrl } from "@/lib/symbols";
 import { DayColumn } from "./DayColumn";
+import { ChartFitProvider } from "./PasteSlot";
 import { TodaySwissTapes } from "./TodaySwissTapes";
 import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
@@ -646,20 +647,22 @@ export function JournalView() {
           <MonthView entries={filtered} onUpdate={upsert} asset={asset} />
         ) : (
           <div ref={scrollerRef} data-slot-root className="overflow-x-auto scrollbar-terminal pb-4">
-            <div className="flex gap-3 min-w-min items-start">
-              {filtered.map((e) => (
-                <DayColumn
-                  key={e.id}
-                  entry={e}
-                  focusedSlot={focusedSlot}
-                  setFocus={setFocusedSlot}
-                  onUpdate={upsert}
-                  onEdit={setEditing}
-                  focusKillzone={killzoneFocus}
-                  focusTick={killzoneFocusTick}
-                />
-              ))}
-            </div>
+            <ChartFitProvider>
+              <div className="flex gap-3 min-w-min items-start">
+                {filtered.map((e) => (
+                  <DayColumn
+                    key={e.id}
+                    entry={e}
+                    focusedSlot={focusedSlot}
+                    setFocus={setFocusedSlot}
+                    onUpdate={upsert}
+                    onEdit={setEditing}
+                    focusKillzone={killzoneFocus}
+                    focusTick={killzoneFocusTick}
+                  />
+                ))}
+              </div>
+            </ChartFitProvider>
           </div>
         )}
       </main>

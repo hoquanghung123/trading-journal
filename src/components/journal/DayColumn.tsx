@@ -194,7 +194,8 @@ export function DayColumn({
             }
             focused={isFocused(`h4-${session}` as SlotKind)}
             onFocus={() => focus(`h4-${session}` as SlotKind)}
-            className="h-52 rounded-xl overflow-hidden border border-border/50"
+            fitImage
+            className="border-border/50"
           >
             <button
               type="button"
@@ -270,7 +271,7 @@ function SlotWithBias({
       focused={focused}
       onFocus={onFocus}
       onChange={onImg}
-      className="h-44"
+      fitImage
     >
       {!hideBiasAndTick && (
         <>
