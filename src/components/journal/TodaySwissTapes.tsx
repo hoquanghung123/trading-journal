@@ -13,12 +13,20 @@ import {
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
-function AssetIcon({ asset, className = "w-8 h-8" }: { asset: string; className?: string }) {
+function AssetIcon({
+  asset,
+  size = "md",
+}: {
+  asset: string;
+  size?: "md" | "sm";
+}) {
   const url = getAssetIconUrl(asset);
+  const box = size === "sm" ? "w-5 h-5" : "w-8 h-8";
+  const type = size === "sm" ? "text-[8px]" : "text-[10px]";
   if (url) {
     return (
       <div
-        className={`${className} rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center border border-border/50`}
+        className={`${box} rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center border border-border/50`}
       >
         <img src={url} alt="" className="w-full h-full object-cover" />
       </div>
@@ -26,7 +34,7 @@ function AssetIcon({ asset, className = "w-8 h-8" }: { asset: string; className?
   }
   return (
     <div
-      className={`${className} rounded-full shrink-0 bg-muted flex items-center justify-center border border-border/50 text-[10px] font-black text-muted-foreground`}
+      className={`${box} rounded-full shrink-0 bg-muted flex items-center justify-center border border-border/50 ${type} font-black text-muted-foreground`}
     >
       {asset.slice(0, 2)}
     </div>
@@ -57,6 +65,8 @@ export function TodaySwissTapes({
 }: Props) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const h4Session = emphasizeH4Now();
+  const loggedAssets = new Set(entries.map((e) => e.asset));
+  const dock = watchlist.filter((name) => !loggedAssets.has(name));
 
   useEffect(() => {
     if (!expandId) return;
@@ -73,34 +83,19 @@ export function TodaySwissTapes({
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto pb-8">
-      {watchlist.map((assetName) => {
-        const entry = entries.find((e) => e.asset === assetName);
-        if (!entry) {
-          return (
-            <button
-              key={assetName}
-              type="button"
-              onClick={() => onCreate(assetName)}
-              className="w-full rounded-2xl border border-dashed border-border bg-card p-4 flex items-center justify-between text-left hover:bg-muted/5 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <AssetIcon asset={assetName} />
-                <div>
-                  <p className="font-mono font-black text-base text-foreground tracking-tight">
-                    {assetName}
-                  </p>
-                  <p className="text-[10px] font-bold text-muted-foreground">
-                    Click to add today’s bias
-                  </p>
-                </div>
-              </div>
-              <span className="text-primary text-lg font-black leading-none">+</span>
-            </button>
-          );
-        }
+      {entries.length === 0 && dock.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card px-4 py-5">
+          <p className="text-sm font-black text-foreground">Prep an asset</p>
+          <p className="text-[11px] font-medium text-muted-foreground">
+            Choose what you are biasing today.
+          </p>
+        </div>
+      )}
 
+      {entries.map((entry) => {
         const sessions = getSessionsForAsset(entry.asset);
-        const isExpanded = !!expandedRows[entry.id];
+        const isExpanded =
+          entry.id in expandedRows ? !!expandedRows[entry.id] : expandId === entry.id;
 
         const isMonday = weekdayOf(entry.date) === "MON";
         const isFirstOfMonth = entry.date.endsWith("-01");
@@ -549,6 +544,25 @@ export function TodaySwissTapes({
           </div>
         );
       })}
+
+      {dock.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pr-1">
+            Add
+          </span>
+          {dock.map((assetName) => (
+            <button
+              key={assetName}
+              type="button"
+              onClick={() => onCreate(assetName)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-2.5 py-1.5 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            >
+              <AssetIcon asset={assetName} size="sm" />
+              <span className="font-mono text-[11px] font-bold text-foreground">{assetName}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -97,9 +97,22 @@ export function JournalView() {
   // Morning Psychology Prompt Logic
   const [showPsychPrompt, setShowPsychPrompt] = useState(false);
   const [todayLog, setTodayLog] = useState<PsychologyLog | undefined>();
+  const psychDismissedRef = useRef(false);
   const { track } = useAchievementTracker();
 
+  const closePsychPrompt = () => {
+    psychDismissedRef.current = true;
+    setShowPsychPrompt(false);
+  };
+
+  const savePsychPrompt = (log: PsychologyLog) => {
+    psychDismissedRef.current = true;
+    setTodayLog(log);
+    setShowPsychPrompt(false);
+  };
+
   useEffect(() => {
+    let cancelled = false;
     const checkPsych = async () => {
       try {
         const { fetchSettings } = await import("@/lib/settings");
@@ -116,16 +129,16 @@ export function JournalView() {
         const isTimePassed = currentH > targetH || (currentH === targetH && currentM >= targetM);
         const isTest = new URLSearchParams(window.location.search).get("test") === "psych";
 
+        // test=psych only skips the reminder-time gate, not an already-saved check-in
         if (!isTimePassed && !isTest) return;
 
         const today = journalTradingDate();
         const logs = await fetchPsychologyForDate(today);
         const daily = logs.find((l) => l.tradeId === null);
+        if (cancelled || psychDismissedRef.current) return;
         setTodayLog(daily);
 
-        // If no daily log or no mood recorded, show prompt (or if in test mode)
-        if (!daily || !daily.morningMood || isTest) {
-          setTodayLog(daily);
+        if (!daily || !daily.morningMood) {
           setShowPsychPrompt(true);
         }
       } catch (e) {
@@ -134,6 +147,9 @@ export function JournalView() {
     };
 
     checkPsych();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Subscribe to real-time updates from Supabase for live reloading
@@ -312,7 +328,9 @@ export function JournalView() {
     for (const [name, draft] of Object.entries(todayDrafts)) {
       if (!byAsset.has(name)) byAsset.set(name, draft);
     }
-    return ASSETS.map((name) => byAsset.get(name)).filter(Boolean) as DayEntry[];
+    const fromWatchlist = ASSETS.map((name) => byAsset.get(name)).filter(Boolean) as DayEntry[];
+    const extras = [...byAsset.values()].filter((e) => !ASSETS.includes(e.asset));
+    return [...fromWatchlist, ...extras];
   }, [filtered, todayDrafts, ASSETS]);
 
   const jumpRight = () => {
@@ -358,6 +376,13 @@ export function JournalView() {
     try {
       await deleteEntry(id);
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      setTodayDrafts((d) => {
+        const hit = Object.entries(d).find(([, draft]) => draft.id === id);
+        if (!hit) return d;
+        const next = { ...d };
+        delete next[hit[0]];
+        return next;
+      });
       track();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (err as any)?.message || "An error occurred");
@@ -368,17 +393,7 @@ export function JournalView() {
   const addEntry = async () => {
     const fallback = ASSETS[0] ?? "XAUUSD";
     const today = journalTradingDate();
-    if (viewMode === "today") {
-      const missing = ASSETS.find(
-        (a) =>
-          !entries.some((e) => e.date === today && e.asset === a) && !todayDrafts[a],
-      );
-      if (missing) {
-        createTodayDraft(missing);
-        return;
-      }
-    }
-    const targetAsset = viewMode === "today" || asset === "ALL" ? fallback : asset;
+    const targetAsset = asset === "ALL" ? fallback : asset;
     const existing = entries.find((e) => e.date === today && e.asset === targetAsset);
     setEditing(existing ?? newEntry(targetAsset));
     setTimeout(jumpRight, 100);
@@ -413,23 +428,29 @@ export function JournalView() {
               </div>
               <SessionChip />
             </div>
-            <button
-              type="button"
-              onClick={addEntry}
-              className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95 transition-all"
-            >
-              <Plus className="w-5 h-5" strokeWidth={3} />
-            </button>
+            {viewMode !== "today" && (
+              <button
+                type="button"
+                onClick={addEntry}
+                className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95 transition-all"
+              >
+                <Plus className="w-5 h-5" strokeWidth={3} />
+              </button>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={addEntry}
-            className="hidden lg:flex forest-gradient items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap shrink-0"
-          >
-            <Plus className="w-4 h-4" strokeWidth={3} /> Add Day
-          </button>
-          <div className="hidden lg:block h-8 w-px bg-border shrink-0" />
+          {viewMode !== "today" && (
+            <>
+              <button
+                type="button"
+                onClick={addEntry}
+                className="hidden lg:flex forest-gradient items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap shrink-0"
+              >
+                <Plus className="w-4 h-4" strokeWidth={3} /> Add Day
+              </button>
+              <div className="hidden lg:block h-8 w-px bg-border shrink-0" />
+            </>
+          )}
 
           <div className="flex bg-muted/50 p-1 rounded-lg border border-border shrink-0">
             <button
@@ -539,11 +560,8 @@ export function JournalView() {
               <MorningPsychologyPrompt
                 isOpen
                 placement="inline"
-                onClose={() => setShowPsychPrompt(false)}
-                onSaved={(log) => {
-                  setTodayLog(log);
-                  setShowPsychPrompt(false);
-                }}
+                onClose={closePsychPrompt}
+                onSaved={savePsychPrompt}
                 existingLog={todayLog}
               />
             )}
@@ -629,11 +647,8 @@ export function JournalView() {
       <MorningPsychologyPrompt
         isOpen={showPsychPrompt && viewMode !== "today"}
         placement="overlay"
-        onClose={() => setShowPsychPrompt(false)}
-        onSaved={(log) => {
-          setTodayLog(log);
-          setShowPsychPrompt(false);
-        }}
+        onClose={closePsychPrompt}
+        onSaved={savePsychPrompt}
         existingLog={todayLog}
       />
 
