@@ -26,7 +26,7 @@ import { EditDayModal } from "./EditDayModal";
 import { MorningPsychologyPrompt } from "./MorningPsychologyPrompt";
 import { MonthView } from "./MonthView";
 import { CelebrationModal } from "./CelebrationModal";
-import { onBiasFocus, onShowCelebration, onRequestNewBias, onBiasAssetFocus, navigateToPage } from "@/lib/nav-bus";
+import { onBiasFocus, onShowCelebration, onRequestNewBias, onBiasAssetFocus, onBiasDateFocus, navigateToPage, parseNavFromUrl, setNavUrl } from "@/lib/nav-bus";
 import { toast } from "sonner";
 import { fetchPsychologyForDate, type PsychologyLog } from "@/lib/psychology";
 import { SessionChip } from "@/components/shared/SessionChip";
@@ -76,6 +76,13 @@ export function JournalView() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationStreak, setCelebrationStreak] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const urlDateApplied = useRef(false);
+  const pinnedDate = useRef<string | null>(null);
+
+  const selectAsset = (next: string) => {
+    if (next !== asset) pinnedDate.current = null;
+    setAsset(next);
+  };
 
   // Morning Psychology Prompt Logic
   const [showPsychPrompt, setShowPsychPrompt] = useState(false);
@@ -158,6 +165,7 @@ export function JournalView() {
   // Subscribe to smart-link focus events from Trade Log
   useEffect(() => {
     return onBiasFocus((entryId, assetName) => {
+      pinnedDate.current = null;
       if (assetName) setAsset(assetName);
       else setAsset("ALL");
       setMonth("ALL");
@@ -167,10 +175,51 @@ export function JournalView() {
 
   useEffect(() => {
     return onBiasAssetFocus((name) => {
+      pinnedDate.current = null;
       setAsset(name);
       setMonth("ALL");
     });
   }, []);
+
+  const applyBiasDate = (date: string) => {
+    setViewMode("timeline");
+    if (date === journalTradingDate()) {
+      pinnedDate.current = null;
+      setAsset("TODAY");
+      return;
+    }
+    pinnedDate.current = date;
+    setMonth("ALL");
+    const match = entries.find((e) => e.date === date);
+    if (match) {
+      setAsset(match.asset);
+      setPendingFocusId(match.id);
+    }
+  };
+
+  useEffect(() => {
+    return onBiasDateFocus((date) => applyBiasDate(date));
+  }, [entries]);
+
+  useEffect(() => {
+    if (entriesPending || urlDateApplied.current) return;
+    urlDateApplied.current = true;
+    const nav = parseNavFromUrl();
+    if (nav.page !== "bias" || !nav.date) return;
+    applyBiasDate(nav.date);
+  }, [entriesPending, entries]);
+
+  useEffect(() => {
+    if (!urlDateApplied.current) return;
+    if (asset === "TODAY") {
+      pinnedDate.current = null;
+      setNavUrl("bias", journalTradingDate());
+    } else if (pinnedDate.current) {
+      setNavUrl("bias", pinnedDate.current);
+    } else {
+      setNavUrl("bias");
+    }
+  }, [asset]);
 
   useEffect(() => {
     return onRequestNewBias((name) => {
@@ -274,6 +323,7 @@ export function JournalView() {
       track();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (err as any)?.message || "An error occurred");
+      throw err;
     }
   };
 
@@ -284,6 +334,7 @@ export function JournalView() {
       track();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (err as any)?.message || "An error occurred");
+      throw err;
     }
   };
 
@@ -344,7 +395,7 @@ export function JournalView() {
               </span>
               {viewMode !== "month" && (
                 <button
-                  onClick={() => setAsset("TODAY")}
+                  onClick={() => selectAsset("TODAY")}
                   className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
                   Today
@@ -353,7 +404,7 @@ export function JournalView() {
               {ASSETS.map((a) => (
                 <button
                   key={a}
-                  onClick={() => setAsset(a)}
+                  onClick={() => selectAsset(a)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
                   {getAssetIconUrl(a) && (
@@ -400,7 +451,7 @@ export function JournalView() {
               <button
                 onClick={() => {
                   setViewMode("month");
-                  if (asset === "TODAY") setAsset(ASSETS[0] || "ALL");
+                  if (asset === "TODAY") selectAsset(ASSETS[0] || "ALL");
                 }}
                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
@@ -408,12 +459,14 @@ export function JournalView() {
               </button>
             </div>
 
+            {viewMode === "timeline" && asset !== "TODAY" && (
             <button
               onClick={jumpRight}
               className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-card rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap text-foreground"
             >
               Jump <ChevronsRight className="w-4 h-4 text-primary" />
             </button>
+            )}
           </div>
         </div>
       </header>
@@ -459,7 +512,7 @@ export function JournalView() {
               setMonth("ALL");
               if (asset === "TODAY") {
                 const first = ASSETS.find((a) => entries.some((e) => e.asset === a));
-                setAsset(first ?? ASSETS[0] ?? "TODAY");
+                selectAsset(first ?? ASSETS[0] ?? "TODAY");
               }
             }}
           />

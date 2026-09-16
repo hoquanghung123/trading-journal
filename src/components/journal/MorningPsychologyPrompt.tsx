@@ -25,7 +25,7 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
 
   const handleSave = async () => {
     if (!mood) {
-      toast.error("Vui lòng chọn cảm xúc");
+      toast.error("Pick a mood");
       return;
     }
 
@@ -37,10 +37,10 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
         morningMood: mood,
         morningNotes: notes,
       });
-      toast.success("Đã cập nhật tâm thế!");
+      toast.success("Mindset saved");
       onClose();
     } catch (e: any) {
-      toast.error(e.message ?? "Lỗi lưu dữ liệu");
+      toast.error(e.message ?? "Couldn't save check-in");
     } finally {
       setSaving(false);
     }
@@ -60,7 +60,7 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
                 Morning Ritual <Sparkles className="w-3 h-3 text-primary animate-pulse" />
               </h3>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                Hôm nay bạn thế nào?
+                How are you showing up today?
               </p>
             </div>
           </div>
@@ -105,13 +105,13 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Thêm ghi chú nhanh về tâm thế của bạn..."
+                placeholder="A quick note on your mindset..."
                 rows={2}
                 className="w-full bg-muted/20 border border-border/50 rounded-xl px-4 py-3 text-xs font-medium text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/10 transition-all resize-none"
               />
               <div className="flex justify-end items-center gap-4">
                 <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">
-                  Tâm lý tốt, giao dịch tốt
+                  Better psychology, better trades
                 </p>
                 <button
                   onClick={handleSave}
@@ -123,7 +123,7 @@ export function MorningPsychologyPrompt({ isOpen, onClose, existingLog }: Props)
                   ) : (
                     <Save className="w-3 h-3" />
                   )}
-                  Hoàn tất check-in
+                  Finish check-in
                 </button>
               </div>
             </div>

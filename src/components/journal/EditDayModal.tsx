@@ -1,14 +1,15 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { X, Trash2, Save, Plus, Loader2 } from "lucide-react";
 import type { Bias, DayEntry, Session } from "@/lib/journal";
-import { biasLabel, weekdayOf, getSessionsForAsset, isHtfBiasSet } from "@/lib/journal";
+import { biasLabel, weekdayOf, getSessionsForAsset, isHtfBiasSet, h4TabForNow } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
+import { toast } from "sonner";
 import { PasteSlot } from "./PasteSlot";
 
 interface Props {
   entry: DayEntry;
   onSave: (e: DayEntry) => Promise<void> | void;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void> | void;
   onClose: () => void;
 }
 
@@ -19,10 +20,12 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const ASSETS = symbols.map((s) => s.name);
   const [draft, setDraft] = useState<DayEntry>(entry);
   const [focusKey, setFocusKey] = useState<string>("weekly");
-  const [session, setSession] = useState<Session>("ASIA");
+  const [session, setSession] = useState<Session>(() => h4TabForNow(entry.asset));
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [uploadingSlots, setUploadingSlots] = useState<Record<string, boolean>>({});
   const [picked, setPicked] = useState<Record<string, boolean>>({});
+  const userPickedSession = useRef(false);
 
   const isUploading = useMemo(
     () => Object.values(uploadingSlots).some(Boolean),
@@ -31,7 +34,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
 
   const handleClose = useCallback(() => {
     if (isUploading) {
-      if (!window.confirm("Ảnh đang tải lên, bạn có chắc muốn thoát và hủy?")) {
+      if (!window.confirm("Upload still running. Leave and cancel?")) {
         return;
       }
     }
@@ -44,12 +47,26 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
     try {
       await onSave(draft);
       onClose();
-    } catch (err) {
-      console.error("Save failed:", err);
+    } catch {
+      // JournalView.upsert already toasts
     } finally {
       setIsSaving(false);
     }
   }, [draft, onSave, onClose, isUploading, isSaving]);
+
+  const handleDelete = useCallback(async () => {
+    if (!onDelete || isDeleting) return;
+    if (!window.confirm("Delete this trading day? Charts will be removed.")) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(draft.id);
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete this day");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [onDelete, isDeleting, draft.id, onClose]);
 
   const sessions = useMemo(() => getSessionsForAsset(draft.asset), [draft.asset]);
 
@@ -60,6 +77,11 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
       else if (session === "NY") setSession("NY AM");
     }
   }, [sessions, session]);
+
+  useEffect(() => {
+    if (userPickedSession.current) return;
+    setSession(h4TabForNow(draft.asset));
+  }, [draft.asset]);
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
@@ -131,6 +153,31 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
           </div>
 
           <div className="space-y-10">
+            <Section title="Yearly Outlook">
+              <div className="grid grid-cols-[1fr_120px] gap-4">
+                <PasteSlot
+                  label="Yearly Chart"
+                  image={draft.yearlyImg}
+                  onChange={(u) => update("yearlyImg", u)}
+                  onBusyChange={(busy) =>
+                    setUploadingSlots((prev) => ({ ...prev, yearly: busy }))
+                  }
+                  focused={focusKey === "yearly"}
+                  onFocus={() => setFocusKey("yearly")}
+                  className="h-48"
+                />
+                <BiasPicker
+                  value={draft.yearlyBias}
+                  image={draft.yearlyImg}
+                  committed={picked.yearly}
+                  onChange={(v) => {
+                    setPicked((p) => ({ ...p, yearly: true }));
+                    update("yearlyBias", v);
+                  }}
+                />
+              </div>
+            </Section>
+
             {/* Monthly - Only on Mondays or 1st of Month */}
             {(weekdayOf(draft.date) === "MON" || draft.date.endsWith("-01")) && (
               <Section title="Monthly Outlook">
@@ -218,6 +265,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                   <button
                     key={s}
                     onClick={() => {
+                      userPickedSession.current = true;
                       setSession(s);
                       setFocusKey(`h4-${s}`);
                     }}
@@ -291,13 +339,12 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
         <div className="flex items-center justify-between px-8 py-6 border-t border-border/50 bg-muted/10 sticky bottom-0 z-20">
           {onDelete ? (
             <button
-              onClick={() => {
-                onDelete(draft.id);
-                onClose();
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs font-black text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all active:scale-95"
+              onClick={handleDelete}
+              disabled={isDeleting || isUploading}
+              className="flex items-center gap-2 px-5 py-2.5 text-xs font-black text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all active:scale-95 disabled:opacity-50"
             >
-              <Trash2 className="w-4 h-4" /> DELETE DAY
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              DELETE DAY
             </button>
           ) : (
             <span />

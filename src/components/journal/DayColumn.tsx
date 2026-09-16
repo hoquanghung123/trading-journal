@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Edit3, Check } from "lucide-react";
 import {
   type DayEntry,
@@ -10,6 +10,7 @@ import {
   weekdayOf,
   getSessionsForAsset,
   isHtfBiasSet,
+  h4TabForNow,
 } from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
@@ -23,7 +24,8 @@ interface Props {
 }
 
 export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Props) {
-  const [session, setSession] = useState<Session>("ASIA");
+  const [session, setSession] = useState<Session>(() => h4TabForNow(entry.asset));
+  const userPickedSession = useRef(false);
   const isFocused = (slot: SlotKind) => focusedSlot?.id === entry.id && focusedSlot?.slot === slot;
   const focus = (slot: SlotKind) => setFocus({ id: entry.id, slot });
 
@@ -40,6 +42,11 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
       else if (session === "NY") setSession("NY AM");
     }
   }, [sessions, session]);
+
+  useEffect(() => {
+    if (userPickedSession.current) return;
+    setSession(h4TabForNow(entry.asset));
+  }, [entry.asset]);
 
   return (
     <div
@@ -138,6 +145,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
                 <button
                   key={s}
                   onClick={() => {
+                    userPickedSession.current = true;
                     setSession(s);
                     focus(`h4-${s}` as SlotKind);
                   }}
@@ -185,6 +193,15 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             )}
           </PasteSlot>
         </div>
+        {entry.notes?.trim() && (
+          <button
+            type="button"
+            onClick={() => onEdit(entry)}
+            className="w-full text-left text-xs font-medium text-muted-foreground line-clamp-2 px-1 hover:text-foreground transition-colors"
+          >
+            {entry.notes.trim()}
+          </button>
+        )}
       </div>
     </div>
   );

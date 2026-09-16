@@ -73,9 +73,13 @@ function MonthBox({
   entries: DayEntry[];
   onUpdate: (e: DayEntry) => void;
 }) {
-  // The first entry of the month will hold the yearly_img
-  const firstEntry = entries[0];
-  const yearlyImg = firstEntry?.yearlyImg;
+  const yearlyHolder = useMemo(() => {
+    const pool = asset === "ALL" ? entries : entries.filter((e) => e.asset === asset);
+    const withYearly = [...pool].sort((a, b) => b.date.localeCompare(a.date)).find((e) => e.yearlyImg);
+    const latest = [...pool].sort((a, b) => b.date.localeCompare(a.date))[0];
+    return withYearly ?? latest ?? entries[0];
+  }, [entries, asset]);
+  const yearlyImg = yearlyHolder?.yearlyImg;
 
   // Find all Monday and 1st-of-month entries for the Monthly frames
   const monthlyOutlookEntries = useMemo(() => {
@@ -128,16 +132,16 @@ function MonthBox({
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
               Yearly Outlook
             </h4>
-            {firstEntry && (
+            {yearlyHolder && (
               <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
                 {BIASES.map((b) => {
                   const active =
-                    firstEntry.yearlyBias === b &&
-                    (b !== "consolidation" || isHtfBiasSet(firstEntry.yearlyBias, yearlyImg));
+                    yearlyHolder.yearlyBias === b &&
+                    (b !== "consolidation" || isHtfBiasSet(yearlyHolder.yearlyBias, yearlyImg));
                   return (
                     <button
                       key={b}
-                      onClick={() => onUpdate({ ...firstEntry, yearlyBias: b })}
+                      onClick={() => onUpdate({ ...yearlyHolder, yearlyBias: b })}
                       className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
                         active
                           ? b === "bullish"
@@ -161,18 +165,18 @@ function MonthBox({
             focused={focusedSlot === "yearly"}
             onFocus={() => setFocusedSlot("yearly")}
             onChange={(u) => {
-              if (firstEntry) {
-                onUpdate({ ...firstEntry, yearlyImg: u });
+              if (yearlyHolder) {
+                onUpdate({ ...yearlyHolder, yearlyImg: u });
               }
             }}
             className="h-[300px] rounded-2xl border border-border/50"
           >
-            {isHtfBiasSet(firstEntry?.yearlyBias, yearlyImg) && (
+            {isHtfBiasSet(yearlyHolder?.yearlyBias, yearlyImg) && (
               <span
                 className="bias-tag absolute bottom-2 right-2 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.18em] shadow-md leading-none"
-                style={biasStyle(firstEntry.yearlyBias)}
+                style={biasStyle(yearlyHolder.yearlyBias)}
               >
-                {biasLabel(firstEntry.yearlyBias)}
+                {biasLabel(yearlyHolder.yearlyBias)}
               </span>
             )}
           </PasteSlot>

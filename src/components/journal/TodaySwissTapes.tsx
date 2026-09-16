@@ -111,6 +111,11 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                   <span className="text-[10px] text-muted-foreground font-bold tracking-wider">
                     {entry.date}
                   </span>
+                  {entry.notes?.trim() && (
+                    <p className="text-[10px] text-muted-foreground/80 font-medium line-clamp-1 mt-0.5 max-w-[14rem]">
+                      {entry.notes.trim()}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -193,8 +198,17 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
             {isExpanded && (
               <div
                 className="border-t border-border bg-muted/10 p-6 animate-in slide-in-from-top-4 duration-200 space-y-8"
-                onClick={(e) => e.stopPropagation()} // Prevent clicks inside the drawer from collapsing the row
+                onClick={(e) => e.stopPropagation()}
               >
+                {entry.notes?.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(entry)}
+                    className="w-full text-left text-sm font-medium text-muted-foreground line-clamp-2 hover:text-foreground transition-colors"
+                  >
+                    {entry.notes.trim()}
+                  </button>
+                )}
                 {/* Top Section: Monthly, Weekly & Daily Charts Side-by-Side */}
                 <div
                   className={`grid grid-cols-1 ${showMonthly ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"} gap-8`}

@@ -121,11 +121,13 @@ export function CommandPalette() {
             );
           })}
         </CommandGroup>
-        {symbols.length > 0 && (
+        {symbols.some((s) => !s.isForex) && (
           <>
             <CommandSeparator />
             <CommandGroup heading="Symbols">
-              {symbols.map((s) => (
+              {symbols
+                .filter((s) => !s.isForex)
+                .map((s) => (
                 <CommandItem
                   key={s.id}
                   value={`symbol ${s.name}`}

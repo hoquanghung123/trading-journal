@@ -57,6 +57,15 @@ export function getActiveKillzone(now = new Date()): {
   return { session, next: "ASIA", secondsUntilNext: toNext(18 * 60) };
 }
 
+/** H4 tab that matches SessionChip, mapped to the asset's session list. */
+export function h4TabForNow(asset: string, now = new Date()): Session {
+  const kz = getActiveKillzone(now).session;
+  const sessions = getSessionsForAsset(asset);
+  if (sessions.includes(kz)) return kz;
+  if ((kz === "NY AM" || kz === "NY PM") && sessions.includes("NY")) return "NY";
+  return sessions[0] ?? "ASIA";
+}
+
 export function nyDateString(iso: string | Date): string {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }

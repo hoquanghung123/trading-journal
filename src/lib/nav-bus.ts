@@ -45,16 +45,17 @@ export function parseNavFromUrl(): { page: PageId; date?: string } {
   return { page: "bias", date };
 }
 
-function writeUrl(page: PageId, date?: string) {
+function writeUrl(page: PageId, date?: string, mode: "push" | "replace" = "push") {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
   url.searchParams.set("page", page);
-  if (page === "daily" && date) url.searchParams.set("date", date);
+  if ((page === "daily" || page === "bias") && date) url.searchParams.set("date", date);
   else url.searchParams.delete("date");
   const next = `${url.pathname}${url.search}${url.hash}`;
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (next !== current) {
-    window.history.pushState({ page, date }, "", next);
+    if (mode === "replace") window.history.replaceState({ page, date }, "", next);
+    else window.history.pushState({ page, date }, "", next);
   }
   document.title = `${PAGE_TITLES[page]} · Chartmate`;
 }
@@ -87,8 +88,23 @@ export function navigateToPage(p: PageId, extra?: { date?: string }) {
   writeUrl(p, extra?.date);
   pageListeners.forEach((fn) => fn(p));
   if (extra?.date) {
-    dailyListeners.forEach((fn) => fn(extra.date!));
+    if (p === "daily") dailyListeners.forEach((fn) => fn(extra.date!));
+    if (p === "bias") biasDateListeners.forEach((fn) => fn(extra.date!));
   }
+}
+
+export function setNavUrl(page: PageId, date?: string) {
+  writeUrl(page, date, "replace");
+}
+
+type BiasDateListener = (date: string) => void;
+const biasDateListeners = new Set<BiasDateListener>();
+
+export function onBiasDateFocus(fn: BiasDateListener): () => void {
+  biasDateListeners.add(fn);
+  return () => {
+    biasDateListeners.delete(fn);
+  };
 }
 
 type DailyListener = (date: string) => void;
