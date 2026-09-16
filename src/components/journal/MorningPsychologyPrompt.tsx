@@ -14,9 +14,16 @@ interface Props {
   onClose: () => void;
   onSaved?: (log: PsychologyLog) => void;
   existingLog?: PsychologyLog;
+  placement?: "overlay" | "inline";
 }
 
-export function MorningPsychologyPrompt({ isOpen, onClose, onSaved, existingLog }: Props) {
+export function MorningPsychologyPrompt({
+  isOpen,
+  onClose,
+  onSaved,
+  existingLog,
+  placement = "overlay",
+}: Props) {
   const [mood, setMood] = useState<string | undefined>(existingLog?.morningMood);
   const [notes, setNotes] = useState<string>(existingLog?.morningNotes ?? "");
   const [saving, setSaving] = useState(false);
@@ -49,8 +56,13 @@ export function MorningPsychologyPrompt({ isOpen, onClose, onSaved, existingLog 
     }
   };
 
+  const shell =
+    placement === "inline"
+      ? "w-full max-w-6xl mx-auto animate-in fade-in duration-300"
+      : "fixed top-16 sm:top-6 inset-x-3 z-[110] mx-auto w-auto max-w-2xl animate-in slide-in-from-top-10 duration-500";
+
   return (
-    <div className="fixed top-16 sm:top-6 inset-x-3 z-[110] mx-auto w-auto max-w-2xl animate-in slide-in-from-top-10 duration-500">
+    <div className={shell}>
       <div className="bg-card/95 backdrop-blur-xl border border-border shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[24px]">
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
           <div className="flex items-center gap-3 min-w-0">

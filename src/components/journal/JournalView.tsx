@@ -62,14 +62,24 @@ export function JournalView() {
     queryFn: () => fetchEntries(),
   });
   const [asset, setAsset] = useState<string>(() => {
-    return localStorage.getItem("journal-filter-asset") || "TODAY";
+    const stored = localStorage.getItem("journal-filter-asset");
+    if (!stored || stored === "TODAY") return "ALL";
+    return stored;
   });
   const [month, setMonth] = useState<string>(() => {
     return localStorage.getItem("journal-filter-month") || "ALL";
   });
-  const [viewMode, setViewMode] = useState<"timeline" | "month">(() => {
-    return (localStorage.getItem("journal-view-mode") as "timeline" | "month") || "timeline";
+  const [viewMode, setViewMode] = useState<"today" | "timeline" | "month">(() => {
+    const stored = localStorage.getItem("journal-view-mode");
+    const storedAsset = localStorage.getItem("journal-filter-asset");
+    if (stored === "month") return "month";
+    if (stored === "today") return "today";
+    if (storedAsset === "TODAY" || !stored) return "today";
+    if (stored === "timeline") return "timeline";
+    return "today";
   });
+  const [todayDrafts, setTodayDrafts] = useState<Record<string, DayEntry>>({});
+  const [expandTapeId, setExpandTapeId] = useState<string | null>(null);
   const [editing, setEditing] = useState<DayEntry | null>(null);
   const [focusedSlot, setFocusedSlot] = useState<{ id: string; slot: SlotKind } | null>(null);
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -179,18 +189,19 @@ export function JournalView() {
   useEffect(() => {
     return onBiasAssetFocus((name) => {
       pinnedDate.current = null;
+      setViewMode("timeline");
       setAsset(name);
       setMonth("ALL");
     });
   }, []);
 
   const applyBiasDate = (date: string) => {
-    setViewMode("timeline");
     if (date === journalTradingDate()) {
       pinnedDate.current = null;
-      setAsset("TODAY");
+      setViewMode("today");
       return;
     }
+    setViewMode("timeline");
     pinnedDate.current = date;
     setMonth("ALL");
     const match = entries.find((e) => e.date === date);
@@ -214,7 +225,7 @@ export function JournalView() {
 
   useEffect(() => {
     if (!urlDateApplied.current) return;
-    if (asset === "TODAY") {
+    if (viewMode === "today") {
       pinnedDate.current = null;
       setNavUrl("bias", journalTradingDate());
     } else if (pinnedDate.current) {
@@ -222,7 +233,7 @@ export function JournalView() {
     } else {
       setNavUrl("bias");
     }
-  }, [asset]);
+  }, [asset, viewMode]);
 
   useEffect(() => {
     return onRequestNewBias((name) => {
@@ -282,20 +293,27 @@ export function JournalView() {
     return [...entries]
       .filter((e) => !forexNames.has(e.asset))
       .filter((e) => {
-        if (asset === "TODAY") return e.date === today;
+        if (viewMode === "today") return e.date === today;
         return asset === "ALL" ? true : e.asset === asset;
       })
       .filter((e) =>
-        viewMode === "month"
+        viewMode === "month" || viewMode === "today"
           ? true
-          : asset === "TODAY"
+          : month === "ALL"
             ? true
-            : month === "ALL"
-              ? true
-              : monthKey(e.date) === month,
+            : monthKey(e.date) === month,
       )
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [entries, asset, month, assetList, viewMode]);
+
+  const todayTapes = useMemo(() => {
+    const byAsset = new Map<string, DayEntry>();
+    for (const e of filtered) byAsset.set(e.asset, e);
+    for (const [name, draft] of Object.entries(todayDrafts)) {
+      if (!byAsset.has(name)) byAsset.set(name, draft);
+    }
+    return ASSETS.map((name) => byAsset.get(name)).filter(Boolean) as DayEntry[];
+  }, [filtered, todayDrafts, ASSETS]);
 
   const jumpRight = () => {
     const el = scrollerRef.current;
@@ -323,6 +341,12 @@ export function JournalView() {
         setShowCelebration(true);
       }
       queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      setTodayDrafts((d) => {
+        if (!d[e.asset]) return d;
+        const next = { ...d };
+        delete next[e.asset];
+        return next;
+      });
       track();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (err as any)?.message || "An error occurred");
@@ -343,11 +367,27 @@ export function JournalView() {
 
   const addEntry = async () => {
     const fallback = ASSETS[0] ?? "XAUUSD";
-    const targetAsset = asset === "ALL" || asset === "TODAY" ? fallback : asset;
     const today = journalTradingDate();
+    if (viewMode === "today") {
+      const missing = ASSETS.find(
+        (a) =>
+          !entries.some((e) => e.date === today && e.asset === a) && !todayDrafts[a],
+      );
+      if (missing) {
+        createTodayDraft(missing);
+        return;
+      }
+    }
+    const targetAsset = viewMode === "today" || asset === "ALL" ? fallback : asset;
     const existing = entries.find((e) => e.date === today && e.asset === targetAsset);
     setEditing(existing ?? newEntry(targetAsset));
     setTimeout(jumpRight, 100);
+  };
+
+  const createTodayDraft = (assetName: string) => {
+    const draft = newEntry(assetName);
+    setTodayDrafts((d) => ({ ...d, [assetName]: draft }));
+    setExpandTapeId(draft.id);
   };
 
   // The extension sync is now handled globally in src/routes/__root.tsx
@@ -357,23 +397,22 @@ export function JournalView() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-6 px-4 lg:px-6 py-3 lg:py-4">
-          <div className="flex items-center justify-between lg:justify-start gap-3">
-            <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4 px-4 lg:px-6 py-3 lg:pr-14">
+          <div className="flex items-center justify-between lg:justify-start gap-3 min-w-0 lg:flex-1">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Activity className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-base lg:text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
                   Bias Expect
                 </h1>
-                <p className="text-[9px] lg:text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                  Journal Timeline
+                <p className="text-[9px] lg:text-[10px] text-muted-foreground font-medium uppercase tracking-wider whitespace-nowrap">
+                  {journalTradingDate()} · rolls 5pm NY
                 </p>
               </div>
               <SessionChip />
             </div>
-
             <button
               type="button"
               onClick={addEntry}
@@ -383,30 +422,54 @@ export function JournalView() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
+          <button
+            type="button"
+            onClick={addEntry}
+            className="hidden lg:flex forest-gradient items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap shrink-0"
+          >
+            <Plus className="w-4 h-4" strokeWidth={3} /> Add Day
+          </button>
+          <div className="hidden lg:block h-8 w-px bg-border shrink-0" />
+
+          <div className="flex bg-muted/50 p-1 rounded-lg border border-border shrink-0">
             <button
               type="button"
-              onClick={addEntry}
-              className="hidden lg:flex forest-gradient items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-xl shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap"
+              onClick={() => setViewMode("today")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "today" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <Plus className="w-4 h-4" strokeWidth={3} /> Add Day
+              Today
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode("timeline");
+                if (asset === "TODAY") selectAsset("ALL");
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "timeline" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Timeline
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode("month");
+                if (asset === "TODAY") selectAsset("ALL");
+              }}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Month
+            </button>
+          </div>
+        </div>
 
-            <div className="hidden lg:block h-8 w-px bg-border" />
-
-            <div className="flex items-center gap-2">
+        {viewMode !== "today" && (
+          <div className="flex flex-wrap items-center gap-2 px-4 lg:px-6 pb-3 lg:pr-14">
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar min-w-0 flex-1">
               <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                 Asset:
               </span>
-              {viewMode !== "month" && (
-                <button
-                  onClick={() => selectAsset("TODAY")}
-                  className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "TODAY" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
-                >
-                  Today
-                </button>
-              )}
               <button
+                type="button"
                 onClick={() => selectAsset("ALL")}
                 className={`px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === "ALL" ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
               >
@@ -415,94 +478,52 @@ export function JournalView() {
               {ASSETS.map((a) => (
                 <button
                   key={a}
+                  type="button"
                   onClick={() => selectAsset(a)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg border transition-all whitespace-nowrap ${asset === a ? "bg-primary text-white border-primary shadow-sm" : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                 >
                   {getAssetIconUrl(a) && (
                     <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center">
-                      <img
-                        src={getAssetIconUrl(a)!}
-                        alt={a}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={getAssetIconUrl(a)!} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
                   {a}
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="flex items-center gap-4 lg:ml-auto lg:pr-14">
-            {viewMode !== "month" && (
-              <label className="flex items-center gap-2 flex-1 lg:flex-none">
-                <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
-                <select
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                  className="flex-1 lg:flex-none bg-card border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+            {viewMode === "timeline" && (
+              <div className="flex items-center gap-2 shrink-0">
+                <label className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <select
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="bg-card border border-border rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                  >
+                    <option value="ALL">All months</option>
+                    {months.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={jumpRight}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-card rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap text-foreground"
                 >
-                  <option value="ALL">All months</option>
-                  {months.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
-              <button
-                onClick={() => setViewMode("timeline")}
-                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "timeline" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Timeline
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode("month");
-                  if (asset === "TODAY") selectAsset("ALL");
-                }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all whitespace-nowrap ${viewMode === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Month View
-              </button>
-            </div>
-
-            {viewMode === "timeline" && asset !== "TODAY" && (
-            <button
-              onClick={jumpRight}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold border border-border bg-card rounded-lg hover:bg-muted transition-all shadow-sm whitespace-nowrap text-foreground"
-            >
-              Jump <ChevronsRight className="w-4 h-4 text-primary" />
-            </button>
+                  Jump <ChevronsRight className="w-4 h-4 text-primary" />
+                </button>
+              </div>
             )}
           </div>
-        </div>
+        )}
       </header>
-
-      <div className="px-4 pt-4 flex flex-wrap items-center gap-2">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-1">
-          Today
-        </span>
-        <CheckChip
-          done={entries.some((e) => e.date === journalTradingDate())}
-          label="Bias logged"
-        />
-        <CheckChip done={!!todayLog?.morningMood} label="Psych check-in" onClick={() => navigateToPage("psychology")} />
-        <button
-          type="button"
-          onClick={() => navigateToPage("trades")}
-          className="text-[10px] font-bold text-primary hover:underline"
-        >
-          Log a trade
-        </button>
-      </div>
 
       <main className="px-4 py-5">
         {entriesPending ? (
-          <BiasSkeleton today={asset === "TODAY" && viewMode !== "month"} />
+          <BiasSkeleton today={viewMode === "today"} />
         ) : entriesError ? (
           <EmptyState
             icon={Activity}
@@ -512,6 +533,58 @@ export function JournalView() {
             onAction={() => refetchEntries()}
             className="mt-20"
           />
+        ) : viewMode === "today" ? (
+          <div className="space-y-4 max-w-6xl mx-auto">
+            {showPsychPrompt && (
+              <MorningPsychologyPrompt
+                isOpen
+                placement="inline"
+                onClose={() => setShowPsychPrompt(false)}
+                onSaved={(log) => {
+                  setTodayLog(log);
+                  setShowPsychPrompt(false);
+                }}
+                existingLog={todayLog}
+              />
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-1">
+                Today
+              </span>
+              <CheckChip
+                done={entries.some((e) => e.date === journalTradingDate())}
+                label="Bias logged"
+              />
+              <CheckChip
+                done={!!todayLog?.morningMood}
+                label="Psych check-in"
+                onClick={() => navigateToPage("psychology")}
+              />
+              <button
+                type="button"
+                onClick={() => navigateToPage("trades")}
+                className="text-[10px] font-bold text-primary hover:underline"
+              >
+                Log a trade
+              </button>
+            </div>
+            {ASSETS.length === 0 && entries.length === 0 ? (
+              <Empty onAdd={addEntry} />
+            ) : (
+              <TodaySwissTapes
+                entries={todayTapes}
+                watchlist={
+                  ASSETS.length
+                    ? [...new Set([...ASSETS, ...todayTapes.map((e) => e.asset)])]
+                    : todayTapes.map((e) => e.asset)
+                }
+                onUpdate={upsert}
+                onEdit={setEditing}
+                onCreate={createTodayDraft}
+                expandId={expandTapeId}
+              />
+            )}
+          </div>
         ) : entries.length === 0 ? (
           <Empty onAdd={addEntry} />
         ) : filtered.length === 0 ? (
@@ -526,8 +599,6 @@ export function JournalView() {
           />
         ) : viewMode === "month" ? (
           <MonthView entries={filtered} onUpdate={upsert} asset={asset} />
-        ) : asset === "TODAY" ? (
-          <TodaySwissTapes entries={filtered} onUpdate={upsert} onEdit={setEditing} />
         ) : (
           <div ref={scrollerRef} data-slot-root className="overflow-x-auto scrollbar-terminal pb-4">
             <div className="flex gap-3 min-w-min items-start">
@@ -556,7 +627,8 @@ export function JournalView() {
       )}
 
       <MorningPsychologyPrompt
-        isOpen={showPsychPrompt}
+        isOpen={showPsychPrompt && viewMode !== "today"}
+        placement="overlay"
         onClose={() => setShowPsychPrompt(false)}
         onSaved={(log) => {
           setTodayLog(log);

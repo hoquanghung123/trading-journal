@@ -89,7 +89,7 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
 
       <div className="p-3 space-y-4">
         {/* Monthly Outlook Area - Fixed Height for Alignment */}
-        {showMonthly ? (
+        {showMonthly && (
           <SlotWithBias
             label="M"
             image={entry.monthlyImg}
@@ -97,20 +97,10 @@ export function DayColumn({ entry, focusedSlot, setFocus, onUpdate, onEdit }: Pr
             correct={entry.monthlyCorrect}
             focused={isFocused("monthly")}
             onFocus={() => focus("monthly")}
-          onImg={(u) => onUpdate({ ...entry, monthlyImg: u })}
-          onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
-          onCycle={() => onUpdate({ ...entry, monthlyBias: cycleBias(entry.monthlyBias) })}
+            onImg={(u) => onUpdate({ ...entry, monthlyImg: u })}
+            onToggle={() => onUpdate({ ...entry, monthlyCorrect: !entry.monthlyCorrect })}
+            onCycle={() => onUpdate({ ...entry, monthlyBias: cycleBias(entry.monthlyBias) })}
           />
-        ) : (
-          /* Spacer for other days to maintain horizontal alignment */
-          <div className="h-44 rounded-xl border border-border/40 bg-muted/20 flex items-center justify-center relative group/spacer">
-            <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-background/60 backdrop-blur-sm text-[9px] uppercase tracking-widest text-muted-foreground/40 font-black border border-border/40">
-              M
-            </div>
-            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground/30 font-bold">
-              MON OR 1ST ONLY
-            </span>
-          </div>
         )}
 
         {/* Weekly */}

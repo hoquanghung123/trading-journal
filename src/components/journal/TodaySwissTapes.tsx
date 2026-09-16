@@ -1,19 +1,67 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Check, ChevronDown, ChevronUp } from "lucide-react";
 import type { DayEntry, Session, Bias } from "@/lib/journal";
-import { getSessionsForAsset, biasStyle, biasLabel, weekdayOf, isHtfBiasSet } from "@/lib/journal";
+import {
+  getSessionsForAsset,
+  biasStyle,
+  biasLabel,
+  weekdayOf,
+  isHtfBiasSet,
+  getActiveKillzone,
+  h4TabForNow,
+} from "@/lib/journal";
 import { getAssetIconUrl } from "@/lib/symbols";
 import { PasteSlot } from "./PasteSlot";
 
-interface Props {
-  entries: DayEntry[];
-  onUpdate: (e: DayEntry) => void;
-  onEdit: (e: DayEntry) => void;
+function AssetIcon({ asset, className = "w-8 h-8" }: { asset: string; className?: string }) {
+  const url = getAssetIconUrl(asset);
+  if (url) {
+    return (
+      <div
+        className={`${className} rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center border border-border/50`}
+      >
+        <img src={url} alt="" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`${className} rounded-full shrink-0 bg-muted flex items-center justify-center border border-border/50 text-[10px] font-black text-muted-foreground`}
+    >
+      {asset.slice(0, 2)}
+    </div>
+  );
 }
 
-export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
-  // Track which rows are expanded: { [entryId]: boolean }
+function emphasizeH4Now() {
+  const s = getActiveKillzone().session;
+  return s === "LDN" || s.startsWith("NY");
+}
+
+interface Props {
+  entries: DayEntry[];
+  watchlist: string[];
+  onUpdate: (e: DayEntry) => void;
+  onEdit: (e: DayEntry) => void;
+  onCreate: (asset: string) => void;
+  expandId?: string | null;
+}
+
+export function TodaySwissTapes({
+  entries,
+  watchlist,
+  onUpdate,
+  onEdit,
+  onCreate,
+  expandId,
+}: Props) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const h4Session = emphasizeH4Now();
+
+  useEffect(() => {
+    if (!expandId) return;
+    setExpandedRows((prev) => ({ ...prev, [expandId]: true }));
+  }, [expandId]);
 
   // Toggle expanded row
   const toggleRow = (entryId: string) => {
@@ -25,7 +73,32 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto pb-8">
-      {entries.map((entry) => {
+      {watchlist.map((assetName) => {
+        const entry = entries.find((e) => e.asset === assetName);
+        if (!entry) {
+          return (
+            <button
+              key={assetName}
+              type="button"
+              onClick={() => onCreate(assetName)}
+              className="w-full rounded-2xl border border-dashed border-border bg-card p-4 flex items-center justify-between text-left hover:bg-muted/5 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <AssetIcon asset={assetName} />
+                <div>
+                  <p className="font-mono font-black text-base text-foreground tracking-tight">
+                    {assetName}
+                  </p>
+                  <p className="text-[10px] font-bold text-muted-foreground">
+                    Click to add today’s bias
+                  </p>
+                </div>
+              </div>
+              <span className="text-primary text-lg font-black leading-none">+</span>
+            </button>
+          );
+        }
+
         const sessions = getSessionsForAsset(entry.asset);
         const isExpanded = !!expandedRows[entry.id];
 
@@ -83,15 +156,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
             >
               {/* Left Info */}
               <div className="flex items-center gap-3">
-                {getAssetIconUrl(entry.asset) && (
-                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-white flex items-center justify-center border border-border/50">
-                    <img
-                      src={getAssetIconUrl(entry.asset)!}
-                      alt={entry.asset}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
+                <AssetIcon asset={entry.asset} />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-black text-base text-foreground tracking-tight">
@@ -120,9 +185,10 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
               </div>
 
               {/* Timeframe Badges & General Chevron */}
-              <div className="flex items-center gap-3">
-                {/* Monthly Badge */}
-                {showMonthly && isHtfBiasSet(entry.monthlyBias, entry.monthlyImg) && (
+              <div className="flex items-center gap-3 min-w-0 overflow-x-auto hide-scrollbar">
+                {showMonthly &&
+                  isHtfBiasSet(entry.monthlyBias, entry.monthlyImg) &&
+                  !h4Session && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase">
                       M:
@@ -136,7 +202,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                   </div>
                 )}
 
-                {isHtfBiasSet(entry.weeklyBias, entry.weeklyImg) && (
+                {(!h4Session || isExpanded) && isHtfBiasSet(entry.weeklyBias, entry.weeklyImg) && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">W:</span>
                   <span
@@ -148,7 +214,7 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                 </div>
                 )}
 
-                {isHtfBiasSet(entry.dailyBias, entry.dailyImg) && (
+                {(!h4Session || isExpanded) && isHtfBiasSet(entry.dailyBias, entry.dailyImg) && (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">D:</span>
                   <span
@@ -160,11 +226,14 @@ export function TodaySwissTapes({ entries, onUpdate, onEdit }: Props) {
                 </div>
                 )}
 
-                {/* Dynamic H4 Session Badges */}
-                {sessions.map((sessionName) => {
+                {(h4Session || isExpanded) &&
+                  sessions.map((sessionName) => {
                   const sessionData = entry.h4[sessionName];
                   const sessionBias = sessionData?.bias;
                   if (!sessionBias || !isHtfBiasSet(sessionBias, sessionData?.img)) return null;
+                  if (h4Session && !isExpanded && sessionName !== h4TabForNow(entry.asset)) {
+                    return null;
+                  }
                   return (
                     <div
                       key={sessionName}
