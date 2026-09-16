@@ -423,13 +423,13 @@ export function JournalView() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4 px-4 lg:px-6 py-3 lg:pr-14">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4 px-4 lg:px-6 py-3 pr-14">
           <div className="flex items-center justify-between lg:justify-start gap-3 min-w-0 lg:flex-1">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Activity className="w-5 h-5 text-primary" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 shrink-0">
                 <h1 className="text-base lg:text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
                   Bias Expect
                 </h1>
@@ -437,13 +437,15 @@ export function JournalView() {
                   {journalTradingDate()} · rolls 5pm NY
                 </p>
               </div>
-              <SessionChip
-                selected={killzoneFocus}
-                onSelect={(chip) => {
-                  setKillzoneFocus(chip);
-                  setKillzoneFocusTick((n) => n + 1);
-                }}
-              />
+              <div className="min-w-0 flex-1 basis-[320px]">
+                <SessionChip
+                  selected={killzoneFocus}
+                  onSelect={(chip) => {
+                    setKillzoneFocus(chip);
+                    setKillzoneFocusTick((n) => n + 1);
+                  }}
+                />
+              </div>
             </div>
             {viewMode !== "today" && (
               <button

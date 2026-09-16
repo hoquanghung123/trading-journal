@@ -94,21 +94,134 @@ export function getActiveKillzone(now = new Date()): {
   return { session: "NY", next: "ASIA", secondsUntilNext: toNext(ASIA_OPEN) };
 }
 
-export type KillzoneChip = "ASIA" | "LDN" | "NY";
+export type KillzoneChip = "ASIA" | "LDN" | "NY" | "NY AM" | "NY PM";
 
-export function killzoneChipGroup(session: Session): KillzoneChip {
-  return session.startsWith("NY") ? "NY" : (session as KillzoneChip);
+export const KILLZONE_CHIPS: KillzoneChip[] = ["ASIA", "LDN", "NY", "NY AM", "NY PM"];
+
+export const KILLZONE_OPEN_CLOCK: Record<KillzoneChip, string> = {
+  ASIA: "18:00",
+  LDN: "02:00",
+  NY: "08:00",
+  "NY AM": "09:30",
+  "NY PM": "13:30",
+};
+
+export function killzoneChipGroup(session: Session): KillzoneChip | null {
+  if (
+    session === "ASIA" ||
+    session === "LDN" ||
+    session === "NY" ||
+    session === "NY AM" ||
+    session === "NY PM"
+  ) {
+    return session;
+  }
+  return null;
 }
 
-/** Map a chip click (ASIA/LDN/NY) onto this asset's H4 session key. */
+export function nextKillzoneChip(next: Session): KillzoneChip {
+  if (next === "ASIA" || next === "LDN" || next === "NY" || next === "NY AM" || next === "NY PM") {
+    return next;
+  }
+  return "ASIA";
+}
+
+/** True after this killzone's window has closed, until Asia opens again. */
+export function isKillzonePassed(chip: KillzoneChip, now = new Date()): boolean {
+  const { mins } = nyWallClock(now);
+  const { ASIA_OPEN, LDN_OPEN, NY_OPEN, NY_AM_OPEN, NY_AM_CLOSE, NY_PM_CLOSE } = KILLZONE_NY;
+  if (mins >= ASIA_OPEN) return false;
+  if (chip === "ASIA") return mins >= LDN_OPEN;
+  if (chip === "LDN") return mins >= NY_OPEN;
+  if (chip === "NY") return mins >= NY_AM_OPEN;
+  if (chip === "NY AM") return mins >= NY_AM_CLOSE;
+  return mins >= NY_PM_CLOSE;
+}
+
+function wrapDur(startSec: number, endSec: number, emptyIsDay = false) {
+  const d = (endSec - startSec + 24 * 3600) % (24 * 3600);
+  return d === 0 && emptyIsDay ? 24 * 3600 : d;
+}
+
+/** Remaining fill of the live window, or of the wait until the next chip when in a NY gap. */
+export function getKillzoneProgress(now = new Date()): {
+  live: KillzoneChip | null;
+  next: KillzoneChip;
+  remainSeconds: number;
+  windowSeconds: number;
+  leftPct: number;
+  wait: boolean;
+} {
+  const kz = getActiveKillzone(now);
+  const { mins, secs } = nyWallClock(now);
+  const nowSec = mins * 60 + secs;
+  const live = killzoneChipGroup(kz.session);
+  const next = nextKillzoneChip(kz.next);
+  const {
+    ASIA_OPEN,
+    LDN_OPEN,
+    NY_OPEN,
+    NY_AM_OPEN,
+    NY_AM_CLOSE,
+    NY_PM_OPEN,
+    NY_PM_CLOSE,
+  } = KILLZONE_NY;
+
+  let windowStart: number;
+  let windowEnd: number;
+  if (live === "ASIA") {
+    windowStart = ASIA_OPEN * 60;
+    windowEnd = LDN_OPEN * 60;
+  } else if (live === "LDN") {
+    windowStart = LDN_OPEN * 60;
+    windowEnd = NY_OPEN * 60;
+  } else if (live === "NY AM") {
+    windowStart = NY_AM_OPEN * 60;
+    windowEnd = NY_AM_CLOSE * 60;
+  } else if (live === "NY PM") {
+    windowStart = NY_PM_OPEN * 60;
+    windowEnd = NY_PM_CLOSE * 60;
+  } else if (live === "NY") {
+    if (mins < NY_AM_OPEN) {
+      windowStart = NY_OPEN * 60;
+      windowEnd = NY_AM_OPEN * 60;
+    } else if (mins < NY_PM_OPEN) {
+      windowStart = NY_AM_CLOSE * 60;
+      windowEnd = NY_PM_OPEN * 60;
+    } else {
+      windowStart = NY_PM_CLOSE * 60;
+      windowEnd = ASIA_OPEN * 60;
+    }
+  } else if (mins >= NY_PM_CLOSE && mins < ASIA_OPEN) {
+    windowStart = NY_PM_CLOSE * 60;
+    windowEnd = ASIA_OPEN * 60;
+  } else if (mins >= NY_AM_CLOSE && mins < NY_PM_OPEN) {
+    windowStart = NY_AM_CLOSE * 60;
+    windowEnd = NY_PM_OPEN * 60;
+  } else {
+    windowStart = NY_OPEN * 60;
+    windowEnd = NY_AM_OPEN * 60;
+  }
+
+  const windowSeconds = wrapDur(windowStart, windowEnd, true);
+  const elapsed = Math.min(windowSeconds, wrapDur(windowStart, nowSec));
+  const remainSeconds = Math.max(0, windowSeconds - elapsed);
+  const leftPct = Math.round((remainSeconds / windowSeconds) * 100);
+
+  return { live, next, remainSeconds, windowSeconds, leftPct, wait: live == null };
+}
+
+/** Map a chip click onto this asset's H4 session key. */
 export function assetSessionForChip(asset: string, chip: KillzoneChip, now = new Date()): Session {
   const sessions = getSessionsForAsset(asset);
-  if (chip !== "NY") return chip;
+  if (chip === "ASIA" || chip === "LDN") return chip;
+  if (chip === "NY") {
+    if (sessions.includes("NY")) return "NY";
+    return splitNyH4(nyWallClock(now).mins);
+  }
+  if (sessions.includes(chip)) return chip;
   if (sessions.includes("NY")) return "NY";
-  const kz = getActiveKillzone(now).session;
-  if (kz === "NY AM" || kz === "NY PM") return kz;
-  if (kz === "NY") return splitNyH4(nyWallClock(now).mins);
-  return "NY AM";
+  return chip;
 }
 
 export function nextKillzoneOpen(next: Session): { name: string; clock: string } {
