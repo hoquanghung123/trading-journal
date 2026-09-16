@@ -484,24 +484,7 @@ export function previousEntryForAsset(
     .sort((a, b) => b.date.localeCompare(a.date))[0];
 }
 
-export function lastMondayEntryForAsset(
-  entries: DayEntry[],
-  asset: string,
-  date: string,
-  excludeId?: string,
-): DayEntry | undefined {
-  return entries
-    .filter(
-      (e) =>
-        e.asset === asset &&
-        e.date <= date &&
-        e.id !== excludeId &&
-        weekdayOf(e.date) === "MON",
-    )
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
-}
-
-/** Copy HTF biases (and optionally chart paths) from a prior entry. */
+/** Copy HTF biases from a prior entry of the same asset. */
 export function applyHtfCarry(
   target: DayEntry,
   source: DayEntry,
@@ -647,18 +630,6 @@ export function getChartUrl(path: string): string {
 export async function deleteChartImage(path?: string): Promise<void> {
   if (!path || path.startsWith("data:") || path.startsWith("http")) return;
   await deleteFromR2({ data: path });
-}
-
-/** Re-upload an existing chart so two days never share one storage path. */
-export async function duplicateChartImage(path?: string): Promise<string | undefined> {
-  if (!path) return undefined;
-  if (path.startsWith("data:")) return uploadChartImage(path);
-  const url = getChartUrl(path);
-  const absolute =
-    url.startsWith("http") || url.startsWith("data:")
-      ? url
-      : `${typeof window !== "undefined" ? window.location.origin : ""}${url}`;
-  return uploadChartImage(absolute);
 }
 
 /**

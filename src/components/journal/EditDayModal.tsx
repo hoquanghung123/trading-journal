@@ -9,7 +9,6 @@ import {
   ChevronDown,
   Check,
   AlertCircle,
-  Copy,
 } from "lucide-react";
 import type { Bias, DayEntry, Session } from "@/lib/journal";
 import {
@@ -19,10 +18,6 @@ import {
   h4TabForNow,
   getChartUrl,
   isMonthlyOutlookDay,
-  previousEntryForAsset,
-  lastMondayEntryForAsset,
-  applyHtfCarry,
-  duplicateChartImage,
 } from "@/lib/journal";
 import { useSymbols } from "@/lib/symbols";
 import { toast } from "sonner";
@@ -33,7 +28,6 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   entry: DayEntry;
-  priorEntries?: DayEntry[];
   onSave: (e: DayEntry) => Promise<void> | void;
   onDelete?: (id: string) => Promise<void> | void;
   onClose: () => void;
@@ -73,7 +67,7 @@ function initialFocus(entry: DayEntry, session: Session): string {
   return exp;
 }
 
-export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClose }: Props) {
+export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
   const isNew = !onDelete;
   const { data: symbols = [] } = useSymbols();
   const ASSETS = symbols
@@ -88,7 +82,6 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
   const [expanded, setExpanded] = useState<LadderKey>(() => initialExpanded(entry));
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
   const [uploadingSlots, setUploadingSlots] = useState<Record<string, boolean>>({});
   const [picked, setPicked] = useState<Record<string, boolean>>(() => initialPicked(entry));
   const [conflict, setConflict] = useState(false);
@@ -105,14 +98,6 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
   const dirty = JSON.stringify(draft) !== snapshotRef.current;
   const monthlyOpen = isMonthlyOutlookDay(draft.date);
   const sessions = useMemo(() => getSessionsForAsset(draft.asset), [draft.asset]);
-  const previous = useMemo(
-    () => previousEntryForAsset(priorEntries, draft.asset, draft.date, draft.id),
-    [priorEntries, draft.asset, draft.date, draft.id],
-  );
-  const lastMonday = useMemo(
-    () => lastMondayEntryForAsset(priorEntries, draft.asset, draft.date, draft.id),
-    [priorEntries, draft.asset, draft.date, draft.id],
-  );
 
   const h4SetCount = sessions.filter((s) => isHtfBiasSet(draft.h4[s]?.bias, draft.h4[s]?.img)).length;
 
@@ -141,7 +126,7 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
   }, [entry.id]);
 
   const requestClose = useCallback(() => {
-    if (isUploading || isCopying) {
+    if (isUploading) {
       setConfirm("upload");
       return;
     }
@@ -150,10 +135,10 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
       return;
     }
     onClose();
-  }, [isUploading, isCopying, dirty, onClose]);
+  }, [isUploading, dirty, onClose]);
 
   const handleSave = useCallback(async () => {
-    if (isUploading || isSaving || isCopying) return;
+    if (isUploading || isSaving) return;
     setIsSaving(true);
     setConflict(false);
     try {
@@ -166,7 +151,7 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
     } finally {
       setIsSaving(false);
     }
-  }, [draft, onSave, onClose, isUploading, isSaving, isCopying]);
+  }, [draft, onSave, onClose, isUploading, isSaving]);
 
   const handleDelete = useCallback(async () => {
     if (!onDelete || isDeleting) return;
@@ -213,40 +198,6 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
   const openLadder = (key: LadderKey, pasteKey?: string) => {
     setExpanded(key);
     if (pasteKey) setFocusKey(pasteKey);
-  };
-
-  const applyPreviousBias = () => {
-    if (!previous) return;
-    setDraft((d) => applyHtfCarry(d, previous, "bias"));
-    setPicked((p) => ({
-      ...p,
-      yearly: isHtfBiasSet(previous.yearlyBias, previous.yearlyImg),
-      weekly: isHtfBiasSet(previous.weeklyBias, previous.weeklyImg),
-      monthly: isHtfBiasSet(previous.monthlyBias, previous.monthlyImg),
-    }));
-    toast.success("Copied last HTF bias");
-  };
-
-  const copyMondayWeekly = async () => {
-    if (!lastMonday) return;
-    setIsCopying(true);
-    try {
-      const img = lastMonday.weeklyImg
-        ? await duplicateChartImage(lastMonday.weeklyImg)
-        : draft.weeklyImg;
-      setDraft((d) => ({
-        ...d,
-        weeklyBias: lastMonday.weeklyBias,
-        weeklyImg: img ?? d.weeklyImg,
-      }));
-      setPicked((p) => ({ ...p, weekly: true }));
-      openLadder("weekly", "weekly");
-      toast.success("Copied weekly from last Monday");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't copy weekly chart");
-    } finally {
-      setIsCopying(false);
-    }
   };
 
   const confirmCopy = {
@@ -387,35 +338,6 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
                 A bias for {draft.asset} on {longDate(draft.date)} already exists. Change date or
                 asset.
               </p>
-            )}
-
-            {(previous || lastMonday?.weeklyImg) && (
-              <div className="flex flex-wrap gap-2">
-                {previous && (
-                  <button
-                    type="button"
-                    onClick={applyPreviousBias}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-                  >
-                    <Copy className="w-3 h-3" /> Use last HTF
-                  </button>
-                )}
-                {lastMonday?.weeklyImg && !draft.weeklyImg && (
-                  <button
-                    type="button"
-                    onClick={() => void copyMondayWeekly()}
-                    disabled={isCopying}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-50"
-                  >
-                    {isCopying ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Copy className="w-3 h-3" />
-                    )}
-                    Copy weekly from last Monday
-                  </button>
-                )}
-              </div>
             )}
 
             <div className="space-y-3">
@@ -684,7 +606,7 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
               <button
                 type="button"
                 onClick={() => setConfirm("delete")}
-                disabled={isDeleting || isUploading || isCopying}
+                disabled={isDeleting || isUploading}
                 className="flex items-center gap-2 px-5 py-2.5 text-xs font-black text-destructive bg-destructive/10 border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all active:scale-95 disabled:opacity-50"
               >
                 {isDeleting ? (
@@ -708,17 +630,17 @@ export function EditDayModal({ entry, priorEntries = [], onSave, onDelete, onClo
               <button
                 type="button"
                 onClick={() => void handleSave()}
-                disabled={isUploading || isSaving || isCopying}
+                disabled={isUploading || isSaving}
                 className={cn(
                   "forest-gradient flex items-center gap-2 px-8 py-3 text-sm font-black text-white rounded-xl shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest",
-                  (isUploading || isSaving || isCopying) && "opacity-50 cursor-not-allowed",
+                  (isUploading || isSaving) && "opacity-50 cursor-not-allowed",
                 )}
               >
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                   </>
-                ) : isUploading || isCopying ? (
+                ) : isUploading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" /> Uploading Charts...
                   </>

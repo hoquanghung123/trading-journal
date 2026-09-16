@@ -659,7 +659,6 @@ export function JournalView() {
       {editing && (
         <EditDayModal
           entry={editing}
-          priorEntries={entries}
           onSave={upsert}
           onDelete={entries.some((e) => e.id === editing.id) ? remove : undefined}
           onClose={() => setEditing(null)}
