@@ -18,7 +18,8 @@
     "http://localhost/*",
     "http://127.0.0.1/*",
     "https://*.pages.dev/*",
-    "https://trading-journal-3di.pages.dev/*"
+    "https://trading-journal-3di.pages.dev/*",
+    "https://trading.hibacsi.com/*"
   ],
   "icons": {
     "16": "icon.png",
@@ -57,7 +58,8 @@
         "http://localhost/*",
         "http://127.0.0.1/*",
         "https://*.pages.dev/*",
-        "https://trading-journal-3di.pages.dev/*"
+        "https://trading-journal-3di.pages.dev/*",
+        "https://trading.hibacsi.com/*"
       ],
       "js": ["journal-content.js"],
       "run_at": "document_start"

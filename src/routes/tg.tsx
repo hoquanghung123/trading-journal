@@ -116,7 +116,7 @@ function NotLinkedScreen() {
         vào mục <strong>Cài đặt tài khoản</strong> và chọn <strong>Liên kết Telegram</strong> để bắt đầu sử dụng.
       </p>
       <a
-        href="https://trading-journal-3di.pages.dev"
+        href="https://trading.hibacsi.com"
         target="_blank"
         rel="noreferrer"
         style={{

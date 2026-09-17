@@ -343,8 +343,8 @@ export function StrategyDetail({
    * display correctly when the HTML file is opened offline.
    */
   function absolutizeHtml(html: string): string {
-    const PROD = 'https://trading-journal-3di.pages.dev';
-    // Use regex to replace src="/storage/..." → src="https://...pages.dev/storage/..."
+    const PROD = 'https://trading.hibacsi.com';
+    // Use regex to replace src="/storage/..." → src="https://trading.hibacsi.com/storage/..."
     // Handles both single and double quotes.
     return html.replace(
       /(src=["'])\/storage\//g,

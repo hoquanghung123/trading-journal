@@ -6,7 +6,8 @@ function isJournalUrl(url) {
       host === "localhost" ||
       host === "127.0.0.1" ||
       host.endsWith(".pages.dev") ||
-      host === "trading-journal-3di.pages.dev"
+      host === "trading-journal-3di.pages.dev" ||
+      host === "trading.hibacsi.com"
     );
   } catch {
     return false;

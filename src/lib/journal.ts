@@ -750,7 +750,7 @@ export function getChartUrl(path: string): string {
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
   ) {
-    return `https://trading-journal-3di.pages.dev/storage/${path}`;
+    return `https://trading.hibacsi.com/storage/${path}`;
   }
 
   // Sử dụng Splat Route (/storage/$) làm Proxy trên Cloudflare
