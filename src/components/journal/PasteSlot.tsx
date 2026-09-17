@@ -51,7 +51,7 @@ interface Props {
   showChartActions?: boolean;
   /** Chip that marks this slot as the Cmd+V target. */
   showPasteTarget?: boolean;
-  /** Fill the slot without letterbox. Height follows the tallest Timeline chart. */
+  /** Fill the slot without letterbox. With ChartFitProvider, height follows the tallest sibling; otherwise the image's own ratio. */
   fitImage?: boolean;
 }
 
@@ -171,20 +171,25 @@ export function PasteSlot({
 
   const reportFit = fit?.report;
   const fitHeight = fit?.height;
+  const [ownHeight, setOwnHeight] = useState<number | undefined>();
   const measureRef = useRef<() => void>(() => {});
+  const slotHeight = fitHeight ?? ownHeight;
 
   useEffect(() => {
-    if (!fitImage || !reportFit) return;
+    if (!fitImage) return;
     const box = ref.current;
     const measure = () => {
       const img = imgRef.current;
       if (!img?.naturalWidth || !displayUrl) {
-        reportFit(slotId, null);
+        reportFit?.(slotId, null);
+        setOwnHeight(undefined);
         return;
       }
       const w = box?.clientWidth ?? 0;
       if (!w) return;
-      reportFit(slotId, Math.round((w * img.naturalHeight) / img.naturalWidth));
+      const h = Math.round((w * img.naturalHeight) / img.naturalWidth);
+      setOwnHeight((prev) => (prev === h ? prev : h));
+      reportFit?.(slotId, h);
     };
     measureRef.current = measure;
     if (!box) return;
@@ -223,10 +228,10 @@ export function PasteSlot({
       className={cn(
         "relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none",
         focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30",
-        fitImage && fitHeight == null && "h-44",
+        fitImage && slotHeight == null && (fit ? "h-44" : "h-36"),
         className,
       )}
-      style={fitImage && fitHeight ? { height: fitHeight } : undefined}
+      style={fitImage && slotHeight ? { height: slotHeight } : undefined}
     >
       {displayUrl ? (
         <>
@@ -275,7 +280,7 @@ export function PasteSlot({
         </div>
       )}
       {displayUrl && (
-        <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-card/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-widest text-primary font-black border border-primary/10">
+        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-card/90 backdrop-blur-sm shadow-sm text-[9px] uppercase tracking-wider text-primary font-black border border-primary/10">
           {label}
         </div>
       )}

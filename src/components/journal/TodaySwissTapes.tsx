@@ -313,7 +313,7 @@ export function TodaySwissTapes({
             {/* Expandable Inline Unified Drawer */}
             {isExpanded && (
               <div
-                className="border-t border-border bg-muted/10 p-6 animate-in slide-in-from-top-4 duration-200 space-y-8"
+                className="border-t border-border bg-muted/10 p-4 animate-in slide-in-from-top-4 duration-200 space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >
                 {entry.notes?.trim() && (
@@ -327,11 +327,11 @@ export function TodaySwissTapes({
                 )}
                 {/* Top Section: Monthly, Weekly & Daily Charts Side-by-Side */}
                 <div
-                  className={`grid grid-cols-1 ${showMonthly ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"} gap-8`}
+                  className={`grid grid-cols-1 ${showMonthly ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"} gap-4`}
                 >
                   {/* Monthly Panel */}
                   {showMonthly && (
-                    <div className="space-y-4 bg-card/40 p-4 rounded-xl border border-border/60">
+                    <div className="space-y-2 bg-card/40 p-3 rounded-xl border border-border/60">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
                         <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                           Monthly Timeframe
@@ -368,16 +368,17 @@ export function TodaySwissTapes({
                       </div>
 
                       <PasteSlot
-                        label="Monthly Chart"
+                        label="M"
                         image={entry.monthlyImg}
                         onChange={(url) => onUpdate({ ...entry, monthlyImg: url })}
-                        className="w-full aspect-video rounded-xl overflow-hidden border border-border"
+                        fitImage
+                        className="w-full"
                       />
                     </div>
                   )}
 
                   {/* Weekly Panel */}
-                  <div className="space-y-4 bg-card/40 p-4 rounded-xl border border-border/60">
+                  <div className="space-y-2 bg-card/40 p-3 rounded-xl border border-border/60">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
                       <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                         Weekly Timeframe
@@ -414,15 +415,16 @@ export function TodaySwissTapes({
                     </div>
 
                     <PasteSlot
-                      label="Weekly Chart"
+                      label="W"
                       image={entry.weeklyImg}
                       onChange={(url) => onUpdate({ ...entry, weeklyImg: url })}
-                      className="w-full aspect-video rounded-xl overflow-hidden border border-border"
+                      fitImage
+                      className="w-full"
                     />
                   </div>
 
                   {/* Daily Panel */}
-                  <div className="space-y-4 bg-card/40 p-4 rounded-xl border border-border/60">
+                  <div className="space-y-2 bg-card/40 p-3 rounded-xl border border-border/60">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
                       <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                         Daily Timeframe
@@ -459,16 +461,17 @@ export function TodaySwissTapes({
                     </div>
 
                     <PasteSlot
-                      label="Daily Chart"
+                      label="D"
                       image={entry.dailyImg}
                       onChange={(url) => onUpdate({ ...entry, dailyImg: url })}
-                      className="w-full aspect-video rounded-xl overflow-hidden border border-border"
+                      fitImage
+                      className="w-full"
                     />
                   </div>
                 </div>
 
                 {/* Bottom Section: H4 Sessions (Dynamic Grid) */}
-                <div className="space-y-4 pt-4 border-t border-border/40">
+                <div className="space-y-3 pt-3 border-t border-border/40">
                   <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                     H4 Timeframe Sessions
                   </h4>
@@ -476,7 +479,7 @@ export function TodaySwissTapes({
                   <div
                     className={`grid grid-cols-1 sm:grid-cols-2 ${
                       sessions.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"
-                    } gap-6`}
+                    } gap-4`}
                   >
                     {sessions.map((sessionName) => {
                       const sessionData = entry.h4[sessionName] || {};
@@ -490,7 +493,7 @@ export function TodaySwissTapes({
                         <div
                           key={sessionName}
                           id={`today-h4-${entry.id}-${sessionName}`}
-                          className={`space-y-3 bg-card/40 p-4 rounded-xl border ${
+                          className={`space-y-2 bg-card/40 p-3 rounded-xl border ${
                             sessionName === focusedH4
                               ? "border-primary/50 ring-1 ring-primary/20"
                               : "border-border/60"
@@ -520,7 +523,7 @@ export function TodaySwissTapes({
                           </div>
 
                           <PasteSlot
-                            label={`${displaySessionLabel} Chart`}
+                            label="H4"
                             image={sessionData.img}
                             onChange={(url) => {
                               const currentH4 = entry.h4[sessionName] || {};
@@ -532,7 +535,8 @@ export function TodaySwissTapes({
                                 },
                               });
                             }}
-                            className="w-full aspect-video rounded-lg overflow-hidden border border-border"
+                            fitImage
+                            className="w-full"
                           />
                         </div>
                       );
