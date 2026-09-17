@@ -15,7 +15,7 @@ const ChartFitContext = createContext<{
   report: (id: string, height: number | null) => void;
 } | null>(null);
 
-/** Shared slot height = tallest loaded chart at current column width. */
+/** Shared fallback slot height = tallest reported chart at current column width. */
 export function ChartFitProvider({ children }: { children: React.ReactNode }) {
   const [heights, setHeights] = useState<Record<string, number>>({});
   const report = useCallback((id: string, height: number | null) => {
@@ -51,7 +51,7 @@ interface Props {
   showChartActions?: boolean;
   /** Chip that marks this slot as the Cmd+V target. */
   showPasteTarget?: boolean;
-  /** Fill the slot without letterbox. With ChartFitProvider, height follows the tallest sibling; otherwise the image's own ratio. */
+  /** Timeline: 16:9 slot. Today: native landscape ratio, 16:9 for portrait. */
   fitImage?: boolean;
 }
 
@@ -172,8 +172,9 @@ export function PasteSlot({
   const reportFit = fit?.report;
   const fitHeight = fit?.height;
   const [ownHeight, setOwnHeight] = useState<number | undefined>();
+  const [containImage, setContainImage] = useState(false);
   const measureRef = useRef<() => void>(() => {});
-  const slotHeight = fitHeight ?? ownHeight;
+  const slotHeight = ownHeight ?? fitHeight;
 
   useEffect(() => {
     if (!fitImage) return;
@@ -183,13 +184,20 @@ export function PasteSlot({
       if (!img?.naturalWidth || !displayUrl) {
         reportFit?.(slotId, null);
         setOwnHeight(undefined);
+        setContainImage(false);
         return;
       }
       const w = box?.clientWidth ?? 0;
       if (!w) return;
-      const h = Math.round((w * img.naturalHeight) / img.naturalWidth);
-      setOwnHeight((prev) => (prev === h ? prev : h));
-      reportFit?.(slotId, h);
+      const ratio = img.naturalHeight / img.naturalWidth;
+      const rawH = Math.round(w * ratio);
+      const landscapeCap = Math.round((w * 9) / 16);
+      // Timeline: fixed 16:9 height. Landscape covers the slot (full width). Portrait contains (no crop).
+      const displayH = reportFit || ratio > 1 ? landscapeCap : rawH;
+      const contain = ratio > 1;
+      setOwnHeight((prev) => (prev === displayH ? prev : displayH));
+      setContainImage(contain);
+      reportFit?.(slotId, displayH);
     };
     measureRef.current = measure;
     if (!box) return;
@@ -243,7 +251,7 @@ export function PasteSlot({
             decoding="async"
             onLoad={() => measureRef.current()}
             className={
-              fitImage
+              fitImage && !containImage
                 ? "w-full h-full object-cover"
                 : "w-full h-full object-contain bg-muted/5"
             }
