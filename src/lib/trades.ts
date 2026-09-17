@@ -202,7 +202,6 @@ export function newTrade(): Trade {
   return {
     id: generateId(),
     entryTime: new Date().toISOString(),
-    exitTime: new Date().toISOString(),
     symbol: "",
     side: "buy",
     grossPnl: 0,

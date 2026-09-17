@@ -209,7 +209,10 @@ export function TradeLog() {
   };
 
   const openNew = () => {
-    setEditing(newTrade());
+    const draft = newTrade();
+    const lastSymbol = tradesRef.current[0]?.symbol;
+    if (lastSymbol) draft.symbol = lastSymbol;
+    setEditing(draft);
     setOpen(true);
   };
 

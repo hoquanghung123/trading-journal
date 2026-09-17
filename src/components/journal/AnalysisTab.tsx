@@ -121,7 +121,7 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
           <div
             key={metric.id}
             className={`group relative p-6 rounded-[32px] border transition-all ${
-              designMode ? "bg-muted/10 border-dashed border-primary/30" : "bg-white border-border/50 shadow-sm"
+              designMode ? "bg-muted/10 border-dashed border-primary/30" : "bg-card border-border/50 shadow-sm"
             }`}
           >
             {designMode && (
@@ -256,7 +256,7 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
                             className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all border shadow-sm ${
                               isPresent
                                 ? "bg-primary text-white border-primary shadow-primary/20 scale-105"
-                                : "bg-white text-muted-foreground border-border hover:border-primary/30"
+                                : "bg-background text-muted-foreground border-border hover:border-primary/30"
                             }`}
                           >
                             {tf}
@@ -277,7 +277,7 @@ export function AnalysisTab({ trade, settings, onUpdate, onRefreshSettings }: Pr
                               ? p === "High"
                                 ? "bg-primary text-white shadow-lg shadow-primary/20"
                                 : "bg-warning text-white shadow-lg shadow-warning/20"
-                              : "bg-white border border-border/50 text-muted-foreground hover:bg-white hover:border-primary/20"
+                              : "bg-background border border-border/50 text-muted-foreground hover:border-primary/20"
                           }`}
                         >
                           {p}

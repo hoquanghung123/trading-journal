@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ import {
   Activity,
   Image as ImageIcon,
   Sliders,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { AnalysisTab } from "./AnalysisTab";
 import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
@@ -26,7 +28,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchSettings, updateSettings } from "@/lib/settings";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAchievementTracker } from "@/hooks/useAchievementTracker";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -54,10 +55,9 @@ type TabID = "execution" | "analysis" | "performance" | "screenshots" | "journal
 export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   const [t, setT] = useState<Trade | null>(trade);
   const [activeTab, setActiveTab] = useState<TabID>("execution");
-  const [showMoreTabs, setShowMoreTabs] = useState(false);
-  const isMobile = useIsMobile();
   const [focused, setFocused] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const [biasEntries, setBiasEntries] = useState<DayEntry[]>([]);
   const { data: symbols = [] } = useSymbols();
   const { models: playbookSetups } = usePlaybook();
@@ -86,24 +86,35 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    setActiveTab("execution");
+    setFocused(null);
+  }, [open, trade?.id]);
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 });
+  }, [activeTab, open, trade?.id]);
+
+  useEffect(() => {
+    if (!open) return;
     fetchEntries()
       .then(setBiasEntries)
       .catch(() => {});
   }, [open]);
 
+  const tradeJournalDate = t?.entryTime
+    ? journalTradingDate(t.entryTime)
+    : journalTradingDate();
+
   const filteredBias = useMemo(
     () =>
       biasEntries
         .filter((e) => {
-          const tradeDate = t?.entryTime
-            ? journalTradingDate(t.entryTime)
-            : journalTradingDate();
-          const isSameDay = e.date === tradeDate;
+          const isSameDay = e.date === tradeJournalDate;
           const isMatchingSymbol = !t?.symbol || e.asset === t.symbol;
           return isSameDay && isMatchingSymbol;
         })
         .sort((a, b) => b.date.localeCompare(a.date)),
-    [biasEntries, t?.symbol, t?.entryTime],
+    [biasEntries, t?.symbol, tradeJournalDate],
   );
 
   const update = (patch: Partial<Trade>) => {
@@ -125,6 +136,17 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
   if (!t) return null;
 
   const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+  const hasResult = t.actualRr !== 0 || t.netPnl !== 0;
+  const headerBadge =
+    t.status !== "Closed" && !hasResult
+      ? {
+          label: t.status === "Not Started" ? "Draft" : "Opened",
+          className:
+            t.status === "Not Started"
+              ? "bg-muted text-muted-foreground"
+              : "bg-primary text-primary-foreground shadow-primary/20",
+        }
+      : { label: outcome.label, className: outcomeStyle[outcome.color] };
 
   const toNyLocal = (iso: string) => {
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -180,7 +202,9 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
     setBusy(true);
     try {
       await onSave(t);
-      await track(t); // Track achievements after save
+      if (t.status !== "Not Started") {
+        await track(t);
+      }
       toast.success("Trade saved");
       onClose();
     } catch (e) {
@@ -206,49 +230,42 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-full h-full sm:h-auto sm:max-w-5xl max-h-[100vh] sm:max-h-[96vh] p-0 gap-0 bg-card border-white/20 text-foreground flex flex-col overflow-hidden rounded-none sm:rounded-[48px] shadow-2xl animate-in fade-in zoom-in-95 duration-300 left-0 top-0 translate-x-0 translate-y-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]">
-        <DialogHeader className="px-6 sm:px-10 py-6 border-b border-border/50 bg-card sm:rounded-t-[48px]">
-          <DialogTitle className="text-xl font-black uppercase tracking-tighter text-foreground flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg forest-gradient flex items-center justify-center shadow-lg shadow-primary/20">
+      <DialogContent className="w-full h-full sm:h-auto sm:max-w-5xl max-h-[100vh] sm:max-h-[96vh] p-0 gap-0 bg-card border-white/20 text-foreground flex flex-col overflow-hidden rounded-none sm:rounded-[48px] shadow-2xl animate-in fade-in zoom-in-95 duration-300 left-0 top-0 translate-x-0 translate-y-0 sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] [&>button]:right-5 [&>button]:top-6 sm:[&>button]:right-8">
+        <DialogHeader className="px-6 sm:px-10 pr-14 sm:pr-16 py-6 border-b border-border/50 bg-card sm:rounded-t-[48px]">
+          <div className="flex items-center gap-3 min-w-0">
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter text-foreground flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg forest-gradient flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
                 <Activity className="w-5 h-5 text-white" />
               </div>
-              Trade Execution
-            </div>
+              <span className="truncate">Trade Execution</span>
+            </DialogTitle>
             <span
-              className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${outcomeStyle[outcome.color]}`}
+              className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${headerBadge.className}`}
             >
-              {outcome.label}
+              {headerBadge.label}
             </span>
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
         {/* Tab Navigation */}
-        <div className="px-6 sm:px-10 py-4 bg-muted/10 border-b border-border/50 overflow-x-auto scrollbar-hide">
+        <div className="px-4 sm:px-10 py-3 sm:py-4 bg-muted/10 border-b border-border/50 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
-            {([
-              { id: "execution", label: "Execution", icon: Activity },
-              { id: "analysis", label: "Analysis", icon: Sliders },
-              { id: "performance", label: "Performance", icon: TrendingUp },
-              { id: "screenshots", label: "Screenshots", icon: ImageIcon },
-              { id: "journal", label: "Journal", icon: FileText },
-            ] as const)
-              .filter((tab) => {
-                if (!isMobile || showMoreTabs) return true;
-                return (
-                  tab.id === "execution" ||
-                  tab.id === "screenshots" ||
-                  tab.id === "journal" ||
-                  tab.id === activeTab
-                );
-              })
-              .map((tab) => (
+            {(
+              [
+                { id: "execution", label: "Execution", icon: Activity },
+                { id: "analysis", label: "Analysis", icon: Sliders },
+                { id: "performance", label: "Performance", icon: TrendingUp },
+                { id: "screenshots", label: "Screenshots", icon: ImageIcon },
+                { id: "journal", label: "Journal", icon: FileText },
+              ] as const
+            ).map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
                   activeTab === tab.id
-                    ? "forest-gradient text-white shadow-lg shadow-primary/20 scale-[1.02]"
+                    ? "forest-gradient text-white shadow-lg shadow-primary/20"
                     : "bg-background border border-border/50 text-muted-foreground hover:bg-muted hover:border-primary/30"
                 }`}
               >
@@ -258,19 +275,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 {tab.label}
               </button>
             ))}
-            {isMobile && !showMoreTabs && (
-              <button
-                type="button"
-                onClick={() => setShowMoreTabs(true)}
-                className="px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-background border border-border text-muted-foreground"
-              >
-                More
-              </button>
-            )}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 space-y-8 sm:space-y-10 scrollbar-hide">
+        <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 space-y-8 sm:space-y-10">
           {/* Tab: Execution */}
           {activeTab === "execution" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -280,7 +288,11 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   <Input
                     type="datetime-local"
                     value={dtLocal}
-                    onChange={(e) => update({ entryTime: nyLocalToIso(e.target.value) })}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v) return;
+                      update({ entryTime: nyLocalToIso(v) });
+                    }}
                     className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                   />
                 </Field>
@@ -288,29 +300,36 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   <Input
                     type="datetime-local"
                     value={exitDtLocal}
-                    onChange={(e) => update({ exitTime: nyLocalToIso(e.target.value) })}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      update({ exitTime: v ? nyLocalToIso(v) : undefined });
+                    }}
                     className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                   />
                 </Field>
                 <Field label="Symbol / Asset">
-                  <select
-                    value={t.symbol}
-                    onChange={(e) => update({ symbol: e.target.value })}
-                    className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
-                  >
+                  <SelectField value={t.symbol} onChange={(v) => update({ symbol: v })}>
                     {SYMBOLS.map((s) => (
                       <option key={s} value={s}>
                         {s}
                       </option>
                     ))}
-                  </select>
+                  </SelectField>
                 </Field>
                 <Field label="Trade Status">
                   <div className="flex gap-2">
                     {(["Not Started", "Opened", "Closed"] as const).map((s) => (
                       <button
                         key={s}
-                        onClick={() => update({ status: s })}
+                        type="button"
+                        onClick={() =>
+                          update({
+                            status: s,
+                            ...(s === "Closed" && !t.exitTime
+                              ? { exitTime: new Date().toISOString() }
+                              : {}),
+                          })
+                        }
                         className={`flex-1 h-12 rounded-xl border-2 text-[9px] font-black tracking-widest uppercase transition-all shadow-sm ${
                           t.status === s
                             ? s === "Not Started"
@@ -326,44 +345,44 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     ))}
                   </div>
                 </Field>
-
-                {/* Trade Grade Section (Conditional) */}
-                {settings?.showTradeGrade && (
-                  <Field label="Trade Grade">
-                    <div className="flex gap-2">
-                      {(["A+", "A", "B"] as const).map((g) => (
-                        <button
-                          key={g}
-                          onClick={() => update({ grade: g })}
-                          className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
-                            t.grade === g
-                              ? g === "A+"
-                                ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
-                                : g === "A"
-                                  ? "bg-warning text-white border-warning shadow-warning/20 scale-[1.02]"
-                                  : "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
-                              : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                          }`}
-                        >
-                          {g}
-                        </button>
-                      ))}
-                      {/* Optional: Clear Grade Button */}
-                      <button
-                        onClick={() => update({ grade: undefined })}
-                        className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
-                          !t.grade
-                            ? "bg-muted/50 border-muted-foreground/20 text-muted-foreground"
-                            : "bg-background border-border text-muted-foreground/30 hover:border-destructive/30 hover:text-destructive"
-                        }`}
-                        title="Clear Grade"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </Field>
-                )}
               </div>
+
+              {settings?.showTradeGrade && (
+                <Field label="Trade Grade">
+                  <div className="flex gap-2">
+                    {(["A+", "A", "B"] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => update({ grade: g })}
+                        className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
+                          t.grade === g
+                            ? g === "A+"
+                              ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
+                              : g === "A"
+                                ? "bg-warning text-white border-warning shadow-warning/20 scale-[1.02]"
+                                : "bg-destructive text-destructive-foreground border-destructive shadow-destructive/20 scale-[1.02]"
+                            : "bg-background border-border text-muted-foreground hover:border-primary/30"
+                        }`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => update({ grade: undefined })}
+                      className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center transition-all ${
+                        !t.grade
+                          ? "bg-muted/50 border-muted-foreground/20 text-muted-foreground"
+                          : "bg-background border-border text-muted-foreground/30 hover:border-destructive/30 hover:text-destructive"
+                      }`}
+                      title="Clear Grade"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </Field>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                 <Field label="Execution Side">
@@ -371,6 +390,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     {(["buy", "sell"] as const).map((s) => (
                       <button
                         key={s}
+                        type="button"
                         onClick={() => update({ side: s })}
                         className={`flex-1 h-12 rounded-xl border-2 text-[10px] font-black tracking-widest uppercase transition-all shadow-sm ${
                           t.side === s
@@ -387,10 +407,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </Field>
                 <Field label={`Context: Bias entry (${t.symbol})`}>
                   <div className="flex gap-2">
-                    <select
+                    <SelectField
+                      className="flex-1"
                       value={t.biasEntryId ?? ""}
-                      onChange={(e) => update({ biasEntryId: e.target.value || undefined })}
-                      className="h-12 flex-1 rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
+                      onChange={(v) => update({ biasEntryId: v || undefined })}
                     >
                       <option value="">— Link to Bias entry —</option>
                       {filteredBias.map((b) => (
@@ -400,12 +420,13 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       ))}
                       {filteredBias.length === 0 && (
                         <option value="" disabled>
-                          No {t.symbol} journal entries found for today
+                          No {t.symbol} bias on {ddmm(tradeJournalDate)}
                         </option>
                       )}
-                    </select>
+                    </SelectField>
                     {t.biasEntryId && (
                       <button
+                        type="button"
                         onClick={() => {
                           navigateToPage("bias");
                           setTimeout(() => focusBiasEntry(t.biasEntryId!, t.symbol), 50);
@@ -420,15 +441,14 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                   </div>
                 </Field>
                 <Field label="Setup / Strategy">
-                  <select
+                  <SelectField
                     value={t.setupId ?? ""}
-                    onChange={(e) =>
+                    onChange={(v) =>
                       update({
-                        setupId: e.target.value || undefined,
+                        setupId: v || undefined,
                         missedConfluences: [],
                       })
                     }
-                    className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
                   >
                     <option value="">— Select Setup —</option>
                     {playbookSetups.map((s) => (
@@ -441,7 +461,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         No strategies in Playbook
                       </option>
                     )}
-                  </select>
+                  </SelectField>
                 </Field>
                 <div className="flex flex-col justify-end">
                   <div className="flex items-center gap-3 bg-primary/5 px-6 h-12 rounded-xl border border-primary/10 transition-all hover:bg-primary/10 w-full mb-1">
@@ -546,14 +566,19 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
           )}
 
           {/* Tab: Analysis */}
-          {activeTab === "analysis" && settings && (
-            <AnalysisTab
-              trade={t}
-              settings={settings}
-              onUpdate={update}
-              onRefreshSettings={() => queryClient.invalidateQueries({ queryKey: ["user_settings"] })}
-            />
-          )}
+          {activeTab === "analysis" &&
+            (settings ? (
+              <AnalysisTab
+                trade={t}
+                settings={settings}
+                onUpdate={update}
+                onRefreshSettings={() => queryClient.invalidateQueries({ queryKey: ["user_settings"] })}
+              />
+            ) : (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ))}
 
           {/* Tab: Performance */}
           {activeTab === "performance" && (
@@ -561,22 +586,10 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
               <SectionHeader title="Financial Performance" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <Field label="Gross PnL">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={t.grossPnl}
-                    onChange={(e) => update({ grossPnl: Number(e.target.value) })}
-                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
-                  />
+                  <NumberField value={t.grossPnl} onChange={(n) => update({ grossPnl: n })} />
                 </Field>
                 <Field label="Fees / Commissions">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={t.fees}
-                    onChange={(e) => update({ fees: Number(e.target.value) })}
-                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
-                  />
+                  <NumberField value={t.fees} onChange={(n) => update({ fees: n })} />
                 </Field>
                 <Field label="Net PnL (Calculated)">
                   <div
@@ -590,30 +603,15 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                 <Field label="Actual RR Achieved">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={t.actualRr}
-                    onChange={(e) => update({ actualRr: Number(e.target.value) })}
-                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
-                  />
+                  <NumberField value={t.actualRr} onChange={(n) => update({ actualRr: n })} />
                 </Field>
                 <Field label="Max RR Reached (Potential)">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={t.maxRr}
-                    onChange={(e) => update({ maxRr: Number(e.target.value) })}
-                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
-                  />
+                  <NumberField value={t.maxRr} onChange={(n) => update({ maxRr: n })} />
                 </Field>
                 <Field label="Risk % of Account">
-                  <Input
-                    type="number"
-                    step="0.01"
+                  <NumberField
                     value={t.riskPercent || 0}
-                    onChange={(e) => update({ riskPercent: Number(e.target.value) })}
-                    className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+                    onChange={(n) => update({ riskPercent: n })}
                     placeholder="e.g. 0.5"
                   />
                 </Field>
@@ -634,6 +632,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     focused={focused === "before"}
                     onFocus={() => setFocused("before")}
                     className="h-48 sm:h-64"
+                    showChartActions
+                    showPasteTarget
                   />
                   <PasteSlot
                     label="AFTER EXIT"
@@ -642,6 +642,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     focused={focused === "after"}
                     onFocus={() => setFocused("after")}
                     className="h-48 sm:h-64"
+                    showChartActions
+                    showPasteTarget
                   />
                 </div>
               </div>
@@ -661,6 +663,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         focused={focused === "monthly"}
                         onFocus={() => setFocused("monthly")}
                         className="h-44"
+                        showChartActions
+                        showPasteTarget
                       />
                       <PasteSlot
                         label="WEEKLY"
@@ -669,6 +673,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         focused={focused === "weekly"}
                         onFocus={() => setFocused("weekly")}
                         className="h-44"
+                        showChartActions
+                        showPasteTarget
                       />
                       <PasteSlot
                         label="DAILY"
@@ -677,6 +683,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         focused={focused === "daily"}
                         onFocus={() => setFocused("daily")}
                         className="h-44"
+                        showChartActions
+                        showPasteTarget
                       />
                     </div>
                     {/* Row 2: H4, H1, M15 */}
@@ -688,6 +696,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         focused={focused === "h4"}
                         onFocus={() => setFocused("h4")}
                         className="h-44"
+                        showChartActions
+                        showPasteTarget
                       />
                       <PasteSlot
                         label="H1"
@@ -696,6 +706,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         focused={focused === "h1"}
                         onFocus={() => setFocused("h1")}
                         className="h-44"
+                        showChartActions
+                        showPasteTarget
                       />
                       <PasteSlot
                         label="M15"
@@ -704,6 +716,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                         focused={focused === "m15"}
                         onFocus={() => setFocused("m15")}
                         className="h-44"
+                        showChartActions
+                        showPasteTarget
                       />
                     </div>
                   </div>
@@ -716,6 +730,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       focused={focused === "h1"}
                       onFocus={() => setFocused("h1")}
                       className="h-48"
+                      showChartActions
+                      showPasteTarget
                     />
                     <PasteSlot
                       label="M15 CONTEXT"
@@ -724,6 +740,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       focused={focused === "m15"}
                       onFocus={() => setFocused("m15")}
                       className="h-48"
+                      showChartActions
+                      showPasteTarget
                     />
                     <PasteSlot
                       label="M5 EXECUTION"
@@ -732,6 +750,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                       focused={focused === "m5"}
                       onFocus={() => setFocused("m5")}
                       className="h-48"
+                      showChartActions
+                      showPasteTarget
                     />
                   </div>
                 )}
@@ -766,7 +786,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row justify-between items-center px-6 sm:px-10 py-6 sm:py-8 border-t border-border/50 bg-muted/10 shrink-0 gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center px-6 sm:px-10 py-6 sm:py-8 border-t border-border/50 bg-card shrink-0 gap-4">
           {onDelete ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -808,6 +828,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
             <div />
           )}
           <button
+            type="button"
             onClick={save}
             disabled={busy}
             className="forest-gradient w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-4 rounded-2xl text-sm font-black text-white shadow-xl hover:opacity-90 transition-all active:scale-95 uppercase tracking-widest"
@@ -837,5 +858,70 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </Label>
       {children}
     </div>
+  );
+}
+
+function SelectField({
+  value,
+  onChange,
+  children,
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-12 w-full rounded-xl bg-muted/30 border border-border px-4 pr-10 text-sm font-bold outline-none cursor-pointer focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
+      >
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    </div>
+  );
+}
+
+function NumberField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  placeholder?: string;
+}) {
+  const [raw, setRaw] = useState(() => String(value ?? ""));
+
+  useEffect(() => {
+    setRaw(String(value ?? ""));
+  }, [value]);
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      placeholder={placeholder}
+      value={raw}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v !== "" && !/^-?\d*\.?\d*$/.test(v)) return;
+        setRaw(v);
+        if (v === "" || v === "-" || v === "." || v === "-.") return;
+        const n = Number(v);
+        if (!Number.isNaN(n)) onChange(n);
+      }}
+      onBlur={() => {
+        const n = Number(raw);
+        const next = raw === "" || Number.isNaN(n) ? 0 : n;
+        onChange(next);
+        setRaw(String(next));
+      }}
+      className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
+    />
   );
 }
