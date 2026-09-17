@@ -49,6 +49,28 @@ export function formatNyClock(iso: string) {
   return `${p.hour}:${p.minute}`;
 }
 
+export function formatNyStamp(iso: string) {
+  const p = nyParts(iso, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return `${p.day} ${p.month} ${p.hour}:${p.minute}`;
+}
+
+export function formatPnl(n: number) {
+  if (n === 0) return "—";
+  return formatSigned(n);
+}
+
+export function liveKillzoneLane(now = new Date()): TradeKillzoneLane {
+  const session = getActiveKillzone(now).session;
+  if (session === "ASIA") return "ASIA";
+  if (session === "LDN") return "LDN";
+  return "NY";
+}
+
+export function shortKillzoneSymbol(symbol: string) {
+  const s = symbol.replace(/USD$/i, "").replace(/!$/, "");
+  return s.length > 4 ? s.slice(0, 4) : s;
+}
+
 export function formatNyDayKey(iso: string) {
   const p = nyParts(iso, { year: "numeric", month: "2-digit", day: "2-digit" });
   return `${p.year}-${p.month}-${p.day}`;

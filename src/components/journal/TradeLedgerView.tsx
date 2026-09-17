@@ -8,6 +8,7 @@ import {
   formatNyClock,
   formatNyDayKey,
   formatNyDayLabel,
+  formatPnl,
   formatSigned,
   gradeStyle,
   notesExcerpt,
@@ -56,6 +57,20 @@ export function TradeLedgerView({
 
   const mark = (key: SortKey) => (sortKey === key ? (dir === "desc" ? " ↓" : " ↑") : "");
 
+  const colSpan =
+    3 +
+    (show("outcome") ? 1 : 0) +
+    (showGrade && show("grade") ? 1 : 0) +
+    (show("entryTime") ? 1 : 0) +
+    (show("side") ? 1 : 0) +
+    (show("playbook") ? 1 : 0) +
+    (show("bias") ? 1 : 0) +
+    (show("stats") ? 2 : 0) +
+    (show("images") ? 1 : 0) +
+    (show("compliance") ? 1 : 0) +
+    (show("status") ? 1 : 0) +
+    (show("analysis") ? 1 : 0);
+
   const dayGroups = useMemo(() => {
     if (sortKey !== "entryTime") return [{ key: "all", label: null as string | null, pnl: 0, rows: sorted }];
     const map = new Map<string, { label: string; pnl: number; rows: Trade[] }>();
@@ -72,36 +87,47 @@ export function TradeLedgerView({
   return (
     <div className="bg-card rounded-3xl border border-border/50 overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse min-w-[960px]">
+        <table className="w-full text-sm border-collapse min-w-[920px]">
           <thead>
             <tr className="text-[9px] lg:text-xs font-bold text-muted-foreground uppercase tracking-widest bg-muted/30 border-b border-border">
-              <th className="sticky left-0 z-10 bg-muted/80 text-center py-3 px-1 w-[36px]">#</th>
-              <th className="text-left p-2 lg:p-3">Symbol</th>
-              {show("outcome") && <th className="text-left p-2 lg:p-3">Out</th>}
-              {showGrade && show("grade") && <th className="text-left p-2 lg:p-3">Grade</th>}
+              <th className="sticky top-0 left-0 z-20 bg-muted text-center py-3 px-1 w-[36px]">#</th>
+              <th className="sticky top-0 left-9 z-20 bg-muted text-left p-2 lg:p-3">Symbol</th>
+              {show("outcome") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Out</th>}
+              {showGrade && show("grade") && (
+                <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Grade</th>
+              )}
               {show("entryTime") && (
-                <th className="text-left p-2 lg:p-3 cursor-pointer" onClick={() => toggleSort("entryTime")}>
+                <th
+                  className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3 cursor-pointer"
+                  onClick={() => toggleSort("entryTime")}
+                >
                   Entry NY{mark("entryTime")}
                 </th>
               )}
-              {show("side") && <th className="text-left p-2 lg:p-3">Side</th>}
-              {show("playbook") && <th className="text-left p-2 lg:p-3">Model</th>}
-              {show("bias") && <th className="text-left p-2 lg:p-3">Bias</th>}
+              {show("side") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Side</th>}
+              {show("playbook") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Model</th>}
+              {show("bias") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Bias</th>}
               {show("stats") && (
                 <>
-                  <th className="text-left p-2 lg:p-3 cursor-pointer" onClick={() => toggleSort("netPnl")}>
+                  <th
+                    className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3 cursor-pointer"
+                    onClick={() => toggleSort("netPnl")}
+                  >
                     PnL{mark("netPnl")}
                   </th>
-                  <th className="text-left p-2 lg:p-3 cursor-pointer" onClick={() => toggleSort("actualRr")}>
+                  <th
+                    className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3 cursor-pointer"
+                    onClick={() => toggleSort("actualRr")}
+                  >
                     R{mark("actualRr")}
                   </th>
                 </>
               )}
-              {show("images") && <th className="text-left p-2 lg:p-3">Charts</th>}
-              {show("compliance") && <th className="text-left p-2 lg:p-3">Rule</th>}
-              {show("status") && <th className="text-left p-2 lg:p-3">Status</th>}
-              {show("analysis") && <th className="text-left p-2 lg:p-3">Analysis</th>}
-              <th className="text-left p-2 lg:p-3 min-w-[160px]">Notes</th>
+              {show("images") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Charts</th>}
+              {show("compliance") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Rule</th>}
+              {show("status") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Status</th>}
+              {show("analysis") && <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3">Analysis</th>}
+              <th className="sticky top-0 z-10 bg-muted text-left p-2 lg:p-3 min-w-[160px]">Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -109,6 +135,7 @@ export function TradeLedgerView({
               <DayBlock
                 key={g.key}
                 group={g}
+                colSpan={colSpan}
                 show={show}
                 showGrade={showGrade}
                 playbookName={playbookName}
@@ -125,6 +152,7 @@ export function TradeLedgerView({
 
 function DayBlock({
   group,
+  colSpan,
   show,
   showGrade,
   playbookName,
@@ -132,13 +160,13 @@ function DayBlock({
   onOpen,
 }: {
   group: { key: string; label: string | null; pnl: number; rows: Trade[] };
+  colSpan: number;
   show: (k: string) => boolean;
   showGrade?: boolean;
   playbookName: (id?: string) => string | undefined;
   executionSchema?: any[];
   onOpen: (t: Trade) => void;
 }) {
-  const colSpan = 16;
   return (
     <>
       {group.label && (
@@ -151,7 +179,8 @@ function DayBlock({
                   group.pnl >= 0 ? "text-primary" : "text-destructive"
                 }`}
               >
-                day {formatSigned(group.pnl)} · {group.rows.length} {group.rows.length === 1 ? "trade" : "trades"}
+                day {formatSigned(group.pnl)} · {group.rows.length}{" "}
+                {group.rows.length === 1 ? "trade" : "trades"}
               </span>
             </div>
           </td>
@@ -172,7 +201,7 @@ function DayBlock({
                 {String(i + 1).padStart(2, "0")}
               </span>
             </td>
-            <td className="p-2 lg:p-3">
+            <td className="sticky left-9 z-10 bg-card group-hover:bg-muted/30 p-2 lg:p-3">
               <div className="flex items-center gap-1.5">
                 {getAssetIconUrl(t.symbol) && (
                   <img src={getAssetIconUrl(t.symbol)!} alt="" className="w-5 h-5 rounded-full" />
@@ -259,7 +288,7 @@ function DayBlock({
                     t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"
                   }`}
                 >
-                  {formatSigned(t.netPnl)}
+                  {formatPnl(t.netPnl)}
                 </td>
                 <td className="p-2 lg:p-3 font-mono tabular-nums text-[12px]">
                   {formatSigned(t.actualRr, 1)} / {t.maxRr}
@@ -302,12 +331,14 @@ function DayBlock({
               </td>
             )}
             {show("analysis") && (
-              <td className="p-2 lg:p-3">
+              <td className="p-2 lg:p-3 max-w-[200px] overflow-hidden">
                 <TradeAnalysisChips trade={t} schema={executionSchema} compact />
               </td>
             )}
-            <td className="p-2 lg:p-3 text-xs text-muted-foreground truncate max-w-[240px]">
-              {excerpt || "—"}
+            <td className="p-2 lg:p-3 text-xs text-muted-foreground">
+              <span className="block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
+                {excerpt || "—"}
+              </span>
             </td>
           </tr>
         );

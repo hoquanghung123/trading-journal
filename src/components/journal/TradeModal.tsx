@@ -317,11 +317,11 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                               ? "bg-muted text-muted-foreground border-border scale-[1.02]"
                               : s === "Opened"
                                 ? "bg-primary text-primary-foreground border-primary shadow-primary/20 scale-[1.02]"
-                                : "bg-warning text-white border-warning shadow-warning/20 scale-[1.02]"
+                                : "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 scale-[1.02]"
                             : "bg-background border-border text-muted-foreground hover:border-primary/30"
                         }`}
                       >
-                        {s}
+                        {s === "Not Started" ? "Draft" : s}
                       </button>
                     ))}
                   </div>

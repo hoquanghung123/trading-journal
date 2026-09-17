@@ -19,7 +19,7 @@ import {
   upsertTrade,
   type Trade,
 } from "@/lib/trades";
-import { isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import { isWithinInterval, startOfDay, endOfDay, parseISO, format } from "date-fns";
 import { DateRangePicker } from "../shared/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { onRequestNewTrade, onRequestOpenTrade } from "@/lib/nav-bus";
@@ -39,11 +39,19 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { fetchSettings, updateSettings } from "@/lib/settings";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   computeFilterPulse,
+  formatPnl,
   formatSigned,
   normalizeTradeLogView,
   TRADE_LOG_VIEWS,
@@ -78,7 +86,7 @@ const COL_LABELS: Record<ColKey, string> = {
 };
 
 const FILTERS_KEY = "trade-log-filters";
-const COLS_KEY = "trade-log-cols";
+const COLS_KEY = "trade-log-cols-v2";
 
 type SideFilter = "ALL" | "buy" | "sell";
 type OutcomeFilter = "ALL" | "Win" | "Loss" | "BE";
@@ -105,8 +113,8 @@ const DEFAULT_COLS: Record<ColKey, boolean> = {
   grade: true,
   outcome: true,
   side: true,
-  bias: true,
-  analysis: true,
+  bias: false,
+  analysis: false,
 };
 
 function loadFilters(): PersistedFilters {
@@ -154,6 +162,7 @@ export function TradeLog() {
     savedFilters.complianceFilter ?? "ALL",
   );
   const [viewOverride, setViewOverride] = useState<TradeLogView | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
 
@@ -311,22 +320,62 @@ export function TradeLog() {
     setDateRange(undefined);
   };
 
-  const chip = (active: boolean) =>
-    `px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap ${
-      active
-        ? "bg-primary text-white border-primary"
-        : "border-border bg-card text-muted-foreground hover:text-foreground"
-    }`;
+  const activeChips: { id: string; label: string; onClear: () => void }[] = [];
+  if (query.trim()) {
+    activeChips.push({ id: "q", label: query.trim(), onClear: () => setQuery("") });
+  }
+  if (symbolFilter !== "ALL") {
+    activeChips.push({ id: "sym", label: symbolFilter, onClear: () => setSymbolFilter("ALL") });
+  }
+  if (setupFilter !== "ALL") {
+    activeChips.push({
+      id: "model",
+      label: playbookName(setupFilter) ?? "Model",
+      onClear: () => setSetupFilter("ALL"),
+    });
+  }
+  if (sideFilter !== "ALL") {
+    activeChips.push({
+      id: "side",
+      label: sideFilter,
+      onClear: () => setSideFilter("ALL"),
+    });
+  }
+  if (outcomeFilter !== "ALL") {
+    activeChips.push({
+      id: "out",
+      label: outcomeFilter,
+      onClear: () => setOutcomeFilter("ALL"),
+    });
+  }
+  if (complianceFilter !== "ALL") {
+    activeChips.push({
+      id: "pb",
+      label: complianceFilter === "yes" ? "Followed" : "Broke",
+      onClear: () => setComplianceFilter("ALL"),
+    });
+  }
+  if (dateRange?.from) {
+    const from = format(dateRange.from, "d MMM");
+    const to = dateRange.to ? format(dateRange.to, "d MMM") : from;
+    activeChips.push({
+      id: "date",
+      label: from === to ? from : `${from} – ${to}`,
+      onClear: () => setDateRange(undefined),
+    });
+  }
 
   const ticketGroups = useMemo(() => {
     const map = new Map<string, { name: string; pnl: number; rows: Trade[] }>();
+    const seen = new Set<string>();
     for (const t of sorted) {
-      const key = t.setupId ?? "none";
+      if (seen.has(t.id)) continue;
+      seen.add(t.id);
       const name = playbookName(t.setupId) ?? "Unassigned";
-      const g = map.get(key) ?? { name, pnl: 0, rows: [] };
+      const g = map.get(name) ?? { name, pnl: 0, rows: [] };
       g.pnl += t.netPnl;
       g.rows.push(t);
-      map.set(key, g);
+      map.set(name, g);
     }
     return Array.from(map.values());
   }, [sorted, playbookSetups]);
@@ -340,36 +389,21 @@ export function TradeLog() {
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-10">
-      <div className="max-w-[1500px] mx-auto space-y-6 lg:space-y-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-border pb-6 lg:pb-8 gap-6">
-          <div className="flex items-center justify-between w-full lg:w-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <FileText className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                  Trade Log
-                </h1>
-                <p className="text-[10px] lg:text-sm text-muted-foreground font-medium uppercase tracking-wider">
-                  {filteredTrades.length} recorded entries
-                </p>
-              </div>
+      <div className="max-w-[1500px] mx-auto space-y-4 lg:space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <FileText className="w-6 h-6 text-primary" />
             </div>
-            <button
-              type="button"
-              onClick={openNew}
-              aria-label="New trade"
-              className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95 transition-all"
-            >
-              <Plus className="w-6 h-6" strokeWidth={3} />
-            </button>
+            <div className="min-w-0">
+              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Trade Log</h1>
+              <p className="text-[10px] lg:text-xs text-muted-foreground font-semibold uppercase tracking-widest">
+                NY blotter
+              </p>
+            </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 overflow-x-auto hide-scrollbar pb-1 lg:pb-0">
-            <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full sm:w-auto" />
-
-            <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border/50 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden sm:flex items-center bg-muted/50 p-1 rounded-xl border border-border/50">
               {TRADE_LOG_VIEWS.map((v) => {
                 const Icon = viewIcon(v.id);
                 return (
@@ -377,150 +411,185 @@ export function TradeLog() {
                     key={v.id}
                     type="button"
                     onClick={() => handleUpdateView(v.id)}
-                    className={`p-2 rounded-lg transition-all ${
+                    aria-label={v.label}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
                       viewMode === v.id
                         ? "bg-card text-primary shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
-                    title={v.label}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5 sm:hidden" />
+                    <span>{v.label}</span>
                   </button>
                 );
               })}
             </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card text-xs lg:text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-all shadow-sm whitespace-nowrap">
-                <Settings2 className="w-4 h-4" /> Columns
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-card border-border text-foreground rounded-xl shadow-xl">
-                <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 py-2">
-                  Toggle Columns
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {(Object.keys(COL_LABELS) as ColKey[])
-                  .filter((k) => k !== "grade" || settings?.showTradeGrade)
-                  .map((k) => (
-                    <DropdownMenuCheckboxItem
-                      key={k}
-                      checked={cols[k]}
-                      onCheckedChange={(v) => setCols((c) => ({ ...c, [k]: !!v }))}
-                      onSelect={(e) => e.preventDefault()}
-                      className="font-medium"
-                    >
-                      {COL_LABELS[k]}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
+            {viewMode === "ledger" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="hidden sm:flex items-center gap-2 h-9 px-3 rounded-xl border border-border bg-card text-[11px] font-bold text-muted-foreground hover:text-foreground">
+                  <Settings2 className="w-4 h-4" /> Columns
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-card border-border text-foreground rounded-xl shadow-xl">
+                  <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-3 py-2">
+                    Toggle Columns
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {(Object.keys(COL_LABELS) as ColKey[])
+                    .filter((k) => k !== "grade" || settings?.showTradeGrade)
+                    .map((k) => (
+                      <DropdownMenuCheckboxItem
+                        key={k}
+                        checked={cols[k]}
+                        onCheckedChange={(v) => setCols((c) => ({ ...c, [k]: !!v }))}
+                        onSelect={(e) => e.preventDefault()}
+                        className="font-medium"
+                      >
+                        {COL_LABELS[k]}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <button
               type="button"
               onClick={openNew}
-              className="hidden lg:flex forest-gradient items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg hover:opacity-90 transition-all active:scale-95 whitespace-nowrap"
+              aria-label="New trade"
+              className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95"
             >
-              <Plus className="w-5 h-5" /> New Trade
+              <Plus className="w-6 h-6" strokeWidth={3} />
+            </button>
+            <button
+              type="button"
+              onClick={openNew}
+              className="hidden lg:flex forest-gradient items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg hover:opacity-90 active:scale-95"
+            >
+              <Plus className="w-5 h-5" /> New trade
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex sm:hidden items-center bg-muted/50 p-1 rounded-xl border border-border/50 overflow-x-auto hide-scrollbar">
+          {TRADE_LOG_VIEWS.map((v) => {
+            const Icon = viewIcon(v.id);
+            return (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => handleUpdateView(v.id)}
+                aria-label={v.label}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap ${
+                  viewMode === v.id ? "bg-card text-primary shadow-sm" : "text-muted-foreground"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {v.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search notes or symbol"
-              className="h-9 w-44 sm:w-56 rounded-lg border border-border bg-card pl-8 pr-3 text-xs font-medium outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="Symbol or notes"
+              className="h-10 w-full rounded-xl border border-border bg-card pl-8 pr-3 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          <select
-            value={symbolFilter}
-            onChange={(e) => setSymbolFilter(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-card px-3 text-xs font-bold"
-          >
-            <option value="ALL">All symbols</option>
-            {symbolsInLog.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            value={setupFilter}
-            onChange={(e) => setSetupFilter(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-card px-3 text-xs font-bold"
-          >
-            <option value="ALL">All models</option>
-            {playbookSetups.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-          {(["ALL", "buy", "sell"] as const).map((s) => (
-            <button key={s} type="button" onClick={() => setSideFilter(s)} className={chip(sideFilter === s)}>
-              {s === "ALL" ? "Side" : s}
-            </button>
-          ))}
-          {(["ALL", "Win", "Loss", "BE"] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setOutcomeFilter(s)}
-              className={chip(outcomeFilter === s)}
-            >
-              {s === "ALL" ? "Outcome" : s}
-            </button>
-          ))}
-          {(["ALL", "yes", "no"] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setComplianceFilter(s)}
-              className={chip(complianceFilter === s)}
-            >
-              {s === "ALL" ? "Playbook" : s === "yes" ? "Followed" : "Broke"}
-            </button>
-          ))}
-          {filtersActive && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-[10px] font-black uppercase tracking-wider text-destructive underline underline-offset-2"
-            >
-              Clear filters
-            </button>
-          )}
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <SheetTrigger className="sm:hidden h-10 px-3 rounded-xl border border-border bg-card text-[11px] font-black uppercase tracking-wider">
+              Filters
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl">
+              <SheetHeader>
+                <SheetTitle>Filters</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-4">
+                <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full" />
+                <div className="flex flex-wrap gap-2">
+                  <FilterControls
+                    symbolsInLog={symbolsInLog}
+                    playbookSetups={playbookSetups}
+                    symbolFilter={symbolFilter}
+                    setupFilter={setupFilter}
+                    sideFilter={sideFilter}
+                    outcomeFilter={outcomeFilter}
+                    complianceFilter={complianceFilter}
+                    setSymbolFilter={setSymbolFilter}
+                    setSetupFilter={setSetupFilter}
+                    setSideFilter={setSideFilter}
+                    setOutcomeFilter={setOutcomeFilter}
+                    setComplianceFilter={setComplianceFilter}
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
 
+        <div className="hidden sm:flex flex-wrap items-center gap-2">
+          <DateRangePicker date={dateRange} setDate={setDateRange} className="w-auto" />
+          <FilterControls
+            symbolsInLog={symbolsInLog}
+            playbookSetups={playbookSetups}
+            symbolFilter={symbolFilter}
+            setupFilter={setupFilter}
+            sideFilter={sideFilter}
+            outcomeFilter={outcomeFilter}
+            complianceFilter={complianceFilter}
+            setSymbolFilter={setSymbolFilter}
+            setSetupFilter={setSetupFilter}
+            setSideFilter={setSideFilter}
+            setOutcomeFilter={setOutcomeFilter}
+            setComplianceFilter={setComplianceFilter}
+          />
+        </div>
+
+        {(activeChips.length > 0 || filtersActive) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {activeChips.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={c.onClear}
+                className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-primary text-white border-primary"
+              >
+                {c.label} ×
+              </button>
+            ))}
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-[10px] font-black uppercase tracking-wider text-destructive underline underline-offset-2"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
         {sorted.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="px-3 py-1.5 border-b border-border flex items-center justify-between">
-              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                Pulse of current filter
-              </p>
-            </div>
-            <div className="grid grid-cols-3 lg:grid-cols-5">
-              <PulseCell label="Trades" value={String(pulse.count)} />
-              <PulseCell
-                label="Net PnL"
-                value={formatSigned(pulse.pnl)}
-                tone={pulse.pnl > 0 ? "up" : pulse.pnl < 0 ? "down" : undefined}
-              />
-              <PulseCell label="Win" value={`${pulse.winRate.toFixed(0)}%`} />
-              <PulseCell
-                label="Avg R"
-                value={`${formatSigned(pulse.avgR, 1)}R`}
-                className="hidden lg:block"
-              />
-              <PulseCell
-                label="Playbook"
-                value={`${pulse.followed}/${pulse.count}`}
-                className="hidden lg:block"
-              />
-            </div>
+          <div className="flex overflow-hidden rounded-xl border border-border bg-card">
+            <PulseCell label="Trades" value={String(pulse.count)} />
+            <PulseCell
+              label="Net"
+              value={formatSigned(pulse.pnl)}
+              tone={pulse.pnl > 0 ? "up" : pulse.pnl < 0 ? "down" : undefined}
+            />
+            <PulseCell label="Win" value={`${pulse.winRate.toFixed(0)}%`} />
+            <PulseCell
+              label="Avg R"
+              value={`${formatSigned(pulse.avgR, 1)}R`}
+              className="hidden lg:block"
+            />
+            <PulseCell
+              label="Playbook"
+              value={`${pulse.followed}/${pulse.count}`}
+              className="hidden lg:block"
+            />
           </div>
         )}
 
@@ -558,8 +627,12 @@ export function TradeLog() {
                 <section key={g.name}>
                   <div className="flex items-baseline justify-between mb-3">
                     <h3 className="text-sm font-black tracking-tight">{g.name}</h3>
-                    <p className="font-mono tabular-nums text-[11px] font-bold text-primary">
-                      {g.rows.length} trades · {formatSigned(g.pnl)}
+                    <p
+                      className={`font-mono tabular-nums text-[11px] font-bold ${
+                        g.pnl > 0 ? "text-primary" : g.pnl < 0 ? "text-destructive" : "text-muted-foreground"
+                      }`}
+                    >
+                      {g.rows.length} {g.rows.length === 1 ? "trade" : "trades"} · {formatPnl(g.pnl)}
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -613,15 +686,129 @@ function PulseCell({
   className?: string;
 }) {
   return (
-    <div className={`px-4 py-3 relative after:absolute after:right-0 after:top-2 after:bottom-2 after:w-px after:bg-border last:after:hidden ${className}`}>
-      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+    <div className={`px-3 py-2 border-l border-border first:border-l-0 min-w-0 ${className}`}>
+      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
       <p
-        className={`font-mono tabular-nums text-xl font-bold ${
+        className={`font-mono tabular-nums text-base font-bold ${
           tone === "up" ? "text-primary" : tone === "down" ? "text-destructive" : "text-foreground"
         }`}
       >
         {value}
       </p>
     </div>
+  );
+}
+
+function FilterSeg<T extends string>({
+  value,
+  all,
+  options,
+  onChange,
+}: {
+  value: T;
+  all: T;
+  options: { id: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="inline-flex overflow-hidden rounded-[10px] border border-border bg-card">
+      {options.map((o, i) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onChange(value === o.id ? all : o.id)}
+          className={`px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider ${
+            i ? "border-l border-border" : ""
+          } ${value === o.id ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FilterControls({
+  symbolsInLog,
+  playbookSetups,
+  symbolFilter,
+  setupFilter,
+  sideFilter,
+  outcomeFilter,
+  complianceFilter,
+  setSymbolFilter,
+  setSetupFilter,
+  setSideFilter,
+  setOutcomeFilter,
+  setComplianceFilter,
+}: {
+  symbolsInLog: string[];
+  playbookSetups: { id: string; name: string }[];
+  symbolFilter: string;
+  setupFilter: string;
+  sideFilter: SideFilter;
+  outcomeFilter: OutcomeFilter;
+  complianceFilter: ComplianceFilter;
+  setSymbolFilter: (v: string) => void;
+  setSetupFilter: (v: string) => void;
+  setSideFilter: (v: SideFilter) => void;
+  setOutcomeFilter: (v: OutcomeFilter) => void;
+  setComplianceFilter: (v: ComplianceFilter) => void;
+}) {
+  return (
+    <>
+      <FilterSeg
+        value={sideFilter}
+        all="ALL"
+        onChange={setSideFilter}
+        options={[
+          { id: "buy", label: "Buy" },
+          { id: "sell", label: "Sell" },
+        ]}
+      />
+      <FilterSeg
+        value={outcomeFilter}
+        all="ALL"
+        onChange={setOutcomeFilter}
+        options={[
+          { id: "Win", label: "Win" },
+          { id: "Loss", label: "Loss" },
+          { id: "BE", label: "BE" },
+        ]}
+      />
+      <FilterSeg
+        value={complianceFilter}
+        all="ALL"
+        onChange={setComplianceFilter}
+        options={[
+          { id: "yes", label: "Followed" },
+          { id: "no", label: "Broke" },
+        ]}
+      />
+      <select
+        value={symbolFilter}
+        onChange={(e) => setSymbolFilter(e.target.value)}
+        className="h-9 rounded-xl border border-border bg-card px-3 text-[11px] font-bold text-muted-foreground"
+      >
+        <option value="ALL">All symbols</option>
+        {symbolsInLog.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+      <select
+        value={setupFilter}
+        onChange={(e) => setSetupFilter(e.target.value)}
+        className="h-9 rounded-xl border border-border bg-card px-3 text-[11px] font-bold text-muted-foreground"
+      >
+        <option value="ALL">All models</option>
+        {playbookSetups.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+          </option>
+        ))}
+      </select>
+    </>
   );
 }
