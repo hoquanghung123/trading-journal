@@ -16,6 +16,7 @@ import { toast, Toaster } from "sonner";
 import {
   resolveTradingViewUrl,
   uploadChartImage,
+  deleteChartImage,
   upsertEntry,
   fetchEntries,
   weekdayOf,
@@ -23,8 +24,10 @@ import {
   calculateStreak,
   journalTradingDate,
   h4TabForNow,
+  classifyChartTimeframe,
   type DayEntry,
 } from "../lib/journal";
+import { fetchSymbols, normalizeJournalAsset } from "../lib/symbols";
 import { focusBiasEntry, navigateToPage, triggerCelebration } from "../lib/nav-bus";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../lib/query-client";
@@ -119,7 +122,7 @@ function RootComponent() {
       if (window.__JOURNAL_SYNC_IN_PROGRESS__) return;
       window.__JOURNAL_SYNC_IN_PROGRESS__ = true;
 
-      const { asset: targetAsset, timeframe, url } = data;
+      const { asset: rawAsset, timeframe, url } = data;
       const tvUrl = resolveTradingViewUrl(url);
 
       if (!tvUrl) {
@@ -129,25 +132,35 @@ function RootComponent() {
       }
 
       const today = journalTradingDate();
-      const tf = timeframe.toUpperCase();
+      const slot = classifyChartTimeframe(timeframe);
 
-      // Early validation for Monthly
-      if (
-        (tf === "M" || tf === "MONTH" || tf === "1M") &&
-        weekdayOf(today) !== "MON" &&
-        !today.endsWith("-01")
-      ) {
+      if (slot === "M" && weekdayOf(today) !== "MON" && !today.endsWith("-01")) {
         toast.error("Khung Monthly chỉ được phép lưu vào ngày Thứ 2 hoặc Ngày 1 đầu tháng!");
         window.__JOURNAL_SYNC_IN_PROGRESS__ = false;
         return;
       }
 
-      toast.info(`Nhận dữ liệu ${targetAsset}...`, { duration: 2000 });
+      toast.info(`Nhận dữ liệu ${rawAsset}...`, { duration: 2000 });
 
-      const toastId = toast.loading(`Đang đồng bộ ${targetAsset}...`);
+      const toastId = toast.loading(`Đang đồng bộ ${rawAsset}...`);
 
       try {
-        const currentEntries = await fetchEntries();
+        const [currentEntries, symbols] = await Promise.all([
+          fetchEntries(),
+          fetchSymbols().catch(() => []),
+        ]);
+        const todayAssets = currentEntries.filter((e) => e.date === today).map((e) => e.asset);
+        const allowed = [...new Set([...symbols.map((s) => s.name), ...todayAssets])];
+        const targetAsset = normalizeJournalAsset(String(rawAsset ?? ""), allowed);
+
+        if (!targetAsset) {
+          toast.error(
+            `Không nhận symbol "${rawAsset}". Thêm vào watchlist rồi thử lại.`,
+            { id: toastId },
+          );
+          return;
+        }
+
         let entry = currentEntries.find((e) => e.date === today && e.asset === targetAsset);
 
         if (!entry) {
@@ -169,30 +182,33 @@ function RootComponent() {
           };
         }
 
-        const path = await uploadChartImage(tvUrl);
+        let path: string;
+        try {
+          path = await uploadChartImage(tvUrl);
+        } catch (uploadErr) {
+          console.error("uploadChartImage failed, fallback to TV URL:", uploadErr);
+          path = tvUrl;
+        }
         const updatedEntry = { ...entry };
+        let oldPath: string | undefined;
+        let session = "";
 
-        if (tf === "M" || tf === "MONTH" || tf === "1M") {
-          const isMonday = weekdayOf(updatedEntry.date) === "MON";
-          const isFirstOfMonth = updatedEntry.date.endsWith("-01");
-
-          if (isMonday || isFirstOfMonth) {
-            toast.info("Đang lưu vào khung MONTHLY...");
-            updatedEntry.monthlyImg = path;
-          } else {
-            toast.error("Chỉ hỗ trợ lưu khung Monthly vào Thứ 2 hoặc Ngày 1 đầu tháng!");
-            return;
-          }
-        } else if (tf === "W" || tf === "WEEK") {
+        if (slot === "M") {
+          toast.info("Đang lưu vào khung MONTHLY...");
+          oldPath = entry.monthlyImg;
+          updatedEntry.monthlyImg = path;
+        } else if (slot === "W") {
           toast.info("Đang lưu vào khung WEEKLY...");
+          oldPath = entry.weeklyImg;
           updatedEntry.weeklyImg = path;
-        } else if (tf === "D" || tf === "DAY") {
+        } else if (slot === "D") {
           toast.info("Đang lưu vào khung DAILY...");
+          oldPath = entry.dailyImg;
           updatedEntry.dailyImg = path;
         } else {
-          const session = h4TabForNow(targetAsset);
-
+          session = h4TabForNow(targetAsset);
           toast.info(`Đang lưu vào khung H4 (${session})...`);
+          oldPath = entry.h4[session]?.img;
           updatedEntry.h4 = { ...entry.h4, [session]: { ...entry.h4[session], img: path } };
         }
 
@@ -201,6 +217,10 @@ function RootComponent() {
         );
 
         await upsertEntry(updatedEntry as DayEntry);
+
+        if (oldPath && oldPath !== path) {
+          deleteChartImage(oldPath).catch(() => {});
+        }
 
         const updatedList = [
           ...currentEntries.filter((x) => x.id !== updatedEntry.id),

@@ -93,6 +93,48 @@ export function useSymbols() {
   });
 }
 
+/** TV ticker families → journal watchlist names. */
+const ASSET_ALIAS_GROUPS: string[][] = [
+  ["GC1!", "GC", "XAUUSD", "XAU", "GOLD"],
+  ["SI1!", "SI", "XAGUSD", "XAG", "SILVER"],
+  ["BTCUSD", "BTCUSDT", "BTC"],
+  ["NQ1!", "NQ", "NAS100", "US100", "NDX", "NASDAQ"],
+  ["ES1!", "ES", "SPX", "SP500", "SPX500"],
+  ["YM1!", "YM", "US30", "DJ30", "DJI"],
+  ["CL1!", "CL", "WTI", "USOIL"],
+  ["DXY", "DX", "DX1!", "DOLLAR"],
+  ["FDAX1!", "FDAX", "DAX", "GER40"],
+  ["EURUSD", "EUR"],
+  ["GBPUSD", "GBP"],
+];
+
+/** Strip exchange prefix (`COMEX:GC1!`) and `.P` (`BTCUSDT.P`). */
+export function canonicalizeAssetTicker(raw: string): string {
+  let s = raw.trim().toUpperCase().replace(/\s/g, "");
+  const colon = s.lastIndexOf(":");
+  if (colon >= 0) s = s.slice(colon + 1);
+  if (s.endsWith(".P")) s = s.slice(0, -2);
+  return s;
+}
+
+/**
+ * Map a TradingView symbol onto a name in `allowed` (watchlist + today's entries).
+ * Returns null when nothing matches — caller must not create a ghost asset.
+ */
+export function normalizeJournalAsset(raw: string, allowed: string[]): string | null {
+  if (!raw || allowed.length === 0) return null;
+  const input = canonicalizeAssetTicker(raw);
+  const canonAllowed = allowed.map((name) => ({ name, key: canonicalizeAssetTicker(name) }));
+
+  const exact = canonAllowed.find((a) => a.key === input);
+  if (exact) return exact.name;
+
+  const group = ASSET_ALIAS_GROUPS.find((g) => g.includes(input));
+  if (!group) return null;
+  const hit = canonAllowed.find((a) => group.includes(a.key));
+  return hit?.name ?? null;
+}
+
 export function getAssetIconUrl(asset: string): string | null {
   const symbol = asset.toUpperCase();
   if (symbol.startsWith("BTC")) return "https://s3-symbol-logo.tradingview.com/crypto/XTVCBTC.svg";

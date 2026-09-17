@@ -1,37 +1,63 @@
 <!doctype html>
 <html>
   <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
     <style>
       body {
-        width: 250px;
-        padding: 20px;
-        font-family: sans-serif;
+        width: 260px;
+        padding: 16px;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
         background: #0a0a0a;
-        color: white;
+        color: #e8e8e8;
+        margin: 0;
       }
       h2 {
         color: #8cc63f;
-        margin-top: 0;
-        font-size: 16px;
+        margin: 0 0 10px;
+        font-size: 15px;
+        font-weight: 700;
       }
       p {
         font-size: 12px;
-        opacity: 0.8;
         line-height: 1.5;
+        margin: 0;
+        color: #c8c8c8;
       }
       .status {
-        background: #1a1a1a;
-        padding: 10px;
+        background: #141414;
+        padding: 12px;
         border-radius: 8px;
-        border: 1px solid #333;
+        border: 1px solid #2a2a2a;
+      }
+      ol {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        font-size: 12px;
+        line-height: 1.55;
+        color: #c8c8c8;
+      }
+      b {
+        color: #8cc63f;
+      }
+      .hint {
+        margin-top: 12px;
+        font-size: 11px;
+        color: #888;
       }
     </style>
   </head>
   <body>
     <h2>Trading Journal Sync</h2>
     <div class="status">
-      <p>Go to TradingView.com and look for the ✨ <b>Journal</b> icon in the top-left toolbar.</p>
+      <p>Trên chart TradingView, dải <b>SYNC</b> nằm mép phải (không phải icon trên toolbar).</p>
+      <ol>
+        <li>Mở tab Journal (localhost hoặc pages.dev).</li>
+        <li>Mở đúng symbol + timeframe.</li>
+        <li>Bấm SYNC — extension Copy link và gửi vào Bias hôm nay.</li>
+      </ol>
     </div>
-    <p style="margin-top: 15px; font-size: 10px">Status: Active & Ready</p>
+    <p class="hint">FAIL = chưa mở Journal, không thấy Camera, hoặc clipboard không có link /x/. Hover nút để xem lý do.</p>
   </body>
 </html>

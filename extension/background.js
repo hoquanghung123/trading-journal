@@ -1,38 +1,91 @@
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "FORWARD_TO_JOURNAL") {
-    console.log("Forwarding to journal:", message.data);
-
-    // Search for all possible journal tabs
-    chrome.tabs.query({}, (tabs) => {
-      const journalTabs = tabs.filter(
-        (t) =>
-          t.url &&
-          (t.url.includes("trading-journal-3di.pages.dev") ||
-            t.url.includes("localhost:8080") ||
-            t.url.includes("127.0.0.1")),
-      );
-
-      if (journalTabs.length > 0) {
-        journalTabs.forEach((tab) => {
-          console.log("Injecting SYNC into tab:", tab.url);
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: (data) => {
-              // MATCH THE FORMAT EXPECTED BY __root.tsx
-              window.postMessage(
-                {
-                  source: "JOURNAL_EXTENSION",
-                  payload: data,
-                },
-                "*",
-              );
-            },
-            args: [message.data],
-          });
-        });
-      } else {
-        console.error("No journal tabs found to receive data!");
-      }
-    });
+function isJournalUrl(url) {
+  if (!url) return false;
+  try {
+    const host = new URL(url).hostname;
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".pages.dev") ||
+      host === "trading-journal-3di.pages.dev"
+    );
+  } catch {
+    return false;
   }
+}
+
+function notify(message) {
+  chrome.notifications.create(
+    {
+      type: "basic",
+      iconUrl: chrome.runtime.getURL("icon.png"),
+      title: "Trading Journal Sync",
+      message,
+    },
+    () => {
+      void chrome.runtime.lastError;
+    },
+  );
+}
+
+function executeFallback(tabId, data) {
+  return new Promise((resolve, reject) => {
+    chrome.scripting.executeScript(
+      {
+        target: { tabId },
+        func: (payload) => {
+          window.postMessage({ source: "JOURNAL_EXTENSION", payload }, "*");
+        },
+        args: [data],
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve();
+        }
+      },
+    );
+  });
+}
+
+function forwardToTab(tabId, data) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, { type: "FORWARD_TO_JOURNAL", data }, () => {
+      if (!chrome.runtime.lastError) {
+        resolve();
+        return;
+      }
+      executeFallback(tabId, data).then(resolve).catch(reject);
+    });
+  });
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type !== "FORWARD_TO_JOURNAL") return undefined;
+
+  (async () => {
+    const tabs = await chrome.tabs.query({});
+    const journalTabs = tabs.filter((t) => isJournalUrl(t.url));
+
+    if (journalTabs.length === 0) {
+      notify("Mở tab Journal rồi bấm SYNC lại.");
+      sendResponse({ ok: false, error: "Mở tab Journal" });
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      journalTabs.map((tab) => forwardToTab(tab.id, message.data)),
+    );
+    const ok = results.some((r) => r.status === "fulfilled");
+    if (!ok) {
+      notify("Journal không nhận được. Reload tab Journal rồi thử lại.");
+      sendResponse({ ok: false, error: "Reload tab Journal" });
+      return;
+    }
+    sendResponse({ ok: true });
+  })().catch((err) => {
+    sendResponse({ ok: false, error: err?.message || "Lỗi extension" });
+  });
+
+  return true;
 });

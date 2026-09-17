@@ -232,6 +232,24 @@ export function nextKillzoneOpen(next: Session): { name: string; clock: string }
   return { name: "NY", clock: "08:00" };
 }
 
+export type ChartSlotKind = "M" | "W" | "D" | "H4";
+
+/**
+ * Classify a TradingView interval label into a journal slot.
+ * Must not uppercase first: `1m` is a minute chart, `1M` is monthly.
+ */
+export function classifyChartTimeframe(raw: string | undefined | null): ChartSlotKind {
+  const compact = String(raw ?? "")
+    .trim()
+    .replace(/\s+/g, "");
+  if (!compact) return "H4";
+  if (/^(1)?M$/.test(compact) || /^1MO$/i.test(compact) || /^MONTH/i.test(compact)) return "M";
+  if (/^(1)?W$/i.test(compact) || /^WEEK/i.test(compact)) return "W";
+  if (/^(1)?D$/i.test(compact) || /^DAY/i.test(compact)) return "D";
+  if (/^(4H|H4|240|4HOUR)$/i.test(compact)) return "H4";
+  return "H4";
+}
+
 /** H4 tab that matches SessionChip, mapped to the asset's session list. */
 export function h4TabForNow(asset: string, now = new Date()): Session {
   const kz = getActiveKillzone(now).session;
