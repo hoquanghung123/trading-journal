@@ -177,7 +177,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
                           setLocalSettings({ ...localSettings, primaryColor: val });
                         }
                       }}
-                      className="flex-1 h-10 bg-muted/30 border-border rounded-lg px-3 font-mono text-sm font-bold focus:ring-primary/20 transition-all"
+                      className="flex-1 h-10 bg-muted/30 border-border rounded-lg px-3 text-sm font-bold tabular-nums focus:ring-primary/20 transition-all"
                       placeholder="#FFFFFF"
                     />
                   </div>

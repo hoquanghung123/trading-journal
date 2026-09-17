@@ -370,9 +370,12 @@ export function StrategyDetail({
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${model.name} — Playbook Backup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; padding: 3rem 1rem; }
+    body { font-family: Inter, system-ui, -apple-system, sans-serif; background: #f8fafc; color: #0f172a; padding: 3rem 1rem; }
     .wrapper { max-width: 900px; margin: 0 auto; }
     .header { background: #fff; border-radius: 32px; padding: 2.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
     .header h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: -.04em; text-transform: uppercase; color: #4C763B; }

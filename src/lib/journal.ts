@@ -638,7 +638,6 @@ export function biasStyle(b: Bias): CSSProperties {
     color: fg,
     borderRadius: "6px",
     fontWeight: "800",
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
   };
 }
 

@@ -99,7 +99,7 @@ export function TradeTicketCard({
               {trade.side.toUpperCase()}
             </span>
           </p>
-          <p className="font-mono tabular-nums text-[11px] text-muted-foreground mt-1">
+          <p className="tabular-nums text-[11px] text-muted-foreground mt-1">
             {formatNyStamp(trade.entryTime)} NY
           </p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-3">
@@ -122,14 +122,14 @@ export function TradeTicketCard({
         </div>
         <div className="text-right shrink-0">
           <p
-            className={`font-mono tabular-nums text-[28px] leading-none font-bold tracking-tight ${
+            className={`tabular-nums text-[28px] leading-none font-bold tracking-tight ${
               win ? "text-primary" : loss ? "text-destructive" : "text-warning"
             }`}
           >
             {formatSigned(trade.actualRr, 1)}R
           </p>
           <p
-            className={`font-mono tabular-nums text-xs font-bold mt-1 ${
+            className={`tabular-nums text-xs font-bold mt-1 ${
               trade.netPnl > 0 ? "text-primary" : trade.netPnl < 0 ? "text-destructive" : "text-muted-foreground"
             }`}
           >

@@ -72,7 +72,7 @@ export function SessionChip({ selected, onSelect }: Props) {
               <span className="text-[8px] sm:text-[9px] font-black tracking-wider leading-tight whitespace-nowrap">
                 {chip}
               </span>
-              <span className="text-[8px] font-semibold font-mono tabular-nums leading-tight mt-0.5 opacity-70">
+              <span className="text-[8px] font-semibold tabular-nums leading-tight mt-0.5 opacity-70">
                 {KILLZONE_OPEN_CLOCK[chip]}
               </span>
               {isLive && (
@@ -98,7 +98,7 @@ export function SessionChip({ selected, onSelect }: Props) {
         }`}
       >
         <p
-          className={`font-mono tabular-nums text-[13px] font-bold ${
+          className={`tabular-nums text-[13px] font-bold ${
             urgent ? "animate-pulse" : ""
           }`}
         >

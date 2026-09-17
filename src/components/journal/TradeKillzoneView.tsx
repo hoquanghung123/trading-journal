@@ -115,11 +115,11 @@ export function TradeKillzoneView({
                 {now ? " · now" : ""}
               </p>
               {s.count === 0 ? (
-                <p className="font-mono text-[13px] font-bold">0</p>
+                <p className="tabular-nums text-[13px] font-bold">0</p>
               ) : (
                 <>
                   <p
-                    className={`font-mono text-[13px] font-bold ${
+                    className={`tabular-nums text-[13px] font-bold ${
                       s.pnl >= 0 ? "text-primary" : "text-destructive"
                     }`}
                   >
@@ -150,7 +150,7 @@ export function TradeKillzoneView({
                 )}
                 {lane.label}
               </p>
-              <div className="flex justify-between font-mono text-[8px] font-bold text-muted-foreground/70 pr-2">
+              <div className="flex justify-between tabular-nums text-[8px] font-bold text-muted-foreground/70 pr-2">
                 {lane.ticks.map((tick) => (
                   <span key={tick}>{tick}</span>
                 ))}
@@ -168,7 +168,7 @@ export function TradeKillzoneView({
               <div className="p-3 bg-muted/40 rounded-l-2xl">
                 <p className="text-[11px] font-black">{day.label}</p>
                 <p
-                  className={`font-mono tabular-nums text-[11px] font-bold ${
+                  className={`tabular-nums text-[11px] font-bold ${
                     day.pnl >= 0 ? "text-primary" : "text-destructive"
                   }`}
                 >
@@ -252,7 +252,7 @@ export function TradeKillzoneView({
           <p className="text-sm font-black">
             {selected.symbol} {selected.side}
           </p>
-          <p className="font-mono text-xs font-bold mt-0.5">
+          <p className="tabular-nums text-xs font-bold mt-0.5">
             {formatSigned(selected.actualRr, 1)}R · {formatPnl(selected.netPnl)}
           </p>
           {notesExcerpt(selected.notes, 120) && (

@@ -280,7 +280,7 @@ export function TradingCalendar() {
                                   <div className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-80 mb-0.5 sm:mb-1">
                                     {dayInfo.count} {dayInfo.count === 1 ? "Trade" : "Trades"}
                                   </div>
-                                  <div className="text-sm sm:text-lg font-black font-mono">
+                                  <div className="text-sm sm:text-lg font-black tabular-nums">
                                     {dayInfo.pnl >= 0 ? "+" : ""}$
                                     {Math.abs(dayInfo.pnl).toLocaleString()}
                                   </div>
@@ -299,7 +299,7 @@ export function TradingCalendar() {
                       })}
                       <div className="hidden md:flex flex-col items-center justify-center bg-slate-50/50">
                         <span
-                          className={`text-sm font-bold font-mono ${weeklyPnl >= 0 ? "text-bull" : "text-destructive"}`}
+                          className={`text-sm font-bold tabular-nums ${weeklyPnl >= 0 ? "text-bull" : "text-destructive"}`}
                         >
                           {weeklyPnl >= 0 ? "+" : ""}${Math.abs(weeklyPnl).toLocaleString()}
                         </span>
@@ -345,7 +345,7 @@ export function TradingCalendar() {
                           <div className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-80 mb-1">
                             {stats.count} {stats.count === 1 ? "Trade" : "Trades"}
                           </div>
-                          <div className="text-lg sm:text-2xl font-black font-mono">
+                          <div className="text-lg sm:text-2xl font-black tabular-nums">
                             {stats.pnl >= 0 ? "+" : ""}${Math.abs(stats.pnl).toLocaleString()}
                           </div>
                           <div className="text-xs sm:text-sm font-bold opacity-90">
@@ -400,7 +400,7 @@ export function TradingCalendar() {
                           <div className="text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-80 mb-1">
                             {stats.count} {stats.count === 1 ? "Trade" : "Trades"}
                           </div>
-                          <div className="text-lg sm:text-2xl font-black font-mono">
+                          <div className="text-lg sm:text-2xl font-black tabular-nums">
                             {stats.pnl >= 0 ? "+" : ""}${Math.abs(stats.pnl).toLocaleString()}
                           </div>
                           <div className="text-xs sm:text-sm font-bold opacity-90">

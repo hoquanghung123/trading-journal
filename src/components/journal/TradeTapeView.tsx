@@ -77,14 +77,14 @@ export function TradeTapeView({
               >
                 {t.side}
               </span>
-              <span className="hidden lg:block font-mono tabular-nums text-[11px] font-semibold text-muted-foreground">
+              <span className="hidden lg:block tabular-nums text-[11px] font-semibold text-muted-foreground">
                 {formatNyDateTime(t.entryTime)}
               </span>
-              <span className="hidden lg:block font-mono tabular-nums text-[12px] font-bold">
+              <span className="hidden lg:block tabular-nums text-[12px] font-bold">
                 {formatSigned(t.actualRr, 1)}R
               </span>
               <span
-                className={`font-mono tabular-nums text-[12px] font-bold ${
+                className={`tabular-nums text-[12px] font-bold ${
                   t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"
                 }`}
               >

@@ -890,7 +890,7 @@ function AdminBackupsDashboard() {
                             {/* Path info */}
                             <td className="px-6 py-4">
                               <div className="flex flex-col gap-0.5 max-w-md truncate">
-                                <span className="font-bold text-foreground/80 font-mono text-[11px] truncate" title={log.path}>
+                                <span className="font-bold text-foreground/80 text-[11px] truncate" title={log.path}>
                                   {userPrefix && <span className="text-muted-foreground/60">{userPrefix}/</span>}
                                   <span className="text-foreground">{fileName}</span>
                                 </span>
@@ -977,7 +977,7 @@ function AdminBackupsDashboard() {
                     type="date"
                     value={selectedHistoryDate}
                     onChange={(e) => setSelectedHistoryDate(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl bg-muted/50 dark:bg-black/40 border border-border/50 text-foreground text-xs font-bold font-mono focus:border-primary/60 focus:outline-none transition-colors animate-all"
+                    className="w-full h-12 px-4 rounded-xl bg-muted/50 dark:bg-black/40 border border-border/50 text-foreground text-xs font-bold tabular-nums focus:border-primary/60 focus:outline-none transition-colors animate-all"
                   />
                 </div>
               </div>
@@ -1072,7 +1072,7 @@ function AdminBackupsDashboard() {
                                 {/* Left side: revision meta */}
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-3">
-                                    <span className="text-xs font-mono font-bold text-foreground">
+                                    <span className="text-xs font-bold tabular-nums text-foreground">
                                       {formatDateTime(group.history_timestamp)}
                                     </span>
                                     {group.history_action === "UPDATE" ? (
@@ -1084,7 +1084,7 @@ function AdminBackupsDashboard() {
                                         DELETE
                                       </span>
                                     )}
-                                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                                       {group.table_name}
                                     </span>
                                   </div>
@@ -1160,7 +1160,7 @@ function AdminBackupsDashboard() {
 
                                   return (
                                     <div key={item.history_id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-muted/5 transition-colors">
-                                      <div className="text-[11px] text-foreground/80 font-mono truncate max-w-lg">
+                                      <div className="text-[11px] text-foreground/80 truncate max-w-lg">
                                         {summaryText}
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
@@ -1244,7 +1244,7 @@ function AdminBackupsDashboard() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto font-mono text-xs text-slate-300 space-y-4 flex-1">
+            <div className="p-6 overflow-y-auto text-xs text-slate-300 space-y-4 flex-1">
               <div className="grid grid-cols-2 gap-4 bg-muted/10 p-4 rounded-xl border border-border/40">
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
@@ -1312,7 +1312,7 @@ function AdminBackupsDashboard() {
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
                       Tên tệp tin
                     </span>
-                    <span className="font-mono font-bold text-foreground text-xs break-all">
+                    <span className="font-bold text-foreground text-xs break-all">
                       {selectedRealtimeLog.path.substring(selectedRealtimeLog.path.indexOf("/") + 1)}
                     </span>
                   </div>
@@ -1342,7 +1342,7 @@ function AdminBackupsDashboard() {
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
                     Đường dẫn Cloudflare R2
                   </span>
-                  <span className="font-mono text-slate-400 break-all">{selectedRealtimeLog.path}</span>
+                  <span className="text-slate-400 break-all">{selectedRealtimeLog.path}</span>
                 </div>
 
                 <div>
@@ -1449,7 +1449,7 @@ function AdminBackupsDashboard() {
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
                       ID bản ghi / Bảng hệ thống
                     </span>
-                    <span className="font-bold text-foreground text-[10px] font-mono break-all block mt-0.5">
+                    <span className="font-bold text-foreground text-[10px] break-all block mt-0.5">
                       {selectedHistoryVersion.row_id} ({tableName})
                     </span>
                   </div>
@@ -1635,7 +1635,7 @@ function AdminBackupsDashboard() {
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">setup_id (Thiết lập)</span>
-                        <span className="font-mono text-[10px] text-muted-foreground truncate block mt-0.5">{snap.setup_id || "Chưa gán"}</span>
+                        <span className="text-[10px] text-muted-foreground truncate block mt-0.5">{snap.setup_id || "Chưa gán"}</span>
                       </div>
                     </div>
 
@@ -1703,7 +1703,7 @@ function AdminBackupsDashboard() {
                       </div>
                       <div>
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">ID Giao Dịch liên kết</span>
-                        <span className="font-mono text-[10px] text-muted-foreground mt-1 truncate block">{snap.trade_id || "N/A"}</span>
+                        <span className="text-[10px] text-muted-foreground mt-1 truncate block">{snap.trade_id || "N/A"}</span>
                       </div>
                     </div>
 

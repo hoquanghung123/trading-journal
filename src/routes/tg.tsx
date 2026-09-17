@@ -868,7 +868,7 @@ function TgMiniApp() {
         >
           <div>
             <div style={{ color: "#778792", fontSize: 11, marginBottom: 2 }}>Daily Reset (5:00 PM NY)</div>
-            <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 700, color: "#6B9A5C" }}>
+            <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 22, fontWeight: 700, color: "#6B9A5C" }}>
               {fmtCountdown(countdown)}
             </div>
           </div>

@@ -631,7 +631,7 @@ export function TradeLog() {
                   <div className="flex items-baseline justify-between mb-3">
                     <h3 className="text-sm font-black tracking-tight">{g.name}</h3>
                     <p
-                      className={`font-mono tabular-nums text-[11px] font-bold ${
+                      className={`tabular-nums text-[11px] font-bold ${
                         g.pnl > 0 ? "text-primary" : g.pnl < 0 ? "text-destructive" : "text-muted-foreground"
                       }`}
                     >
@@ -692,7 +692,7 @@ function PulseCell({
     <div className={`px-3 py-2 border-l border-border first:border-l-0 min-w-0 ${className}`}>
       <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
       <p
-        className={`font-mono tabular-nums text-base font-bold ${
+        className={`tabular-nums text-base font-bold ${
           tone === "up" ? "text-primary" : tone === "down" ? "text-destructive" : "text-foreground"
         }`}
       >

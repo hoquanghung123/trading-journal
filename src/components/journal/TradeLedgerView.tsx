@@ -175,7 +175,7 @@ function DayBlock({
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black tracking-tight">{group.label} · NY</span>
               <span
-                className={`font-mono tabular-nums text-[11px] font-bold ${
+                className={`tabular-nums text-[11px] font-bold ${
                   group.pnl >= 0 ? "text-primary" : "text-destructive"
                 }`}
               >
@@ -230,7 +230,7 @@ function DayBlock({
               </td>
             )}
             {show("entryTime") && (
-              <td className="p-2 lg:p-3 font-mono tabular-nums text-[11px] text-muted-foreground">
+              <td className="p-2 lg:p-3 tabular-nums text-[11px] text-muted-foreground">
                 {formatNyClock(t.entryTime)}
               </td>
             )}
@@ -284,13 +284,13 @@ function DayBlock({
             {show("stats") && (
               <>
                 <td
-                  className={`p-2 lg:p-3 font-mono tabular-nums font-bold ${
+                  className={`p-2 lg:p-3 tabular-nums font-bold ${
                     t.netPnl > 0 ? "text-primary" : t.netPnl < 0 ? "text-destructive" : "text-muted-foreground"
                   }`}
                 >
                   {formatPnl(t.netPnl)}
                 </td>
-                <td className="p-2 lg:p-3 font-mono tabular-nums text-[12px]">
+                <td className="p-2 lg:p-3 tabular-nums text-[12px]">
                   {formatSigned(t.actualRr, 1)} / {t.maxRr}
                 </td>
               </>

@@ -7,6 +7,8 @@ import {
   useRouter,
   useLocation,
 } from "@tanstack/react-router";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/inter/wght-italic.css";
 import appCss from "../styles.css?url";
 import tgCss from "../tg-mini-app.css?url";
 import { useEffect } from "react";

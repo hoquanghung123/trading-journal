@@ -212,7 +212,7 @@ export function TodaySwissTapes({
                 <AssetIcon asset={entry.asset} />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-black text-base text-foreground tracking-tight">
+                    <span className="font-black text-base text-foreground tracking-tight">
                       {entry.asset}
                     </span>
                     <button
@@ -245,7 +245,7 @@ export function TodaySwissTapes({
                       M:
                     </span>
                     <span
-                      className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none font-mono tracking-wider shrink-0"
+                      className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none tracking-wider shrink-0"
                       style={biasStyle(entry.monthlyBias)}
                     >
                       {biasLabel(entry.monthlyBias)}
@@ -257,7 +257,7 @@ export function TodaySwissTapes({
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">W:</span>
                   <span
-                    className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none font-mono tracking-wider shrink-0"
+                    className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none tracking-wider shrink-0"
                     style={biasStyle(entry.weeklyBias)}
                   >
                     {biasLabel(entry.weeklyBias)}
@@ -269,7 +269,7 @@ export function TodaySwissTapes({
                 <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-secondary/40 border border-border/80 text-foreground">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase">D:</span>
                   <span
-                    className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none font-mono tracking-wider shrink-0"
+                    className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none tracking-wider shrink-0"
                     style={biasStyle(entry.dailyBias)}
                   >
                     {biasLabel(entry.dailyBias)}
@@ -290,7 +290,7 @@ export function TodaySwissTapes({
                         {sessionName}:
                       </span>
                       <span
-                        className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none font-mono tracking-wider shrink-0"
+                        className="px-1.5 py-0.5 rounded text-[8px] font-black leading-none tracking-wider shrink-0"
                         style={biasStyle(sessionBias)}
                       >
                         {biasLabel(sessionBias)}
@@ -558,7 +558,7 @@ export function TodaySwissTapes({
               className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-2.5 py-1.5 hover:border-primary/40 hover:bg-primary/5 transition-colors"
             >
               <AssetIcon asset={assetName} size="sm" />
-              <span className="font-mono text-[11px] font-bold text-foreground">{assetName}</span>
+              <span className="text-[11px] font-bold text-foreground">{assetName}</span>
             </button>
           ))}
         </div>
