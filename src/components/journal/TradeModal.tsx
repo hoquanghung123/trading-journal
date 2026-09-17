@@ -247,9 +247,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
           </div>
         </DialogHeader>
 
-        {/* Tab Navigation */}
-        <div className="px-4 sm:px-10 py-3 sm:py-4 bg-muted/10 border-b border-border/50 overflow-x-auto">
-          <div className="flex items-center gap-2 min-w-max">
+        <div className="px-6 sm:px-10 py-3 border-b border-border/50">
+          <div className="flex items-center bg-muted/50 p-1 rounded-2xl border border-border/50 overflow-x-auto hide-scrollbar">
             {(
               [
                 { id: "execution", label: "Execution", icon: Activity },
@@ -263,22 +262,23 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                className={`flex-1 flex items-center justify-center gap-1.5 min-w-[6.5rem] px-2.5 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${
                   activeTab === tab.id
-                    ? "forest-gradient text-white shadow-lg shadow-primary/20"
-                    : "bg-background border border-border/50 text-muted-foreground hover:bg-muted hover:border-primary/30"
+                    ? "bg-card text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <tab.icon
-                  className={`w-3.5 h-3.5 ${activeTab === tab.id ? "text-white" : "text-muted-foreground"}`}
-                />
+                <tab.icon className="w-3.5 h-3.5 shrink-0" />
                 {tab.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div ref={bodyRef} className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 space-y-8 sm:space-y-10">
+        <div
+          ref={bodyRef}
+          className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 space-y-8 sm:space-y-10 hide-scrollbar"
+        >
           {/* Tab: Execution */}
           {activeTab === "execution" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
