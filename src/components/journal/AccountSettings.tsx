@@ -129,6 +129,9 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
   const displayName = profile?.displayName || user?.email?.split("@")[0] || "Trader";
   const initial = (displayName.replace(/[^A-Za-z0-9]/g, "").charAt(0) || "?").toUpperCase();
   const botUser = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "ChartmateBot";
+  const biasCount = symbols.filter((s) => !s.isForex).length;
+  const fxCount = symbols.filter((s) => s.isForex).length;
+  const assetsSummary = `${biasCount} on Bias desk · ${fxCount} FX pair${fxCount === 1 ? "" : "s"}`;
 
   const newsSummary = useMemo(() => {
     const ccys = (local.forexNewsCurrencies || []).slice(0, 4).join(" ");
@@ -489,7 +492,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
             open={openFold === "assets"}
             onToggle={() => toggleFold("assets")}
             title="Assets"
-            summary={`${symbols.length} symbol${symbols.length === 1 ? "" : "s"} on Bias Expect`}
+            summary={assetsSummary}
           >
             <p className="font-mono text-sm font-bold text-muted-foreground">
               {symbols.length ? symbols.map((s) => s.name).join(" · ") : "No symbols yet."}

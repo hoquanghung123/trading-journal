@@ -50,24 +50,24 @@ export async function toggleForexSymbol(id: string, isForex: boolean): Promise<v
   if (error) throw error;
 }
 
+export async function countSymbolUsage(name: string): Promise<{ trades: number; biasDays: number }> {
+  const [{ count: tradeCount, error: tErr }, { count: biasCount, error: bErr }] = await Promise.all([
+    supabase.from("trades").select("id", { count: "exact", head: true }).eq("symbol", name),
+    supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("asset", name),
+  ]);
+  if (tErr) throw tErr;
+  if (bErr) throw bErr;
+  return { trades: tradeCount ?? 0, biasDays: biasCount ?? 0 };
+}
+
 /**
  * Delete a symbol after verifying no trades or journal entries reference it
  * (matched by name, since current FKs are by string).
  */
 export async function deleteSymbol(sym: Symbol): Promise<void> {
-  const [{ count: tradeCount, error: tErr }, { count: biasCount, error: bErr }] = await Promise.all(
-    [
-      supabase.from("trades").select("id", { count: "exact", head: true }).eq("symbol", sym.name),
-      supabase
-        .from("journal_entries")
-        .select("id", { count: "exact", head: true })
-        .eq("asset", sym.name),
-    ],
-  );
-  if (tErr) throw tErr;
-  if (bErr) throw bErr;
-  if ((tradeCount ?? 0) > 0 || (biasCount ?? 0) > 0) {
-    throw new Error("Không thể xóa cặp tiền này vì đang có dữ liệu giao dịch liên quan");
+  const { trades, biasDays } = await countSymbolUsage(sym.name);
+  if (trades > 0 || biasDays > 0) {
+    throw new Error(`Still on ${trades} trades / ${biasDays} bias days — remove those first.`);
   }
   const { error } = await supabase.from("symbols").delete().eq("id", sym.id);
   if (error) throw error;
@@ -154,4 +154,41 @@ export function getAssetIconUrl(asset: string): string | null {
   if (symbol.startsWith("YM") || symbol.startsWith("US30"))
     return "https://s3-symbol-logo.tradingview.com/indices/dow-30.svg";
   return null;
+}
+
+const FX_CCY = ["EUR", "GBP", "AUD", "NZD", "USD", "CAD", "CHF", "JPY"] as const;
+
+/** Six-letter pairs of known currencies land on the FX desk; everything else on Bias. */
+export function guessIsForex(raw: string): boolean {
+  const n = raw.toUpperCase().replace(/[^A-Z]/g, "");
+  const a = n.slice(0, 3);
+  const b = n.slice(3);
+  return (
+    n.length === 6 &&
+    (FX_CCY as readonly string[]).includes(a) &&
+    (FX_CCY as readonly string[]).includes(b)
+  );
+}
+
+export function aliasesForSymbol(name: string): string[] {
+  const key = canonicalizeAssetTicker(name);
+  const upper = name.toUpperCase();
+  const group = ASSET_ALIAS_GROUPS.find((g) => g.includes(key) || g.includes(upper));
+  if (!group) return [];
+  return group.filter((a) => a !== key && a !== upper);
+}
+
+export function kindLabelForAsset(name: string, isForex: boolean): string {
+  if (isForex) return "FX pair";
+  const s = name.toUpperCase();
+  if (s.startsWith("GC") || s.startsWith("XAU") || s.startsWith("SI") || s.startsWith("XAG")) {
+    return "Metals";
+  }
+  if (s.startsWith("CL")) return "Energy";
+  if (s.startsWith("BTC")) return "Crypto";
+  return "Index";
+}
+
+export function assetMarkLetters(name: string): string {
+  return name.replace(/[^A-Z]/g, "").slice(0, 3) || "FX";
 }
