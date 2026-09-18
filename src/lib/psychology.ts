@@ -195,8 +195,43 @@ export function newTradeLog(date: string, tradeId: string): PsychologyLog {
 }
 
 export const MOOD_OPTIONS = ["😐", "😡", "🤔", "🙂", "😊", "🤩"];
+export const MOOD_ITEMS = [
+  { value: "😐", label: "Tired" },
+  { value: "😡", label: "Frustrated" },
+  { value: "🤔", label: "Uncertain" },
+  { value: "🙂", label: "Calm" },
+  { value: "😊", label: "Focused" },
+  { value: "🤩", label: "Energized" },
+] as const;
 export const PRE_EMOTIONS = ["FOMO", "Confidence", "Patience", "Anxiety", "Calm", "Greedy"];
 export const POST_EMOTIONS = ["Greed", "Fear", "Disappointment", "Pride", "Relief", "Frustration"];
+const HOT_EMOTIONS = new Set([
+  "FOMO",
+  "Anxiety",
+  "Greedy",
+  "Greed",
+  "Fear",
+  "Disappointment",
+  "Frustration",
+]);
+
+export function moodLabel(value?: string): string {
+  if (!value) return "";
+  const hit = MOOD_ITEMS.find((m) => m.value === value || m.label === value);
+  return hit?.label ?? value;
+}
+
+export function isHotEmotion(value?: string): boolean {
+  return !!value && HOT_EMOTIONS.has(value);
+}
+
+export function hasDailyCheckIn(log?: PsychologyLog | null): boolean {
+  return !!(log && log.tradeId === null && (log.morningMood || log.morningNotes));
+}
+
+export function hasTradeEval(log?: PsychologyLog | null): boolean {
+  return !!(log && log.tradeId && (log.preTradeEmotion || log.postTradeEmotion));
+}
 
 export function toLocalDateStr(d: Date): string {
   const yy = d.getFullYear();

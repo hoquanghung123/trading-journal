@@ -1,6 +1,10 @@
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import type { PsychologyLog } from "@/lib/psychology";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  hasDailyCheckIn,
+  hasTradeEval,
+  type PsychologyLog,
+} from "@/lib/psychology";
 import { journalTradingDate } from "@/lib/journal";
 import type { Trade } from "@/lib/trades";
 
@@ -11,12 +15,10 @@ interface Props {
   trades: Trade[];
 }
 
-const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
-/** Build a 6×7 grid (Mon-first) for the month containing `anchor`. */
 function buildMonthGrid(anchor: Date): Date[] {
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  // JS getDay: 0=Sun … 6=Sat. We want Monday=0.
   const offset = (first.getDay() + 6) % 7;
   const start = new Date(first);
   start.setDate(first.getDate() - offset);
@@ -35,42 +37,40 @@ function ymd(d: Date): string {
 }
 
 export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }: Props) {
-  // Anchor month derived from selectedDate when possible
   const [anchor, setAnchor] = useState<Date>(() => {
     const [y, m] = selectedDate.split("-").map(Number);
     return new Date(y, (m ?? 1) - 1, 1);
   });
 
+  useEffect(() => {
+    const [y, m] = selectedDate.split("-").map(Number);
+    setAnchor((prev) => {
+      if (prev.getFullYear() === y && prev.getMonth() === (m ?? 1) - 1) return prev;
+      return new Date(y, (m ?? 1) - 1, 1);
+    });
+  }, [selectedDate]);
+
   const days = useMemo(() => buildMonthGrid(anchor), [anchor]);
 
-  // Index logs / trades by NY date string for O(1) lookup
   const stats = useMemo(() => {
     const map = new Map<
       string,
-      {
-        hasDaily: boolean;
-        tradeLogCount: number;
-        tradeCount: number;
-        netPnl: number;
-        mood?: string;
-      }
+      { hasDaily: boolean; hasEval: boolean; tradeCount: number; netPnl: number }
     >();
     for (const l of logs) {
       const cur = map.get(l.date) ?? {
         hasDaily: false,
-        tradeLogCount: 0,
+        hasEval: false,
         tradeCount: 0,
         netPnl: 0,
       };
-      if (l.tradeId === null) {
-        cur.hasDaily = true;
-        if (l.morningMood) cur.mood = l.morningMood;
-      } else cur.tradeLogCount += 1;
+      if (l.tradeId === null) cur.hasDaily = hasDailyCheckIn(l);
+      else if (hasTradeEval(l)) cur.hasEval = true;
       map.set(l.date, cur);
     }
     for (const t of trades) {
       const k = journalTradingDate(t.entryTime);
-      const cur = map.get(k) ?? { hasDaily: false, tradeLogCount: 0, tradeCount: 0, netPnl: 0 };
+      const cur = map.get(k) ?? { hasDaily: false, hasEval: false, tradeCount: 0, netPnl: 0 };
       cur.tradeCount += 1;
       cur.netPnl += Number(t.netPnl) || 0;
       map.set(k, cur);
@@ -78,8 +78,19 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
     return map;
   }, [logs, trades]);
 
+  const maxAbs = useMemo(() => {
+    let m = 1;
+    for (const d of days) {
+      if (d.getMonth() !== anchor.getMonth()) continue;
+      const s = stats.get(ymd(d));
+      if (s) m = Math.max(m, Math.abs(s.netPnl));
+    }
+    return m;
+  }, [days, anchor, stats]);
+
   const today = journalTradingDate();
-  const monthLabel = anchor.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const monthLabel = anchor.toLocaleString("en-US", { month: "long" });
+  const yearLabel = String(anchor.getFullYear());
 
   const goPrev = () => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1));
   const goNext = () => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1));
@@ -89,161 +100,118 @@ export function PsychologyCalendar({ selectedDate, onSelectDate, logs, trades }:
     onSelectDate(today);
   };
 
-  // Group days into weeks of 7
-  const rows = useMemo(() => {
+  const weeks = useMemo(() => {
     const res: Date[][] = [];
-    for (let i = 0; i < days.length; i += 7) {
-      res.push(days.slice(i, i + 7));
+    for (let i = 0; i < days.length; i += 7) res.push(days.slice(i, i + 7));
+    while (
+      res.length > 4 &&
+      res[res.length - 1].every((d) => d.getMonth() !== anchor.getMonth())
+    ) {
+      res.pop();
     }
     return res;
-  }, [days]);
+  }, [days, anchor]);
 
   return (
-    <section className="bg-card rounded-[40px] border border-border shadow-sm overflow-hidden animate-in fade-in duration-500 flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-border bg-card flex-wrap gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <CalendarDays className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black tracking-tight text-foreground">
-              Psychology History
-            </h2>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1">
-              Daily Check-ins & Performance
-            </p>
-          </div>
+    <div className="flex flex-col min-h-0 h-full">
+      <div className="px-3 pt-4 pb-3 flex items-center justify-between gap-2 shrink-0">
+        <div>
+          <h2 className="text-sm font-black tracking-tight text-foreground">{monthLabel}</h2>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+            {yearLabel} · NY
+          </p>
         </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center bg-muted/30 rounded-2xl p-1.5 gap-1 border border-border/50">
-            <button
-              onClick={goPrev}
-              className="p-2 rounded-xl hover:bg-background hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="px-6 py-1 text-sm font-black text-foreground min-w-[160px] text-center uppercase tracking-widest">
-              {monthLabel}
-            </div>
-            <button
-              onClick={goNext}
-              className="p-2 rounded-xl hover:bg-background hover:shadow-sm text-muted-foreground hover:text-foreground transition-all"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="flex items-center gap-1">
           <button
+            type="button"
+            onClick={goPrev}
+            aria-label="Previous month"
+            className="h-8 w-8 rounded-lg border border-border bg-card text-foreground hover:bg-muted"
+          >
+            <ChevronLeft className="w-4 h-4 mx-auto" />
+          </button>
+          <button
+            type="button"
             onClick={goToday}
-            className="px-6 py-3 rounded-2xl text-xs font-black tracking-widest bg-card border border-border text-muted-foreground hover:border-primary hover:text-primary transition-all active:scale-95 uppercase shadow-sm"
+            className="h-8 px-2 rounded-lg border border-border bg-card text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
           >
             Today
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            aria-label="Next month"
+            className="h-8 w-8 rounded-lg border border-border bg-card text-foreground hover:bg-muted"
+          >
+            <ChevronRight className="w-4 h-4 mx-auto" />
           </button>
         </div>
       </div>
 
-      {/* Grid Container */}
-      <div className="flex-1 flex flex-col">
-        {/* Days of week */}
-        <div className="grid grid-cols-7 border-b border-border bg-muted/10">
-          {WEEKDAYS.map((w) => (
+      <div className="mx-2 mb-2 rounded-xl border border-border overflow-hidden bg-card">
+        <div className="grid grid-cols-7 bg-muted/40">
+          {WEEKDAYS.map((w, i) => (
             <div
-              key={w}
-              className="py-4 text-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]"
+              key={`${w}-${i}`}
+              className="py-1.5 text-center text-[8px] font-black uppercase tracking-widest text-muted-foreground"
             >
               {w}
             </div>
           ))}
         </div>
-
-        {/* Days Grid */}
-        <div className="flex-1 flex flex-col divide-y divide-border">
-          {rows.map((row, i) => (
-            <div key={i} className="flex-1 grid grid-cols-7 divide-x divide-border min-h-[120px]">
-              {row.map((d) => {
-                const k = ymd(d);
-                const inMonth = d.getMonth() === anchor.getMonth();
-                const isSelected = k === selectedDate;
-                const isToday = k === today;
-                const s = stats.get(k);
-
-                return (
-                  <div
-                    key={k}
-                    onClick={() => onSelectDate(k)}
-                    className={`relative p-4 flex flex-col justify-between cursor-pointer transition-all duration-300 group
-                      ${inMonth ? "bg-card hover:bg-muted/30" : "bg-muted/5"}
-                      ${isSelected ? "ring-4 ring-inset ring-primary/40 z-10" : ""}
-                      ${isToday && !isSelected ? "ring-2 ring-inset ring-primary/20" : ""}
-                      ${!inMonth ? "opacity-20" : ""}
-                    `}
-                  >
-                    {/* Day number */}
-                    <div className="flex justify-between items-start">
-                      <span
-                        className={`text-sm font-black ${inMonth ? "text-foreground group-hover:text-primary" : "text-muted-foreground/30"}`}
-                      >
-                        {d.getDate()}
-                      </span>
-                      {s && s.tradeCount > 0 && (
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
-                          {s.tradeCount}T
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Mood / Center Content */}
-                    <div className="flex-1 flex items-center justify-center py-2">
-                      {s?.mood && (
-                        <span className="text-2xl drop-shadow-sm transition-transform duration-300 group-hover:scale-125">
-                          {s.mood}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bottom Stats */}
-                    <div className="flex flex-col items-center">
-                      {s && s.tradeCount > 0 && (
-                        <span
-                          className={`text-[11px] font-black ${s.netPnl >= 0 ? "text-primary" : "text-destructive"}`}
-                        >
-                          {s.netPnl >= 0 ? "+" : ""}${Math.abs(s.netPnl).toFixed(0)}
-                        </span>
-                      )}
-                      {/* Indicators */}
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        {s?.hasDaily && (
-                          <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-primary" />
-                        )}
-                        {s && s.tradeLogCount > 0 && (
-                          <div className="w-1.5 h-1.5 rounded-full shadow-sm bg-amber-500" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+        <div className="grid grid-cols-7">
+          {weeks.flat().map((d) => {
+            const k = ymd(d);
+            const inMonth = d.getMonth() === anchor.getMonth();
+            const isSelected = k === selectedDate;
+            const isToday = k === today;
+            const s = stats.get(k);
+            const width = s ? Math.min(100, (Math.abs(s.netPnl) / maxAbs) * 100) : 0;
+            return (
+              <button
+                key={k}
+                type="button"
+                disabled={!inMonth}
+                onClick={() => onSelectDate(k)}
+                className={`min-h-[52px] px-1.5 py-1.5 text-left border-r border-b border-border flex flex-col overflow-hidden last:border-r-0 ${
+                  inMonth ? "bg-card hover:bg-muted/40" : "bg-muted/20 text-muted-foreground/40"
+                } ${isSelected ? "ring-2 ring-inset ring-primary z-[1]" : ""} ${
+                  isToday && !isSelected ? "ring-1 ring-inset ring-primary/30" : ""
+                }`}
+              >
+                <span className="tabular-nums text-[11px] font-bold leading-none text-foreground">
+                  {d.getDate()}
+                </span>
+                <span className="mt-auto block h-[3px] rounded-full bg-muted overflow-hidden">
+                  {s && s.tradeCount > 0 && (
+                    <span
+                      className={`block h-full ${s.netPnl >= 0 ? "bg-primary" : "bg-destructive"}`}
+                      style={{ width: `${width}%` }}
+                    />
+                  )}
+                </span>
+                <span className="mt-1 flex gap-1 h-[5px] items-center">
+                  {s?.hasDaily && (
+                    <span className="block w-[5px] h-[5px] rounded-full bg-primary" />
+                  )}
+                  {s?.hasEval && (
+                    <span className="block w-[5px] h-[5px] rounded-full bg-warning" />
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="px-8 py-6 border-t border-border bg-card flex items-center gap-8 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            Daily Check-in
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-amber-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            Trade Evaluation
-          </span>
-        </div>
+      <div className="px-3 pb-4 flex flex-wrap gap-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <i className="w-1.5 h-1.5 rounded-full bg-primary inline-block" /> Check-in
+        </span>
+        <span className="flex items-center gap-1.5">
+          <i className="w-1.5 h-1.5 rounded-full bg-warning inline-block" /> Eval
+        </span>
       </div>
-    </section>
+    </div>
   );
 }
