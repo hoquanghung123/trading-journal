@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account · 04 Inspector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: "#F8FAFC", foreground: "#0F172A", card: "#FFFFFF",
+            muted: "#F1F5F9", "muted-fg": "#64748B", border: "#E2E8F0",
+            primary: "#4C763B", bear: "#C2413B", cons: "#D97706", tg: "#0088CC",
+          },
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"], mono: ["IBM Plex Mono", "ui-monospace", "monospace"] },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body { font-family: Inter, system-ui, sans-serif; background: #E4EBE0; color: #0F172A; }
+    .forest { background: linear-gradient(135deg, #4C763B, #3B5E2E); }
+    .nums { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { scrollbar-width: none; }
+    .shell {
+      width: min(1440px, 100%); height: min(860px, calc(100vh - 88px));
+      border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 200px 1fr;
+      background: #F8FAFC; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08); border: 1px solid #fff;
+    }
+    body[data-frame="phone"] .shell { width: 390px; height: 844px; grid-template-columns: 1fr; }
+    .phone-only, .desk-only { display: flex; }
+    body[data-frame="phone"] .sidebar, body[data-frame="phone"] .desk-only { display: none !important; }
+    body[data-frame="desktop"] .phone-only { display: none !important; }
+    .split { display: grid; grid-template-columns: 1fr 340px; min-height: 0; flex: 1; }
+    body[data-frame="phone"] .split { grid-template-columns: 1fr; }
+    .row {
+      width: 100%; display: grid; grid-template-columns: 140px 1fr 18px;
+      gap: 12px; align-items: center; padding: 12px 16px;
+      border: 0; background: transparent; text-align: left; cursor: pointer; border-bottom: 1px solid #E2E8F0;
+    }
+    .row.is-on { background: #F4F8F1; box-shadow: inset 3px 0 0 #4C763B; }
+    .insp { display: none; }
+    .insp.is-on { display: block; }
+    .sheet {
+      display: none; position: absolute; inset: 0; z-index: 30;
+      background: rgba(15,23,42,.35); align-items: flex-end;
+    }
+    .sheet.is-on { display: flex; }
+    .sheet-card {
+      width: 100%; background: #fff; border-radius: 20px 20px 0 0;
+      padding: 16px 16px 28px; box-shadow: 0 -12px 40px rgba(15,23,42,.18); max-height: 78%;
+      overflow: auto;
+    }
+    .tog { width: 36px; height: 20px; border-radius: 99px; background: #CBD5E1; border: 0; position: relative; cursor: pointer; flex-shrink: 0; }
+    .tog.is-on { background: #4C763B; }
+    .tog-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 99px; transition: transform .15s; }
+    .tog.is-on .tog-knob { transform: translateX(16px); }
+    .time { height: 36px; border: 1px solid #E2E8F0; border-radius: 10px; padding: 0 10px; font-size: 13px; font-weight: 700; background: #fff; }
+    .swatch { width: 32px; height: 32px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; }
+    .swatch.is-on { border-color: #0F172A; }
+    .ccy { height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid #E2E8F0; font-size: 11px; font-weight: 800; color: #64748B; background: #fff; }
+    .ccy.is-on { background: #4C763B; color: #fff; border-color: transparent; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body data-frame="desktop" class="antialiased">
+  <div class="min-h-screen py-5 px-4 flex flex-col items-center gap-4">
+    <div class="w-full max-w-[1440px] flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Mockup 04 / 05 · Account</p>
+        <h1 class="text-xl font-black tracking-tight">Inspector</h1>
+        <p class="text-sm text-muted-fg mt-1 max-w-2xl">Blotter of current values. Click a row — editor opens on the right (laptop) or as a sheet (phone). No form until you need one.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-[11px] font-bold">
+        <nav class="flex bg-white border border-border rounded-xl p-1 overflow-x-auto hide-scroll">
+          <a href="account-01-split-rail.html" class="px-3 py-1.5 rounded-lg text-muted-fg">01 Split</a>
+          <a href="account-02-passport.html" class="px-3 py-1.5 rounded-lg text-muted-fg">02 Passport</a>
+          <a href="account-03-session-clock.html" class="px-3 py-1.5 rounded-lg text-muted-fg">03 Clock</a>
+          <a href="account-04-inspector.html" class="px-3 py-1.5 rounded-lg forest text-white">04 Inspector</a>
+          <a href="account-05-health-board.html" class="px-3 py-1.5 rounded-lg text-muted-fg">05 Health</a>
+          <a href="account-02x05-passport-health.html" class="px-3 py-1.5 rounded-lg text-muted-fg">02×05</a>
+        </nav>
+        <div class="flex bg-white border border-border rounded-xl p-1">
+          <button type="button" data-frame="phone" class="frame-btn px-3 py-1.5 rounded-lg text-muted-fg">Phone</button>
+          <button type="button" data-frame="desktop" class="frame-btn px-3 py-1.5 rounded-lg forest text-white">Laptop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="shell relative">
+      <aside class="sidebar flex flex-col border-r border-border bg-white py-5 px-3">
+        <div class="flex items-center gap-2 px-2 mb-6">
+          <div class="w-8 h-8 rounded-lg forest grid place-items-center text-white text-xs font-black">C</div>
+          <div>
+            <p class="text-sm font-black leading-tight">Chartmate</p>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-muted-fg">ICT journal</p>
+          </div>
+        </div>
+        <nav class="flex-1 space-y-1 text-[13px] font-semibold">
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Bias Expect</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Trade Log</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Playbook</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Review</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Stats</div>
+        </nav>
+        <div class="mt-auto space-y-1 pt-4 border-t border-border">
+          <div class="px-3 py-2 rounded-xl forest text-white text-[13px] font-semibold">Account</div>
+          <div class="px-2 pt-2 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full border border-border grid place-items-center text-primary text-xs font-black">D</div>
+            <span class="text-xs font-bold">Duy</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="flex flex-col min-w-0 min-h-0 relative">
+        <div class="phone-only h-12 px-4 items-center justify-between border-b border-border bg-white/90 backdrop-blur shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg forest grid place-items-center text-white text-xs font-black">C</div>
+            <span class="text-sm font-bold">Account</span>
+          </div>
+        </div>
+
+        <div class="px-4 lg:px-5 pt-4 pb-3 border-b border-border bg-white shrink-0">
+          <h2 class="text-lg lg:text-2xl font-black tracking-tight">Desk blotter</h2>
+          <p class="text-[11px] font-medium text-muted-fg mt-0.5">Current state on the right of each row. Tap to edit.</p>
+        </div>
+
+        <div class="split min-h-0">
+          <div class="overflow-y-auto hide-scroll bg-white border-r border-border">
+            <button type="button" class="row is-on" data-key="telegram">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Telegram</span>
+              <span class="text-sm font-bold text-tg truncate">Connected</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="accent">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Accent</span>
+              <span class="text-sm font-bold truncate flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-sm bg-primary"></span> Forest</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="night">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Night</span>
+              <span class="text-sm font-bold truncate text-muted-fg">Off</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="grade">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Grading</span>
+              <span class="text-sm font-bold truncate text-muted-fg">Hidden on tickets</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="psych">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Psychology</span>
+              <span class="nums text-sm font-bold truncate">08:00 Local</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="asia">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Asia bias</span>
+              <span class="nums text-sm font-bold truncate">07:30 GMT+7</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="london">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">London bias</span>
+              <span class="nums text-sm font-bold truncate">13:00 GMT+7</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="ny">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">NY bias</span>
+              <span class="nums text-sm font-bold truncate">19:00 GMT+7</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="weekend">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Weekend</span>
+              <span class="nums text-sm font-bold truncate">Sat 09:00 Local</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="news">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">News</span>
+              <span class="text-sm font-bold truncate">USD EUR GBP JPY · High</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="assets">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Assets</span>
+              <span class="nums text-sm font-bold truncate">8 symbols</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+            <button type="button" class="row" data-key="admin">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Admin</span>
+              <span class="text-sm font-bold truncate text-muted-fg">SQL backup</span>
+              <span class="text-muted-fg">›</span>
+            </button>
+          </div>
+
+          <aside class="desk-only flex-col overflow-y-auto hide-scroll bg-background p-5" id="desk-insp">
+            <div class="insp is-on" data-key="telegram">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-tg">Channel</p>
+              <h3 class="text-lg font-black tracking-tight mt-1">@ChartmateBot</h3>
+              <p class="text-sm text-muted-fg mt-2">Linked. Session and news fire here at GMT+7. Popups stay on this computer’s clock.</p>
+              <button type="button" class="mt-4 h-9 px-3 rounded-xl border border-bear/30 text-bear text-xs font-bold">Disconnect</button>
+            </div>
+            <div class="insp" data-key="accent">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-muted-fg">Look</p>
+              <h3 class="text-lg font-black tracking-tight mt-1">Accent</h3>
+              <div class="mt-4 flex gap-2">
+                <button type="button" class="swatch is-on" style="background:#4C763B"></button>
+                <button type="button" class="swatch" style="background:#0c3299"></button>
+                <button type="button" class="swatch" style="background:#f97316"></button>
+                <button type="button" class="swatch" style="background:#7c3aed"></button>
+                <button type="button" class="swatch" style="background:#475569"></button>
+                <button type="button" class="swatch" style="background:#d97706"></button>
+              </div>
+              <p class="mt-3 text-xs text-muted-fg">Forest is live on the sidebar.</p>
+            </div>
+            <div class="insp" data-key="night">
+              <h3 class="text-lg font-black tracking-tight">Night mode</h3>
+              <p class="text-sm text-muted-fg mt-2">Same control as the floating sun.</p>
+              <div class="mt-4 flex items-center justify-between">
+                <span class="text-sm font-bold">Dark canvas</span>
+                <button type="button" class="tog" data-tog><span class="tog-knob"></span></button>
+              </div>
+            </div>
+            <div class="insp" data-key="grade">
+              <h3 class="text-lg font-black tracking-tight">Trade grading</h3>
+              <p class="text-sm text-muted-fg mt-2">Show A+, A, B on the execution ticket.</p>
+              <div class="mt-4 flex items-center justify-between">
+                <span class="text-sm font-bold">Show grades</span>
+                <button type="button" class="tog" data-tog><span class="tog-knob"></span></button>
+              </div>
+            </div>
+            <div class="insp" data-key="psych">
+              <h3 class="text-lg font-black tracking-tight">Daily psychology</h3>
+              <p class="text-sm text-muted-fg mt-2">Morning check-in. Popup follows this computer.</p>
+              <div class="mt-4 flex items-center gap-2">
+                <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                <input type="time" value="08:00" class="time nums flex-1" />
+                <span class="text-[10px] font-bold text-muted-fg">Local</span>
+              </div>
+            </div>
+            <div class="insp" data-key="asia">
+              <h3 class="text-lg font-black tracking-tight">Asia bias</h3>
+              <p class="text-sm text-muted-fg mt-2">Telegram at Vietnam time.</p>
+              <div class="mt-4 flex items-center gap-2">
+                <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                <input type="time" value="07:30" class="time nums flex-1" />
+                <span class="text-[10px] font-bold text-muted-fg">GMT+7</span>
+              </div>
+            </div>
+            <div class="insp" data-key="london">
+              <h3 class="text-lg font-black tracking-tight">London bias</h3>
+              <div class="mt-4 flex items-center gap-2">
+                <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                <input type="time" value="13:00" class="time nums flex-1" />
+                <span class="text-[10px] font-bold text-muted-fg">GMT+7</span>
+              </div>
+            </div>
+            <div class="insp" data-key="ny">
+              <h3 class="text-lg font-black tracking-tight">New York bias</h3>
+              <div class="mt-4 flex items-center gap-2">
+                <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                <input type="time" value="19:00" class="time nums flex-1" />
+                <span class="text-[10px] font-bold text-muted-fg">GMT+7</span>
+              </div>
+            </div>
+            <div class="insp" data-key="weekend">
+              <h3 class="text-lg font-black tracking-tight">Weekend review</h3>
+              <p class="text-sm text-muted-fg mt-2">Saturday recap popup.</p>
+              <div class="mt-4 flex items-center gap-2">
+                <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                <input type="time" value="09:00" class="time nums flex-1" />
+                <span class="text-[10px] font-bold text-muted-fg">Local</span>
+              </div>
+            </div>
+            <div class="insp" data-key="news">
+              <h3 class="text-lg font-black tracking-tight">News desk</h3>
+              <p class="text-sm text-muted-fg mt-2">Forex Factory via Telegram · 21:00 GMT+7 nightly.</p>
+              <div class="mt-3 flex items-center justify-between">
+                <span class="text-sm font-bold">Enabled</span>
+                <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-1.5">
+                <button type="button" class="ccy is-on">USD</button>
+                <button type="button" class="ccy is-on">EUR</button>
+                <button type="button" class="ccy is-on">GBP</button>
+                <button type="button" class="ccy">CHF</button>
+                <button type="button" class="ccy">AUD</button>
+                <button type="button" class="ccy">NZD</button>
+                <button type="button" class="ccy is-on">JPY</button>
+                <button type="button" class="ccy">CAD</button>
+              </div>
+            </div>
+            <div class="insp" data-key="assets">
+              <h3 class="text-lg font-black tracking-tight">Assets</h3>
+              <p class="nums text-sm font-bold text-muted-fg mt-2 leading-relaxed">XAUUSD · GC1! · EURUSD · GBPUSD · USDJPY · NAS100 · US30 · BTCUSD</p>
+              <button type="button" class="mt-4 h-9 px-3 rounded-xl border border-border text-xs font-bold">Manage symbols</button>
+            </div>
+            <div class="insp" data-key="admin">
+              <h3 class="text-lg font-black tracking-tight">Backup</h3>
+              <p class="text-sm text-muted-fg mt-2">Export SQL and store a copy on R2. Admin only.</p>
+              <button type="button" class="mt-4 h-9 px-3 rounded-xl border border-border text-xs font-bold">Download backup</button>
+            </div>
+          </aside>
+        </div>
+
+        <nav class="phone-only h-14 border-t border-border bg-white items-center justify-around text-[9px] font-black uppercase tracking-wider text-muted-fg shrink-0">
+          <span>Bias</span><span>Trades</span><span>Book</span><span>Review</span><span class="text-primary">Account</span>
+        </nav>
+
+        <div id="sheet" class="sheet" role="dialog" aria-label="Edit setting">
+          <div class="sheet-card" id="sheet-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sheet = document.getElementById("sheet");
+    const sheetBody = document.getElementById("sheet-body");
+
+    function openKey(key) {
+      document.querySelectorAll(".row").forEach((r) => r.classList.toggle("is-on", r.dataset.key === key));
+      document.querySelectorAll("#desk-insp .insp").forEach((p) => p.classList.toggle("is-on", p.dataset.key === key));
+      if (document.body.dataset.frame === "phone") {
+        const src = document.querySelector(`#desk-insp .insp[data-key="${key}"]`);
+        sheetBody.innerHTML =
+          '<div class="flex items-center justify-between mb-4"><p class="text-sm font-black">Edit</p><button type="button" id="close-sheet" class="text-[11px] font-bold text-muted-fg">Done</button></div>' +
+          src.innerHTML;
+        sheet.classList.add("is-on");
+        document.getElementById("close-sheet").addEventListener("click", () => sheet.classList.remove("is-on"));
+      }
+    }
+
+    document.querySelectorAll(".row").forEach((btn) => {
+      btn.addEventListener("click", () => openKey(btn.dataset.key));
+    });
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) sheet.classList.remove("is-on"); });
+    document.querySelectorAll("[data-tog]").forEach((btn) => {
+      btn.addEventListener("click", () => btn.classList.toggle("is-on"));
+    });
+    document.querySelectorAll(".swatch, .ccy").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.classList.contains("swatch")) {
+          btn.parentElement.querySelectorAll(".swatch").forEach((s) => s.classList.remove("is-on"));
+          btn.classList.add("is-on");
+        } else btn.classList.toggle("is-on");
+      });
+    });
+    document.querySelectorAll(".frame-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.body.dataset.frame = btn.dataset.frame;
+        document.querySelectorAll(".frame-btn").forEach((b) => {
+          b.classList.toggle("forest", b === btn);
+          b.classList.toggle("text-white", b === btn);
+          b.classList.toggle("text-muted-fg", b !== btn);
+        });
+        sheet.classList.remove("is-on");
+      });
+    });
+  </script>
+</body>
+</html>

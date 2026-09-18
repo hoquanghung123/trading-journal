@@ -1,745 +1,647 @@
-import { useState, useEffect } from "react";
-import {
-  UserCircle,
-  Palette,
-  ToggleLeft,
-  Mail,
-  CheckCircle2,
-  Loader2,
-  Sparkles,
-  Save,
-  Bell,
-  Send,
-  HelpCircle,
-  ShieldAlert,
-  Globe,
-  Settings,
-} from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Loader2, ShieldAlert } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings, type UserSettings } from "@/lib/settings";
+import { fetchMyProfile } from "@/lib/journal";
+import { useSymbols } from "@/lib/symbols";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BackupButton } from "@/components/dashboard/BackupButton";
+import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 
 const ADMIN_EMAIL = "bsleducduy@gmail.com";
 
 const PRESET_COLORS = [
-  { name: "Forest Green", hex: "#4C763B" },
-  { name: "Deep Blue", hex: "#0c3299" },
-  { name: "Sunset Orange", hex: "#f97316" },
-  { name: "Midnight Purple", hex: "#7c3aed" },
-  { name: "Slate", hex: "#475569" },
-  { name: "Amber", hex: "#d97706" },
+  { name: "Forest", hex: "#4C763B", deep: "#3B5E2E" },
+  { name: "Blue", hex: "#0c3299", deep: "#08246e" },
+  { name: "Orange", hex: "#f97316", deep: "#c2410c" },
+  { name: "Purple", hex: "#7c3aed", deep: "#5b21b6" },
+  { name: "Slate", hex: "#475569", deep: "#334155" },
+  { name: "Amber", hex: "#d97706", deep: "#b45309" },
 ];
 
 const CURRENCIES = ["USD", "EUR", "GBP", "CHF", "AUD", "NZD", "JPY", "CAD"];
 const IMPACTS = [
-  { id: "high", name: "High Impact (Red)", color: "bg-destructive", text: "text-destructive" },
-  { id: "medium", name: "Medium Impact (Orange)", color: "bg-orange-500", text: "text-orange-600" },
-  { id: "low", name: "Low Impact (Yellow)", color: "bg-amber-400", text: "text-warning", desc: "Special: Only Crude Oil Inventories" },
-  { id: "holiday", name: "Holiday (Grey)", color: "bg-slate-400", text: "text-slate-600" }
+  { id: "high", name: "High", color: "bg-destructive" },
+  { id: "medium", name: "Medium", color: "bg-orange-500" },
+  { id: "low", name: "Low", color: "bg-amber-400", desc: "Crude inventories only" },
+  { id: "holiday", name: "Holiday", color: "bg-slate-400" },
 ];
+
+type FoldId = "rituals" | "news" | "local" | "assets";
+
+function presetFor(hex?: string) {
+  return PRESET_COLORS.find((c) => c.hex.toLowerCase() === (hex || "").toLowerCase());
+}
+
+function darkenHex(hex: string) {
+  const preset = presetFor(hex);
+  if (preset) return preset.deep;
+  const n = hex.replace("#", "");
+  if (n.length !== 6) return hex;
+  const v = parseInt(n, 16);
+  const r = Math.max(0, ((v >> 16) & 255) - 24);
+  const g = Math.max(0, ((v >> 8) & 255) - 24);
+  const b = Math.max(0, (v & 255) - 24);
+  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+}
 
 export function AccountSettings({ onManageAssets }: { onManageAssets?: () => void }) {
   const qc = useQueryClient();
-  const [user, setUser] = useState<any>(null);
-  const [localSettings, setLocalSettings] = useState<Partial<UserSettings>>({});
+  const { theme, toggleTheme } = useTheme();
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [local, setLocal] = useState<Partial<UserSettings>>({});
+  const [openFold, setOpenFold] = useState<FoldId | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const debounceRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
+      setUser(u ? { id: u.id, email: u.email } : null);
+    });
   }, []);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["user_settings"],
     queryFn: fetchSettings,
   });
+  const { data: profile } = useQuery({
+    queryKey: ["my_profile"],
+    queryFn: fetchMyProfile,
+  });
+  const { data: symbols = [] } = useSymbols();
 
-  // Sync local settings when data is loaded
   useEffect(() => {
-    if (settings) {
-      setLocalSettings(settings);
-    }
+    if (settings) setLocal(settings);
   }, [settings]);
+
+  useEffect(() => {
+    if (!local.primaryColor) return;
+    document.documentElement.style.setProperty("--primary", local.primaryColor);
+  }, [local.primaryColor]);
+
+  useEffect(() => {
+    const onFocus = () => qc.invalidateQueries({ queryKey: ["user_settings"] });
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [qc]);
 
   const mutation = useMutation({
     mutationFn: (patch: Partial<UserSettings>) => updateSettings(patch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["user_settings"] });
-      toast.success("Settings saved successfully");
+      setSavedFlash(true);
+      window.setTimeout(() => setSavedFlash(false), 1600);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const handleSave = () => {
-    mutation.mutate(localSettings);
+  const patchNow = useCallback(
+    (patch: Partial<UserSettings>) => {
+      setLocal((prev) => ({ ...prev, ...patch }));
+      mutation.mutate(patch);
+    },
+    [mutation],
+  );
+
+  const patchDebounced = useCallback(
+    (key: string, patch: Partial<UserSettings>) => {
+      setLocal((prev) => ({ ...prev, ...patch }));
+      window.clearTimeout(debounceRef.current[key]);
+      debounceRef.current[key] = window.setTimeout(() => mutation.mutate(patch), 400);
+    },
+    [mutation],
+  );
+
+  const telegramOn = !!local.telegramChatId;
+  const gradingOn = !!local.showTradeGrade;
+  const accent = local.primaryColor || "#4C763B";
+  const accentDeep = darkenHex(accent);
+  const accentName = presetFor(accent)?.name ?? accent;
+  const displayName = profile?.displayName || user?.email?.split("@")[0] || "Trader";
+  const initial = (displayName.replace(/[^A-Za-z0-9]/g, "").charAt(0) || "?").toUpperCase();
+  const botUser = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "ChartmateBot";
+
+  const newsSummary = useMemo(() => {
+    const ccys = (local.forexNewsCurrencies || []).slice(0, 4).join(" ");
+    const impacts = (local.forexNewsImpacts || [])
+      .map((id) => IMPACTS.find((i) => i.id === id)?.name)
+      .filter(Boolean)
+      .join(" + ");
+    return `${ccys || "No pairs"} · ${impacts || "No impact"} · ${local.forexNewsTimeDaily || "21:00"} GMT+7`;
+  }, [local.forexNewsCurrencies, local.forexNewsImpacts, local.forexNewsTimeDaily]);
+
+  const sessionSummary = `${local.asianTime || "07:30"} · ${local.londonTime || "13:00"} · ${local.nyTime || "19:00"} GMT+7`;
+
+  const scanSub = !telegramOn && !gradingOn
+    ? "1 block · 1 warning · alerts not on phone"
+    : !telegramOn
+      ? "1 block · alerts not on phone"
+      : !gradingOn
+        ? "1 warning left (grading)"
+        : "Desk is live";
+
+  const toggleFold = (id: FoldId) => setOpenFold((cur) => (cur === id ? null : id));
+
+  const toggleCurrency = (code: string) => {
+    const cur = local.forexNewsCurrencies || [];
+    const next = cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code];
+    patchNow({ forexNewsCurrencies: next });
   };
 
-  const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(settings);
+  const toggleImpact = (id: string) => {
+    const cur = local.forexNewsImpacts || [];
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    patchNow({ forexNewsImpacts: next });
+  };
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex h-full min-h-[40vh] items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 lg:p-10 animate-in fade-in duration-500">
-      <div className="max-w-2xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border pb-8">
-          <div className="flex items-center gap-6">
-            <div className="relative group">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden forest-gradient transition-transform group-hover:scale-105">
-                <UserCircle className="w-16 h-16 text-white opacity-90" strokeWidth={1.5} />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary border-4 border-white shadow-lg flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tight text-foreground">
-                Account Settings
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <Mail className="w-3 h-3 text-muted-foreground" />
-                <p className="text-sm font-medium text-muted-foreground">{user.email}</p>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
-                  Active Trader
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-                  PRO Plan
-                </span>
-              </div>
-            </div>
+    <div className="h-full overflow-y-auto bg-background animate-in fade-in duration-500">
+      <div className="mx-auto max-w-4xl space-y-3 p-4 lg:p-6">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h1 className="text-lg lg:text-2xl font-black tracking-tight text-foreground">Desk</h1>
+            <p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{scanSub}</p>
           </div>
+          <p
+            className={cn(
+              "text-[11px] font-bold transition-opacity",
+              mutation.isPending || savedFlash ? "opacity-100 text-primary" : "opacity-0",
+            )}
+          >
+            {mutation.isPending ? "Saving…" : "Saved"}
+          </p>
         </div>
 
-        <div className="space-y-8">
-          {/* Theme Section */}
-          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <Palette className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Interface Customization</h2>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Personalize your trading dashboard
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Primary Accent Color
-              </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                {PRESET_COLORS.map((color) => (
-                  <button
-                    key={color.hex}
-                    onClick={() => setLocalSettings({ ...localSettings, primaryColor: color.hex })}
-                    className={`
-                      group relative w-full aspect-square rounded-2xl transition-all active:scale-95
-                      ${localSettings.primaryColor === color.hex ? "ring-4 ring-primary/20 scale-105" : "hover:scale-105"}
-                    `}
-                    style={{ backgroundColor: color.hex }}
-                    title={color.name}
+        <section className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="flex flex-col gap-5 p-4 lg:flex-row lg:p-5">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3">
+                {profile?.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt=""
+                    className="h-14 w-14 rounded-2xl object-cover"
+                    style={{ background: `linear-gradient(135deg, ${accent}, ${accentDeep})` }}
+                  />
+                ) : (
+                  <div
+                    className="grid h-14 w-14 place-items-center rounded-2xl text-lg font-black text-white"
+                    style={{ background: `linear-gradient(135deg, ${accent}, ${accentDeep})` }}
                   >
-                    {localSettings.primaryColor === color.hex && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 text-white drop-shadow-md" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-4 pt-4 mt-4 border-t border-border/50">
-                <div className="flex-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">
-                    Custom Hex Code
-                  </label>
-                  <div className="flex gap-2">
-                    <div
-                      className="w-10 h-10 rounded-lg border border-border shadow-inner"
-                      style={{ backgroundColor: localSettings.primaryColor }}
-                    />
-                    <input
-                      type="text"
-                      value={localSettings.primaryColor || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val.match(/^#[0-9A-Fa-f]{0,6}$/)) {
-                          setLocalSettings({ ...localSettings, primaryColor: val });
-                        }
-                      }}
-                      className="flex-1 h-10 bg-muted/30 border-border rounded-lg px-3 text-sm font-bold tabular-nums focus:ring-primary/20 transition-all"
-                      placeholder="#FFFFFF"
-                    />
+                    {initial}
                   </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xl font-black tracking-tight text-foreground">{displayName}</p>
+                  <p className="truncate text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
-            </div>
-          </section>
 
-          {/* Features Section */}
-          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Advanced Features</h2>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Enable specialized journal tools
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <label className="flex items-center justify-between p-6 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-border/50 group-hover:scale-110 transition-transform">
-                    <ToggleLeft className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-black uppercase tracking-widest text-foreground block">
-                      Enable Trade Grading
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {telegramOn ? (
+                  <>
+                    <span className="inline-flex items-center rounded-lg border border-[#B8DFF0] bg-[#E8F4FA] px-2.5 py-1 text-[11px] font-bold text-[#0088cc] dark:border-[#0088cc]/40 dark:bg-[#0088cc]/15">
+                      Telegram connected
                     </span>
-                    <span className="text-xs text-muted-foreground font-medium">
-                      Show A+, A, B options in execution modal
-                    </span>
-                  </div>
-                </div>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={localSettings.showTradeGrade ?? false}
-                    onChange={(e) =>
-                      setLocalSettings({ ...localSettings, showTradeGrade: e.target.checked })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-14 h-7 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-                </div>
-              </label>
-            </div>
-          </section>
-
-          {/* Notifications Section */}
-          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <Bell className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Notification Settings</h2>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Manage how and when you want to be reminded
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              {/* Journal Reminders Grouped Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-primary" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                      Journal Reminders
-                    </h3>
-                  </div>
-                  <div className="group relative">
-                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground cursor-help hover:text-primary transition-colors" />
-                    <div className="absolute bottom-full right-0 mb-3 w-64 p-3 bg-gray-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-2xl z-50 font-medium leading-relaxed border border-white/10 scale-95 group-hover:scale-100 origin-bottom-right">
-                      <div className="space-y-1.5">
-                        <p className="flex items-center gap-2">
-                          <div className="w-1 h-1 rounded-full bg-primary" />
-                          <span className="font-bold">Web Popup:</span> Theo giờ máy tính của bạn.
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <div className="w-1 h-1 rounded-full bg-[#0088cc]" />
-                          <span className="font-bold">Telegram:</span> Gửi theo giờ Việt Nam (GMT+7).
-                        </p>
-                      </div>
-                      <div className="absolute top-full right-2 border-8 border-transparent border-t-gray-900" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Daily Psychology */}
-                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
-                          <Bell className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Daily Psychology</span>
-                      </div>
-                      <label className="relative cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={localSettings.dailyReminder ?? false}
-                          onChange={(e) => setLocalSettings({ ...localSettings, dailyReminder: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
-                      </label>
-                    </div>
-                    <input
-                      type="time"
-                      value={localSettings.dailyReminderTime || "08:00"}
-                      onChange={(e) => setLocalSettings({ ...localSettings, dailyReminderTime: e.target.value })}
-                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                    />
-                  </div>
-
-                  {/* Weekend Review */}
-                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-primary border border-border/50">
-                          <Sparkles className="w-4 h-4" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Weekend Review (Sat)</span>
-                      </div>
-                      <label className="relative cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={localSettings.weeklyReminder ?? false}
-                          onChange={(e) => setLocalSettings({ ...localSettings, weeklyReminder: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
-                      </label>
-                    </div>
-                    <input
-                      type="time"
-                      value={localSettings.weeklyReminderTime || "09:00"}
-                      onChange={(e) => setLocalSettings({ ...localSettings, weeklyReminderTime: e.target.value })}
-                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Session Bias Reminders Grouped Section */}
-              <div className="pt-6 border-t border-border/50 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                    Session Bias Reminders
-                  </h3>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Asian Session */}
-                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Asian Bias</span>
-                      <label className="relative cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={localSettings.asianReminder ?? false}
-                          onChange={(e) => setLocalSettings({ ...localSettings, asianReminder: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
-                      </label>
-                    </div>
-                    <input
-                      type="time"
-                      value={localSettings.asianTime || "07:30"}
-                      onChange={(e) => setLocalSettings({ ...localSettings, asianTime: e.target.value })}
-                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                    />
-                  </div>
-
-                  {/* London Session */}
-                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">London Bias</span>
-                      <label className="relative cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={localSettings.londonReminder ?? false}
-                          onChange={(e) => setLocalSettings({ ...localSettings, londonReminder: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
-                      </label>
-                    </div>
-                    <input
-                      type="time"
-                      value={localSettings.londonTime || "13:00"}
-                      onChange={(e) => setLocalSettings({ ...localSettings, londonTime: e.target.value })}
-                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                    />
-                  </div>
-
-                  {/* NY Session */}
-                  <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground">NY Bias</span>
-                      <label className="relative cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={localSettings.nyReminder ?? false}
-                          onChange={(e) => setLocalSettings({ ...localSettings, nyReminder: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-muted-foreground/20 rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner transition-colors group-hover:bg-muted-foreground/30"></div>
-                      </label>
-                    </div>
-                    <input
-                      type="time"
-                      value={localSettings.nyTime || "19:00"}
-                      onChange={(e) => setLocalSettings({ ...localSettings, nyTime: e.target.value })}
-                      className="w-full bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Economic News Section */}
-          <section className="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <Globe className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Economic Calendar News</h2>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Receive Forex Factory economic calendar reminders via Telegram
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {/* Main Switch */}
-              <label className="flex items-center justify-between p-6 bg-muted/20 rounded-2xl border border-border/50 cursor-pointer hover:bg-muted/30 transition-all group">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-border/50 group-hover:scale-110 transition-transform">
-                    <Globe className="w-6 h-6 animate-pulse" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-black uppercase tracking-widest text-foreground block">
-                      Enable News Telegram Reminders
-                    </span>
-                    <span className="text-xs text-muted-foreground font-medium">
-                      Automatically send news alerts daily and weekly
-                    </span>
-                  </div>
-                </div>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={localSettings.forexNewsReminder ?? false}
-                    onChange={(e) =>
-                      setLocalSettings({ ...localSettings, forexNewsReminder: e.target.checked })
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="w-14 h-7 bg-muted-foreground/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-                </div>
-              </label>
-
-              {localSettings.forexNewsReminder && (
-                <div className="space-y-6 pt-4 border-t border-border/50 animate-fadeIn">
-                  {/* Currencies Selection */}
-                  <div className="space-y-3">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      Currencies to Track
-                    </h3>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                      {CURRENCIES.map((currency) => {
-                        const currencies = localSettings.forexNewsCurrencies || [];
-                        const isChecked = currencies.includes(currency);
-                        return (
-                          <button
-                            key={currency}
-                            type="button"
-                            onClick={() => {
-                              const nextCurrencies = isChecked
-                                ? currencies.filter((c) => c !== currency)
-                                : [...currencies, currency];
-                              setLocalSettings({
-                                ...localSettings,
-                                forexNewsCurrencies: nextCurrencies,
-                              });
-                            }}
-                            className={`
-                              px-3 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95
-                              ${isChecked 
-                                ? "bg-primary border-primary text-white shadow-sm" 
-                                : "bg-muted/10 border-border/50 text-muted-foreground hover:bg-muted/20 hover:text-foreground"}
-                            `}
-                          >
-                            {currency}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Impact levels Selection */}
-                  <div className="space-y-3">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      News Impact Filter
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {IMPACTS.map((impact) => {
-                        const impacts = localSettings.forexNewsImpacts || [];
-                        const isChecked = impacts.includes(impact.id);
-                        return (
-                          <button
-                            key={impact.id}
-                            type="button"
-                            onClick={() => {
-                              const nextImpacts = isChecked
-                                ? impacts.filter((imp) => imp !== impact.id)
-                                : [...impacts, impact.id];
-                              setLocalSettings({
-                                ...localSettings,
-                                forexNewsImpacts: nextImpacts,
-                              });
-                            }}
-                            className={`
-                              flex items-start gap-3 p-4 rounded-2xl border text-left transition-all active:scale-[0.98]
-                              ${isChecked 
-                                ? "bg-white border-primary/50 ring-2 ring-primary/10 shadow-sm" 
-                                : "bg-muted/10 border-border/50 text-muted-foreground hover:bg-muted/20"}
-                            `}
-                          >
-                            <div className={`w-4 h-4 rounded-full mt-0.5 ${impact.color} flex items-center justify-center shrink-0`}>
-                              {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                            </div>
-                            <div>
-                              <span className={`text-xs font-bold block ${isChecked ? "text-foreground" : "text-muted-foreground"}`}>
-                                {impact.name}
-                              </span>
-                              {impact.desc && (
-                                <span className="text-[10px] font-medium text-warning block mt-0.5 uppercase tracking-wider">
-                                  {impact.desc}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Notification Timing */}
-                  <div className="space-y-3">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                      Notification Timing (Vietnam GMT+7)
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Daily Timing */}
-                      <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Tomorrow's News Notification</span>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="time"
-                            value={localSettings.forexNewsTimeDaily || "21:00"}
-                            onChange={(e) =>
-                              setLocalSettings({
-                                ...localSettings,
-                                forexNewsTimeDaily: e.target.value,
-                              })
-                            }
-                            className="flex-1 bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                          />
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            Every Night
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Weekly Timing */}
-                      <div className="p-4 bg-muted/20 rounded-2xl border border-border/50 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Weekly News Notification</span>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="time"
-                            value={localSettings.forexNewsTimeWeekly || "08:00"}
-                            onChange={(e) =>
-                              setLocalSettings({
-                                ...localSettings,
-                                forexNewsTimeWeekly: e.target.value,
-                              })
-                            }
-                            className="flex-1 bg-white border border-border rounded-xl px-3 py-1.5 font-bold text-xs outline-none focus:ring-2 ring-primary/20 transition-all"
-                          />
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            Sunday Mornings
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {onManageAssets && (
-            <section className="bg-card rounded-[32px] border border-border p-8 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                    <Settings className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground">Trading assets</h2>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Symbols shown on Bias Expect and the Telegram mini app
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={onManageAssets}
-                  className="px-5 py-2.5 rounded-xl border border-border text-sm font-bold hover:bg-muted"
-                >
-                  Manage assets
-                </button>
-              </div>
-            </section>
-          )}
-
-          {/* Telegram Section */}
-          <section className="bg-card rounded-[32px] border border-border p-8 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[#0088cc]/10 text-[#0088cc]">
-                <Send className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Telegram Integration</h2>
-                <p className="text-xs text-muted-foreground font-medium">
-                  Receive reminders directly on your phone
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className={`p-6 rounded-2xl border transition-all ${localSettings.telegramChatId ? "bg-primary/10 border-primary/20" : "bg-muted/20 border-border/50"}`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg ${localSettings.telegramChatId ? "bg-primary shadow-primary/20" : "bg-[#0088cc] shadow-[#0088cc]/20"}`}>
-                      <Send className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                        {localSettings.telegramChatId ? "Connected to Telegram" : "Telegram Bot"}
-                      </h3>
-                      <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                        {localSettings.telegramChatId 
-                          ? "You are receiving notifications via Telegram" 
-                          : "Connect your account to receive mobile alerts"}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {localSettings.telegramChatId ? (
-                    <button 
-                      onClick={() => setLocalSettings({ ...localSettings, telegramChatId: "" })}
-                      className="px-6 py-2.5 bg-white border border-destructive/30 text-destructive rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-destructive/10 transition-all"
+                    <button
+                      type="button"
+                      onClick={() => patchNow({ telegramChatId: "" })}
+                      className="h-8 rounded-lg border border-destructive/30 px-3 text-[11px] font-bold text-destructive hover:bg-destructive/10"
                     >
                       Disconnect
                     </button>
-                  ) : (
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center rounded-lg border border-destructive/25 bg-destructive/10 px-2.5 py-1 text-[11px] font-bold text-destructive">
+                      Telegram off
+                    </span>
                     <a
-                      href={`https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'ChartmateBot'}?start=${user.id}`}
+                      href={`https://t.me/${botUser}?start=${user.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-6 py-2.5 bg-[#0088cc] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#0088cc]/20 hover:opacity-90 active:scale-95 transition-all text-center"
+                      className="inline-flex h-8 items-center rounded-lg bg-[#0088cc] px-3 text-[11px] font-bold text-white hover:opacity-90"
                     >
-                      Connect Now
+                      Connect
                     </a>
-                  )}
-                </div>
+                  </>
+                )}
+                <span className="rounded-lg border border-border bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+                  {accentName}
+                </span>
+              </div>
+              {!telegramOn && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Session bias and news will not reach your phone. Popups on this computer still fire.
+                </p>
+              )}
+
+              <p className="mt-5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Accent</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    title={c.name}
+                    aria-label={c.name}
+                    aria-pressed={accent.toLowerCase() === c.hex.toLowerCase()}
+                    onClick={() => patchNow({ primaryColor: c.hex })}
+                    className={cn(
+                      "h-9 w-9 rounded-[10px] border-2 transition-shadow",
+                      accent.toLowerCase() === c.hex.toLowerCase()
+                        ? "border-foreground shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_25%,transparent)]"
+                        : "border-transparent hover:border-border",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 flex w-[168px] items-center gap-2">
+                <span
+                  className="h-8 w-8 shrink-0 rounded-lg border border-border"
+                  style={{ backgroundColor: accent }}
+                />
+                <input
+                  value={accent}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val.match(/^#[0-9A-Fa-f]{0,6}$/)) return;
+                    setLocal((prev) => ({ ...prev, primaryColor: val }));
+                    if (val.length === 7) patchDebounced("primaryColor", { primaryColor: val });
+                  }}
+                  className="h-8 flex-1 rounded-lg border border-border bg-background px-2 font-mono text-xs font-bold tabular-nums"
+                  spellCheck={false}
+                  aria-label="Custom hex"
+                />
               </div>
 
-              {!localSettings.telegramChatId && (
-                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
-                  <Sparkles className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-amber-800 font-medium leading-relaxed uppercase tracking-wider">
-                    Tip: Click "Connect Now" to open our Telegram Bot. 
-                    Press "Start" in the chat to automatically link your account.
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Admin Zone — only visible to admin email */}
-          {user?.email === ADMIN_EMAIL && (
-            <section className="bg-destructive/10 dark:bg-destructive/10 rounded-[32px] border border-destructive/30 dark:border-destructive/30 p-8 shadow-sm space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-destructive/15 dark:bg-destructive/20 text-destructive dark:text-destructive">
-                  <ShieldAlert className="w-5 h-5" />
-                </div>
+              <div className="mt-4 flex max-w-md items-center gap-3">
+                <Switch checked={theme === "dark"} onCheckedChange={() => toggleTheme()} />
                 <div>
-                  <h2 className="text-xl font-bold text-destructive dark:text-destructive">Admin Zone</h2>
-                  <p className="text-xs text-destructive dark:text-destructive font-medium">
-                    Visible only to system administrator
-                  </p>
+                  <p className="text-sm font-bold text-foreground">Night mode</p>
+                  <p className="text-xs text-muted-foreground">Same control as the floating sun.</p>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-destructive dark:text-destructive">
-                  Database Backup
-                </p>
-                <p className="text-xs text-destructive/70 dark:text-destructive/70 font-medium leading-relaxed">
-                  Export toàn bộ database thành file SQL và lưu đồng thời lên Cloudflare R2.
-                  File sẽ được tải về máy ngay sau khi hoàn tất.
-                </p>
-                <BackupButton />
-              </div>
-            </section>
-          )}
+            <div className="shrink-0">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Live desk</p>
+              <LiveDeskPreview accent={accent} accentDeep={accentDeep} telegramOn={telegramOn} />
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {telegramOn
+                  ? "Bias Expect in your color."
+                  : "Bias Expect in your color. Stamp lifts when Telegram is on."}
+              </p>
+            </div>
+          </div>
+        </section>
 
-          {/* Save Button */}
-          <div className="pt-4">
-            <button
-              onClick={handleSave}
-              disabled={mutation.isPending || !hasChanges}
-              className={`
-                w-full py-4 rounded-[20px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all
-                ${mutation.isPending ? "bg-muted text-muted-foreground" : "bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95"}
-                ${!hasChanges && !mutation.isPending ? "opacity-50 grayscale cursor-not-allowed" : "cursor-pointer"}
-              `}
-            >
-              {mutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Save className="w-5 h-5" />
-              )}
-              {mutation.isPending ? "Saving..." : "Save All Settings"}
-            </button>
-            {!hasChanges && !mutation.isPending && (
-              <p className="text-center text-[10px] text-muted-foreground font-medium mt-3 uppercase tracking-widest">
-                No changes to save
+        {!gradingOn && (
+          <div className="flex items-start gap-3 rounded-[14px] border border-amber-200 bg-amber-50 px-3.5 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+            <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground">Grading is off</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Execution tickets hide A+ / A / B.</p>
+            </div>
+            <Switch checked={false} onCheckedChange={(on) => patchNow({ showTradeGrade: on })} />
+          </div>
+        )}
+
+        {gradingOn && (
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-card px-3.5 py-3">
+            <div>
+              <p className="text-sm font-bold text-foreground">Trade grading</p>
+              <p className="text-xs text-muted-foreground">A+ / A / B on the execution ticket.</p>
+            </div>
+            <Switch checked onCheckedChange={(on) => patchNow({ showTradeGrade: on })} />
+          </div>
+        )}
+
+        <div className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+          <Fold
+            open={openFold === "rituals"}
+            onToggle={() => toggleFold("rituals")}
+            title="Session bias"
+            summary={sessionSummary}
+            degraded={!telegramOn}
+            degradedNote="Won’t send"
+          >
+            {!telegramOn && (
+              <p className="mb-2 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                Times still save. Telegram is what delivers them.
               </p>
             )}
+            <ReminderRow
+              label="Asia bias"
+              tz="GMT+7"
+              checked={!!local.asianReminder}
+              time={local.asianTime || "07:30"}
+              onChecked={(v) => patchNow({ asianReminder: v })}
+              onTime={(v) => patchDebounced("asianTime", { asianTime: v })}
+            />
+            <ReminderRow
+              label="London bias"
+              tz="GMT+7"
+              checked={!!local.londonReminder}
+              time={local.londonTime || "13:00"}
+              onChecked={(v) => patchNow({ londonReminder: v })}
+              onTime={(v) => patchDebounced("londonTime", { londonTime: v })}
+            />
+            <ReminderRow
+              label="NY bias"
+              tz="GMT+7"
+              checked={!!local.nyReminder}
+              time={local.nyTime || "19:00"}
+              onChecked={(v) => patchNow({ nyReminder: v })}
+              onTime={(v) => patchDebounced("nyTime", { nyTime: v })}
+            />
+          </Fold>
+
+          <Fold
+            open={openFold === "news"}
+            onToggle={() => toggleFold("news")}
+            title="News desk"
+            summary={newsSummary}
+            degraded={!telegramOn}
+            degradedNote="Needs Telegram"
+          >
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-sm font-semibold">Send nightly pack</span>
+              <Switch
+                checked={!!local.forexNewsReminder}
+                onCheckedChange={(v) => patchNow({ forexNewsReminder: v })}
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {CURRENCIES.map((c) => {
+                const on = (local.forexNewsCurrencies || []).includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => toggleCurrency(c)}
+                    className={cn(
+                      "h-7 rounded-md border px-2 text-[10px] font-extrabold",
+                      on
+                        ? "border-transparent bg-primary text-primary-foreground"
+                        : "border-border bg-background text-muted-foreground",
+                    )}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {IMPACTS.map((impact) => {
+                const on = (local.forexNewsImpacts || []).includes(impact.id);
+                return (
+                  <button
+                    key={impact.id}
+                    type="button"
+                    onClick={() => toggleImpact(impact.id)}
+                    className={cn(
+                      "flex items-start gap-2 rounded-xl border p-3 text-left",
+                      on ? "border-primary/40 bg-background" : "border-border bg-muted/30 text-muted-foreground",
+                    )}
+                  >
+                    <span className={cn("mt-0.5 h-3 w-3 shrink-0 rounded-full", impact.color)} />
+                    <span>
+                      <span className="block text-xs font-bold">{impact.name}</span>
+                      {impact.desc && (
+                        <span className="text-[10px] font-medium text-amber-600">{impact.desc}</span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <label className="text-xs font-semibold">
+                Tomorrow’s news
+                <span className="mt-1 flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={local.forexNewsTimeDaily || "21:00"}
+                    onChange={(e) => patchDebounced("forexNewsTimeDaily", { forexNewsTimeDaily: e.target.value })}
+                    className="h-9 flex-1 rounded-lg border border-border bg-background px-2 font-mono text-xs font-bold"
+                  />
+                  <span className="w-16 text-[10px] font-bold text-muted-foreground">GMT+7</span>
+                </span>
+              </label>
+              <label className="text-xs font-semibold">
+                Weekly pack
+                <span className="mt-1 flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={local.forexNewsTimeWeekly || "08:00"}
+                    onChange={(e) => patchDebounced("forexNewsTimeWeekly", { forexNewsTimeWeekly: e.target.value })}
+                    className="h-9 flex-1 rounded-lg border border-border bg-background px-2 font-mono text-xs font-bold"
+                  />
+                  <span className="w-16 text-[10px] font-bold text-muted-foreground">Sun GMT+7</span>
+                </span>
+              </label>
+            </div>
+          </Fold>
+
+          <Fold
+            open={openFold === "local"}
+            onToggle={() => toggleFold("local")}
+            title="This computer"
+            summary="Popups still work without Telegram"
+          >
+            <ReminderRow
+              label="Daily psychology"
+              tz="Local"
+              checked={!!local.dailyReminder}
+              time={local.dailyReminderTime || "08:00"}
+              onChecked={(v) => patchNow({ dailyReminder: v })}
+              onTime={(v) => patchDebounced("dailyReminderTime", { dailyReminderTime: v })}
+            />
+            <ReminderRow
+              label="Weekend review"
+              tz="Local"
+              checked={!!local.weeklyReminder}
+              time={local.weeklyReminderTime || "09:00"}
+              onChecked={(v) => patchNow({ weeklyReminder: v })}
+              onTime={(v) => patchDebounced("weeklyReminderTime", { weeklyReminderTime: v })}
+            />
+          </Fold>
+
+          <Fold
+            open={openFold === "assets"}
+            onToggle={() => toggleFold("assets")}
+            title="Assets"
+            summary={`${symbols.length} symbol${symbols.length === 1 ? "" : "s"} on Bias Expect`}
+          >
+            <p className="font-mono text-sm font-bold text-muted-foreground">
+              {symbols.length ? symbols.map((s) => s.name).join(" · ") : "No symbols yet."}
+            </p>
+            {onManageAssets && (
+              <button
+                type="button"
+                onClick={onManageAssets}
+                className="mt-3 h-9 rounded-xl border border-border px-3 text-xs font-bold hover:bg-muted"
+              >
+                Manage symbols
+              </button>
+            )}
+          </Fold>
+        </div>
+
+        {user.email === ADMIN_EMAIL && (
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ShieldAlert className="h-4 w-4" />
+              <h2 className="text-sm font-bold text-foreground">Admin backup</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Export the database as SQL and store a copy on R2. Visible only to the system admin.
+            </p>
+            <div className="mt-3">
+              <BackupButton />
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LiveDeskPreview({
+  accent,
+  accentDeep,
+  telegramOn,
+}: {
+  accent: string;
+  accentDeep: string;
+  telegramOn: boolean;
+}) {
+  return (
+    <div className="relative grid h-[148px] w-full overflow-hidden rounded-xl border border-border bg-background shadow-sm sm:h-[168px] sm:w-[260px] grid-cols-[72px_1fr]">
+      <div
+        className="flex flex-col gap-1.5 p-2"
+        style={{ background: `linear-gradient(180deg, ${accent}, ${accentDeep})` }}
+      >
+        <span className="block h-2 w-8 rounded bg-white/30" />
+        <span className="block h-2 w-10 rounded bg-white" />
+        <span className="block h-2 w-7 rounded bg-white/30" />
+        <span className="block h-2 w-9 rounded bg-white/30" />
+        <span className="mt-auto block h-2 w-8 rounded bg-white/30" />
+      </div>
+      <div className="flex flex-col gap-2 bg-muted/40 p-2.5">
+        <div className="h-3 w-16 rounded bg-border" />
+        <div className="flex-1 rounded-md border border-border bg-card p-1.5">
+          <div className="mb-1.5 h-1.5 w-10 rounded" style={{ background: accent }} />
+          <div className="space-y-1">
+            <div className="h-1.5 w-full rounded bg-muted" />
+            <div className="h-1.5 w-4/5 rounded bg-muted" />
+            <div className="h-1.5 w-3/5 rounded bg-muted" />
           </div>
         </div>
+        <div className="grid h-5 place-items-center rounded text-[8px] font-black text-white" style={{ background: accent }}>
+          New trade
+        </div>
       </div>
+      {!telegramOn && (
+        <div className="absolute right-2 top-2 max-w-[140px] rounded-lg bg-foreground/80 px-2 py-1.5 text-[10px] font-bold leading-snug text-background">
+          Phone channel dark · news won’t land
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Fold({
+  open,
+  onToggle,
+  title,
+  summary,
+  degraded,
+  degradedNote,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  title: string;
+  summary: string;
+  degraded?: boolean;
+  degradedNote?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Collapsible open={open} onOpenChange={onToggle}>
+      <div
+        className={cn(
+          degraded &&
+            "bg-muted/40 bg-[repeating-linear-gradient(-45deg,transparent,transparent_8px,var(--border)_8px,var(--border)_9px)]",
+        )}
+      >
+        <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left">
+          <span>
+            <span className="block text-sm font-bold text-foreground">{title}</span>
+            <span className="block text-xs text-muted-foreground">{summary}</span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            {degraded && degradedNote && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                {degradedNote}
+              </span>
+            )}
+            <span className="text-xs font-bold text-muted-foreground">{open ? "Hide" : "Show"}</span>
+          </span>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-4 pb-4">{children}</CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+function ReminderRow({
+  label,
+  tz,
+  checked,
+  time,
+  onChecked,
+  onTime,
+}: {
+  label: string;
+  tz: string;
+  checked: boolean;
+  time: string;
+  onChecked: (v: boolean) => void;
+  onTime: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 py-1 sm:flex-nowrap sm:gap-3">
+      <Switch checked={checked} onCheckedChange={onChecked} />
+      <span className="min-w-0 flex-1 text-sm font-semibold">{label}</span>
+      <span className="flex items-center gap-2">
+        <input
+          type="time"
+          value={time}
+          onChange={(e) => onTime(e.target.value)}
+          className="h-9 w-[108px] rounded-lg border border-border bg-background px-2 font-mono text-xs font-bold"
+        />
+        <span className="w-12 text-[10px] font-bold text-muted-foreground">{tz}</span>
+      </span>
     </div>
   );
 }

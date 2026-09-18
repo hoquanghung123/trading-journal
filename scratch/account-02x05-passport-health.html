@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account · 02×05 Passport health</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: "#F8FAFC", foreground: "#0F172A", card: "#FFFFFF",
+            muted: "#F1F5F9", "muted-fg": "#64748B", border: "#E2E8F0",
+            primary: "#4C763B", bear: "#C2413B", cons: "#D97706", tg: "#0088CC",
+          },
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"], mono: ["IBM Plex Mono", "ui-monospace", "monospace"] },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root { --accent: #4C763B; --accent-deep: #3B5E2E; }
+    html, body { font-family: Inter, system-ui, sans-serif; background: #E4EBE0; color: #0F172A; }
+    .forest { background: linear-gradient(135deg, #4C763B, #3B5E2E); }
+    .accent-fill { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); }
+    .nums { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { scrollbar-width: none; }
+    .shell {
+      width: min(1440px, 100%); height: min(860px, calc(100vh - 88px));
+      border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 200px 1fr;
+      background: #F8FAFC; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08); border: 1px solid #fff;
+    }
+    body[data-frame="phone"] .shell { width: 390px; height: 844px; grid-template-columns: 1fr; }
+    .phone-only, .desk-only { display: flex; }
+    body[data-frame="phone"] .sidebar, body[data-frame="phone"] .desk-only { display: none !important; }
+    body[data-frame="desktop"] .phone-only { display: none !important; }
+    .tog { width: 36px; height: 20px; border-radius: 99px; background: #CBD5E1; border: 0; position: relative; cursor: pointer; flex-shrink: 0; }
+    .tog.is-on { background: var(--accent); }
+    .tog-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 99px; transition: transform .15s; }
+    .tog.is-on .tog-knob { transform: translateX(16px); }
+    .swatch { width: 36px; height: 36px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; }
+    .swatch.is-on { border-color: #0F172A; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+    .mini {
+      width: 260px; height: 168px; border-radius: 12px; overflow: hidden; position: relative;
+      display: grid; grid-template-columns: 72px 1fr;
+      border: 1px solid #E2E8F0; box-shadow: 0 10px 28px rgba(15,23,42,.1); background: #F8FAFC;
+    }
+    body[data-frame="phone"] .mini { width: 100%; height: 148px; }
+    .mini-nav span { display: block; height: 8px; border-radius: 4px; background: rgba(255,255,255,.28); }
+    .mini-nav span.is-on { background: #fff; width: 100%; }
+    .mini-veil {
+      position: absolute; top: 8px; right: 8px; left: auto; bottom: auto;
+      max-width: 140px; padding: 6px 8px; border-radius: 8px;
+      background: rgba(15,23,42,.82); color: #fff;
+      font-size: 10px; font-weight: 700; line-height: 1.3;
+    }
+    body.is-linked .mini-veil { display: none; }
+    .fold { display: none; }
+    .fold.is-on { display: block; }
+    .row { width: 100%; text-align: left; }
+    .time { height: 34px; border: 1px solid #E2E8F0; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 700; background: #fff; }
+    .ccy { height: 28px; padding: 0 8px; border-radius: 7px; border: 1px solid #E2E8F0; background: #fff; font-size: 10px; font-weight: 800; color: #64748B; }
+    .ccy.is-on { background: var(--accent); color: #fff; border-color: transparent; }
+    .ex {
+      border-radius: 14px; padding: 12px 14px; border: 1px solid #F1C4C0;
+      background: #FDF6F5; display: flex; gap: 12px; align-items: flex-start;
+    }
+    .ex.warn { border-color: #F3D4A0; background: #FFF8EE; }
+    .ex.ok { border-color: #D5E4CF; background: #F4F8F1; }
+    .degraded {
+      border: 1px dashed #E2E8F0;
+      background: repeating-linear-gradient(-45deg, #F8FAFC, #F8FAFC 8px, #F1F5F9 8px, #F1F5F9 16px);
+    }
+    body.is-linked .degraded { border-style: solid; background: #fff; }
+    body.is-linked .degraded-note { display: none; }
+    .linked-only { display: none; }
+    body.is-linked .off-only { display: none; }
+    body.is-linked .linked-only { display: inline-flex; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body data-frame="desktop" class="antialiased">
+  <div class="min-h-screen py-5 px-4 flex flex-col items-center gap-4">
+    <div class="w-full max-w-[1440px] flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Mockup 02 × 05 · Account</p>
+        <h1 class="text-xl font-black tracking-tight">Passport health</h1>
+        <p class="text-sm text-muted-fg mt-1 max-w-2xl">Identity + live chrome from 02. Exceptions and degraded delivery from 05. Connect Telegram and the desk preview, session bias, and news come alive.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-[11px] font-bold">
+        <nav class="flex bg-white border border-border rounded-xl p-1 overflow-x-auto hide-scroll">
+          <a href="account-01-split-rail.html" class="px-3 py-1.5 rounded-lg text-muted-fg">01</a>
+          <a href="account-02-passport.html" class="px-3 py-1.5 rounded-lg text-muted-fg">02</a>
+          <a href="account-03-session-clock.html" class="px-3 py-1.5 rounded-lg text-muted-fg">03</a>
+          <a href="account-04-inspector.html" class="px-3 py-1.5 rounded-lg text-muted-fg">04</a>
+          <a href="account-05-health-board.html" class="px-3 py-1.5 rounded-lg text-muted-fg">05</a>
+          <a href="account-02x05-passport-health.html" class="px-3 py-1.5 rounded-lg forest text-white">02×05</a>
+        </nav>
+        <div class="flex bg-white border border-border rounded-xl p-1">
+          <button type="button" data-frame="phone" class="frame-btn px-3 py-1.5 rounded-lg text-muted-fg">Phone</button>
+          <button type="button" data-frame="desktop" class="frame-btn px-3 py-1.5 rounded-lg forest text-white">Laptop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="shell relative">
+      <aside class="sidebar flex flex-col border-r border-border bg-white py-5 px-3">
+        <div class="flex items-center gap-2 px-2 mb-6">
+          <div class="w-8 h-8 rounded-lg forest grid place-items-center text-white text-xs font-black">C</div>
+          <div>
+            <p class="text-sm font-black leading-tight">Chartmate</p>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-muted-fg">ICT journal</p>
+          </div>
+        </div>
+        <nav class="flex-1 space-y-1 text-[13px] font-semibold">
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Bias Expect</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Trade Log</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Playbook</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Review</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Stats</div>
+        </nav>
+        <div class="mt-auto space-y-1 pt-4 border-t border-border">
+          <div class="px-3 py-2 rounded-xl forest text-white text-[13px] font-semibold">Account</div>
+          <div class="px-2 pt-2 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full border border-border grid place-items-center text-primary text-xs font-black">D</div>
+            <span class="text-xs font-bold">Duy</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="flex flex-col min-w-0 min-h-0">
+        <div class="phone-only h-12 px-4 items-center justify-between border-b border-border bg-white/90 backdrop-blur shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg forest grid place-items-center text-white text-xs font-black">C</div>
+            <span class="text-sm font-bold">Account</span>
+          </div>
+          <span class="text-[10px] font-black text-bear off-only" id="phone-flag">1 block</span>
+          <span class="text-[10px] font-black text-cons linked-only">Warn</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scroll">
+          <div class="p-4 lg:p-6 space-y-3">
+            <div class="flex items-end justify-between gap-3">
+              <div>
+                <h2 class="text-lg lg:text-2xl font-black tracking-tight">Desk</h2>
+                <p class="text-[11px] font-medium text-muted-fg mt-0.5" id="scan-sub">1 block · 1 warning · alerts not on phone</p>
+              </div>
+              <p class="desk-only nums text-xs font-bold text-muted-fg">Fri 18 Sep</p>
+            </div>
+
+            <div class="rounded-2xl border border-border bg-white overflow-hidden">
+              <div class="p-4 lg:p-5 flex flex-col lg:flex-row gap-5">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-3">
+                    <div class="w-14 h-14 rounded-2xl accent-fill grid place-items-center text-white text-lg font-black">D</div>
+                    <div>
+                      <p class="text-xl font-black tracking-tight">Duy</p>
+                      <p class="text-sm text-muted-fg">bsleducduy@gmail.com</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 flex flex-wrap items-center gap-2">
+                    <span class="off-only inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FDF6F5] text-bear text-[11px] font-bold border border-[#F1C4C0]">Telegram off</span>
+                    <span class="linked-only items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#E8F4FA] text-tg text-[11px] font-bold border border-[#B8DFF0]">Telegram connected</span>
+                    <span class="px-2.5 py-1 rounded-lg bg-muted border border-border text-[11px] font-bold text-muted-fg" id="accent-label">Forest</span>
+                    <button type="button" id="connect" class="off-only h-8 px-3 rounded-lg bg-[#0088cc] text-white text-[11px] font-bold">Connect</button>
+                  </div>
+                  <p class="off-only mt-2 text-xs text-muted-fg">Session bias and news will not reach your phone. Popups on this computer still fire.</p>
+
+                  <p class="mt-5 text-[11px] font-bold uppercase tracking-widest text-muted-fg">Accent</p>
+                  <div class="mt-2 flex flex-wrap gap-2" id="swatches">
+                    <button type="button" class="swatch is-on" data-hex="#4C763B" data-deep="#3B5E2E" data-name="Forest" style="background:#4C763B"></button>
+                    <button type="button" class="swatch" data-hex="#0c3299" data-deep="#08246e" data-name="Blue" style="background:#0c3299"></button>
+                    <button type="button" class="swatch" data-hex="#f97316" data-deep="#c2410c" data-name="Orange" style="background:#f97316"></button>
+                    <button type="button" class="swatch" data-hex="#7c3aed" data-deep="#5b21b6" data-name="Purple" style="background:#7c3aed"></button>
+                    <button type="button" class="swatch" data-hex="#475569" data-deep="#334155" data-name="Slate" style="background:#475569"></button>
+                    <button type="button" class="swatch" data-hex="#d97706" data-deep="#b45309" data-name="Amber" style="background:#d97706"></button>
+                  </div>
+                  <div class="mt-4 flex items-center gap-3 max-w-md">
+                    <button type="button" class="tog" data-tog aria-pressed="false"><span class="tog-knob"></span></button>
+                    <div>
+                      <p class="text-sm font-bold">Night mode</p>
+                      <p class="text-xs text-muted-fg">Preview stays light so you can judge the accent.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="shrink-0">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-muted-fg mb-2">Live desk</p>
+                  <div class="mini">
+                    <div class="mini-nav p-2 flex flex-col gap-1.5" style="background:linear-gradient(180deg, var(--accent), var(--accent-deep))">
+                      <span class="w-8 opacity-90"></span>
+                      <span class="w-10 is-on"></span>
+                      <span class="w-7"></span>
+                      <span class="w-9"></span>
+                      <span class="w-8 mt-auto"></span>
+                    </div>
+                    <div class="p-2.5 flex flex-col gap-2 bg-[#F8FAFC]">
+                      <div class="h-3 w-16 rounded bg-slate-200"></div>
+                      <div class="flex-1 rounded-md border border-border bg-white p-1.5">
+                        <div class="h-1.5 w-10 rounded mb-1.5" style="background:var(--accent)"></div>
+                        <div class="space-y-1">
+                          <div class="h-1.5 w-full rounded bg-slate-100"></div>
+                          <div class="h-1.5 w-4/5 rounded bg-slate-100"></div>
+                          <div class="h-1.5 w-3/5 rounded bg-slate-100"></div>
+                        </div>
+                      </div>
+                      <button type="button" class="h-5 rounded text-[8px] font-black text-white" style="background:var(--accent)">New trade</button>
+                    </div>
+                    <div class="mini-veil">Phone channel dark · news won’t land</div>
+                  </div>
+                  <p class="mt-2 text-[11px] text-muted-fg">Bias Expect in your color. Veil lifts when Telegram is on.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="ex warn" id="ex-grade">
+              <span class="mt-1 w-2 h-2 rounded-full bg-cons shrink-0"></span>
+              <div class="flex-1">
+                <p class="text-sm font-bold">Grading is off</p>
+                <p class="text-xs text-muted-fg mt-0.5">Execution tickets hide A+ / A / B.</p>
+              </div>
+              <button type="button" class="tog" data-tog id="grade-tog"><span class="tog-knob"></span></button>
+            </div>
+
+            <div class="rounded-2xl border border-border bg-white overflow-hidden divide-y divide-border">
+              <button type="button" class="row px-4 py-3.5 flex items-center justify-between degraded" data-fold="rituals">
+                <span>
+                  <span class="block text-sm font-bold">Session bias</span>
+                  <span class="block text-xs text-muted-fg">Asia 07:30 · London 13:00 · NY 19:00 GMT+7</span>
+                </span>
+                <span class="flex items-center gap-2">
+                  <span class="degraded-note text-[10px] font-bold uppercase tracking-wider text-cons">Won’t send</span>
+                  <span class="text-muted-fg text-xs font-bold" data-chev>Show</span>
+                </span>
+              </button>
+              <div class="fold px-4 pb-4 space-y-2 degraded" data-fold="rituals">
+                <p class="degraded-note text-[11px] text-cons font-medium pt-2">Times still save. Telegram is what delivers them.</p>
+                <div class="flex items-center gap-3 py-1">
+                  <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  <span class="flex-1 text-sm font-semibold">Asia bias</span>
+                  <input type="time" value="07:30" class="time nums w-[100px]" /><span class="text-[10px] font-bold text-muted-fg w-10">GMT+7</span>
+                </div>
+                <div class="flex items-center gap-3 py-1">
+                  <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  <span class="flex-1 text-sm font-semibold">London bias</span>
+                  <input type="time" value="13:00" class="time nums w-[100px]" /><span class="text-[10px] font-bold text-muted-fg w-10">GMT+7</span>
+                </div>
+                <div class="flex items-center gap-3 py-1">
+                  <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  <span class="flex-1 text-sm font-semibold">NY bias</span>
+                  <input type="time" value="19:00" class="time nums w-[100px]" /><span class="text-[10px] font-bold text-muted-fg w-10">GMT+7</span>
+                </div>
+              </div>
+
+              <button type="button" class="row px-4 py-3.5 flex items-center justify-between degraded" data-fold="news">
+                <span>
+                  <span class="block text-sm font-bold">News desk</span>
+                  <span class="block text-xs text-muted-fg">USD EUR GBP JPY · High + Medium · 21:00 GMT+7</span>
+                </span>
+                <span class="flex items-center gap-2">
+                  <span class="degraded-note text-[10px] font-bold uppercase tracking-wider text-cons">Needs Telegram</span>
+                  <span class="text-muted-fg text-xs font-bold" data-chev>Show</span>
+                </span>
+              </button>
+              <div class="fold px-4 pb-4 space-y-3 degraded" data-fold="news">
+                <div class="flex items-center justify-between pt-2">
+                  <span class="text-sm font-semibold">Send nightly pack</span>
+                  <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" class="ccy is-on">USD</button>
+                  <button type="button" class="ccy is-on">EUR</button>
+                  <button type="button" class="ccy is-on">GBP</button>
+                  <button type="button" class="ccy">CHF</button>
+                  <button type="button" class="ccy">AUD</button>
+                  <button type="button" class="ccy">NZD</button>
+                  <button type="button" class="ccy is-on">JPY</button>
+                  <button type="button" class="ccy">CAD</button>
+                </div>
+              </div>
+
+              <button type="button" class="row px-4 py-3.5 flex items-center justify-between" data-fold="local">
+                <span>
+                  <span class="block text-sm font-bold">This computer</span>
+                  <span class="block text-xs text-muted-fg">Popups still work without Telegram</span>
+                </span>
+                <span class="text-muted-fg text-xs font-bold" data-chev>Show</span>
+              </button>
+              <div class="fold px-4 pb-4 space-y-2" data-fold="local">
+                <div class="flex items-center gap-3 py-1">
+                  <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  <span class="flex-1 text-sm font-semibold">Daily psychology</span>
+                  <input type="time" value="08:00" class="time nums w-[100px]" /><span class="text-[10px] font-bold text-muted-fg w-10">Local</span>
+                </div>
+                <div class="flex items-center gap-3 py-1">
+                  <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  <span class="flex-1 text-sm font-semibold">Weekend review</span>
+                  <input type="time" value="09:00" class="time nums w-[100px]" /><span class="text-[10px] font-bold text-muted-fg w-10">Local</span>
+                </div>
+              </div>
+
+              <button type="button" class="row px-4 py-3.5 flex items-center justify-between" data-fold="assets">
+                <span>
+                  <span class="block text-sm font-bold">Assets</span>
+                  <span class="block text-xs text-muted-fg">8 symbols on Bias Expect</span>
+                </span>
+                <span class="text-muted-fg text-xs font-bold" data-chev>Show</span>
+              </button>
+              <div class="fold px-4 pb-4" data-fold="assets">
+                <p class="nums text-sm font-bold text-muted-fg">XAUUSD · GC1! · EURUSD · GBPUSD · USDJPY · NAS100 · US30 · BTCUSD</p>
+                <button type="button" class="mt-3 h-9 px-3 rounded-xl border border-border text-xs font-bold">Manage symbols</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav class="phone-only h-14 border-t border-border bg-white items-center justify-around text-[9px] font-black uppercase tracking-wider text-muted-fg shrink-0">
+          <span>Bias</span><span>Trades</span><span>Book</span><span>Review</span><span class="text-primary">Account</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function link() {
+      document.body.classList.add("is-linked");
+      document.getElementById("scan-sub").textContent = "Clear · 1 warning left (grading)";
+    }
+    document.getElementById("connect").addEventListener("click", link);
+    document.querySelectorAll(".swatch").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".swatch").forEach((s) => s.classList.remove("is-on"));
+        btn.classList.add("is-on");
+        document.documentElement.style.setProperty("--accent", btn.dataset.hex);
+        document.documentElement.style.setProperty("--accent-deep", btn.dataset.deep);
+        document.getElementById("accent-label").textContent = btn.dataset.name;
+      });
+    });
+    document.querySelectorAll("[data-fold].row").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.fold;
+        const panel = document.querySelector(`.fold[data-fold="${id}"]`);
+        const on = panel.classList.toggle("is-on");
+        btn.querySelector("[data-chev]").textContent = on ? "Hide" : "Show";
+      });
+    });
+    document.getElementById("grade-tog").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const on = e.currentTarget.classList.toggle("is-on");
+      const box = document.getElementById("ex-grade");
+      if (on) {
+        box.className = "ex ok";
+        box.querySelector(".text-sm").textContent = "Grading is on";
+        box.querySelector(".text-xs").textContent = "A+ / A / B show on the execution ticket.";
+        box.querySelector(".rounded-full").className = "mt-1 w-2 h-2 rounded-full bg-primary shrink-0";
+        document.getElementById("scan-sub").textContent = document.body.classList.contains("is-linked")
+          ? "Desk is live"
+          : "1 block · alerts not on phone";
+      } else {
+        box.className = "ex warn";
+        box.querySelector(".text-sm").textContent = "Grading is off";
+        box.querySelector(".text-xs").textContent = "Execution tickets hide A+ / A / B.";
+        box.querySelector(".rounded-full").className = "mt-1 w-2 h-2 rounded-full bg-cons shrink-0";
+        document.getElementById("scan-sub").textContent = document.body.classList.contains("is-linked")
+          ? "Clear · 1 warning left (grading)"
+          : "1 block · 1 warning · alerts not on phone";
+      }
+    });
+    document.querySelectorAll("[data-tog]").forEach((btn) => {
+      if (btn.id === "grade-tog") return;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        btn.classList.toggle("is-on");
+      });
+    });
+    document.querySelectorAll(".ccy").forEach((btn) => {
+      btn.addEventListener("click", () => btn.classList.toggle("is-on"));
+    });
+    document.querySelectorAll(".frame-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.body.dataset.frame = btn.dataset.frame;
+        document.querySelectorAll(".frame-btn").forEach((b) => {
+          b.classList.toggle("forest", b === btn);
+          b.classList.toggle("text-white", b === btn);
+          b.classList.toggle("text-muted-fg", b !== btn);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

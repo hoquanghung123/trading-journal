@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account · 03 Session clock</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: "#F8FAFC", foreground: "#0F172A", card: "#FFFFFF",
+            muted: "#F1F5F9", "muted-fg": "#64748B", border: "#E2E8F0",
+            primary: "#4C763B", bear: "#C2413B", cons: "#D97706", tg: "#0088CC",
+          },
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"], mono: ["IBM Plex Mono", "ui-monospace", "monospace"] },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body { font-family: Inter, system-ui, sans-serif; background: #E4EBE0; color: #0F172A; }
+    .forest { background: linear-gradient(135deg, #4C763B, #3B5E2E); }
+    .nums { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { scrollbar-width: none; }
+    .shell {
+      width: min(1440px, 100%); height: min(860px, calc(100vh - 88px));
+      border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 200px 1fr;
+      background: #F8FAFC; box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08); border: 1px solid #fff;
+    }
+    body[data-frame="phone"] .shell { width: 390px; height: 844px; grid-template-columns: 1fr; }
+    .phone-only, .desk-only { display: flex; }
+    body[data-frame="phone"] .sidebar, body[data-frame="phone"] .desk-only { display: none !important; }
+    body[data-frame="desktop"] .phone-only { display: none !important; }
+    .clock {
+      display: grid; grid-template-columns: 88px 12px minmax(0, 1fr) 88px;
+      gap: 0 12px; position: relative;
+    }
+    body[data-frame="phone"] .clock { grid-template-columns: 56px 10px minmax(0, 1fr) 56px; gap: 0 8px; }
+    .clock::before {
+      content: ""; position: absolute; left: calc(88px + 5px); top: 8px; bottom: 8px;
+      width: 2px; background: #E2E8F0;
+    }
+    body[data-frame="phone"] .clock::before { left: calc(56px + 4px); }
+    .tick { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: start; padding: 4px 0; }
+    .tick.is-off { opacity: 0.42; }
+    .node {
+      width: 12px; height: 12px; border-radius: 99px; border: 2px solid #fff;
+      box-shadow: 0 0 0 2px #CBD5E1; margin-top: 22px; background: #CBD5E1; z-index: 1;
+    }
+    .tick.is-on .node { background: #4C763B; box-shadow: 0 0 0 2px #4C763B; }
+    .tick.is-now .node { background: #0c3299; box-shadow: 0 0 0 4px rgba(12,50,153,.2); }
+    .card {
+      margin: 8px 0; padding: 12px 14px; border-radius: 14px;
+      border: 1px solid #E2E8F0; background: #fff;
+    }
+    .tick.is-now .card { border-color: rgba(12,50,153,.35); background: #F4F7FC; }
+    .tick.is-off .card { background: #F8FAFC; }
+    .tog { width: 36px; height: 20px; border-radius: 99px; background: #CBD5E1; border: 0; position: relative; cursor: pointer; flex-shrink: 0; }
+    .tog.is-on { background: #4C763B; }
+    .tog-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 99px; transition: transform .15s; }
+    .tog.is-on .tog-knob { transform: translateX(16px); }
+    .time { height: 32px; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0 8px; font-size: 12px; font-weight: 700; background: #fff; width: 108px; }
+    .chan { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #64748B; }
+    .chan.is-tg { color: #0088CC; }
+    .chan.is-local { color: #4C763B; }
+    .swatch { width: 28px; height: 28px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; }
+    .swatch.is-on { border-color: #0F172A; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body data-frame="desktop" class="antialiased">
+  <div class="min-h-screen py-5 px-4 flex flex-col items-center gap-4">
+    <div class="w-full max-w-[1440px] flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="text-[10px] font-black uppercase tracking-[0.22em] text-primary">Mockup 03 / 05 · Account</p>
+        <h1 class="text-xl font-black tracking-tight">Session clock</h1>
+        <p class="text-sm text-muted-fg mt-1 max-w-2xl">The page is a trading day. Each reminder is a tick on the tape. Delivery channel sits on the right — Telegram vs this computer — not a buried card.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-[11px] font-bold">
+        <nav class="flex bg-white border border-border rounded-xl p-1 overflow-x-auto hide-scroll">
+          <a href="account-01-split-rail.html" class="px-3 py-1.5 rounded-lg text-muted-fg">01 Split</a>
+          <a href="account-02-passport.html" class="px-3 py-1.5 rounded-lg text-muted-fg">02 Passport</a>
+          <a href="account-03-session-clock.html" class="px-3 py-1.5 rounded-lg forest text-white">03 Clock</a>
+          <a href="account-04-inspector.html" class="px-3 py-1.5 rounded-lg text-muted-fg">04 Inspector</a>
+          <a href="account-05-health-board.html" class="px-3 py-1.5 rounded-lg text-muted-fg">05 Health</a>
+          <a href="account-02x05-passport-health.html" class="px-3 py-1.5 rounded-lg text-muted-fg">02×05</a>
+        </nav>
+        <div class="flex bg-white border border-border rounded-xl p-1">
+          <button type="button" data-frame="phone" class="frame-btn px-3 py-1.5 rounded-lg text-muted-fg">Phone</button>
+          <button type="button" data-frame="desktop" class="frame-btn px-3 py-1.5 rounded-lg forest text-white">Laptop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="shell relative">
+      <aside class="sidebar flex flex-col border-r border-border bg-white py-5 px-3">
+        <div class="flex items-center gap-2 px-2 mb-6">
+          <div class="w-8 h-8 rounded-lg forest grid place-items-center text-white text-xs font-black">C</div>
+          <div>
+            <p class="text-sm font-black leading-tight">Chartmate</p>
+            <p class="text-[9px] font-bold uppercase tracking-wider text-muted-fg">ICT journal</p>
+          </div>
+        </div>
+        <nav class="flex-1 space-y-1 text-[13px] font-semibold">
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Bias Expect</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Trade Log</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Playbook</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Review</div>
+          <div class="px-3 py-2 rounded-xl text-muted-fg">Stats</div>
+        </nav>
+        <div class="mt-auto space-y-1 pt-4 border-t border-border">
+          <div class="px-3 py-2 rounded-xl forest text-white text-[13px] font-semibold">Account</div>
+          <div class="px-2 pt-2 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full border border-border grid place-items-center text-primary text-xs font-black">D</div>
+            <span class="text-xs font-bold">Duy</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="flex flex-col min-w-0 min-h-0">
+        <div class="phone-only h-12 px-4 items-center justify-between border-b border-border bg-white/90 backdrop-blur shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg forest grid place-items-center text-white text-xs font-black">C</div>
+            <span class="text-sm font-bold">Account</span>
+          </div>
+          <span class="text-[10px] font-bold text-tg">TG on</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scroll">
+          <div class="p-4 lg:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-5">
+              <div>
+                <h2 class="text-lg lg:text-2xl font-black tracking-tight">Friday tape</h2>
+                <p class="text-[11px] font-medium text-muted-fg mt-0.5">18 Sep · next up London · Telegram delivers GMT+7</p>
+              </div>
+              <div class="flex items-center gap-2 text-[11px] font-bold">
+                <span class="px-2.5 py-1 rounded-lg bg-[#E8F4FA] text-tg border border-[#B8DFF0]">Telegram connected</span>
+                <span class="px-2.5 py-1 rounded-lg bg-muted border border-border text-muted-fg">Popup = local</span>
+              </div>
+            </div>
+
+            <div class="clock">
+              <div class="tick is-on">
+                <p class="nums text-[15px] font-bold leading-none pt-5">07:30</p>
+                <span class="node"></span>
+                <div class="card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-cons">Asia</p>
+                      <p class="text-sm font-bold mt-0.5">Mark Asia bias</p>
+                    </div>
+                    <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  </div>
+                  <input type="time" value="07:30" class="time nums mt-3" />
+                </div>
+                <p class="chan is-tg pt-6">Telegram</p>
+              </div>
+
+              <div class="tick is-on">
+                <p class="nums text-[15px] font-bold leading-none pt-5">08:00</p>
+                <span class="node"></span>
+                <div class="card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-primary">Prep</p>
+                      <p class="text-sm font-bold mt-0.5">Daily psychology</p>
+                    </div>
+                    <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  </div>
+                  <input type="time" value="08:00" class="time nums mt-3" />
+                </div>
+                <p class="chan is-local pt-6">Popup</p>
+              </div>
+
+              <div class="tick is-on is-now">
+                <p class="nums text-[15px] font-bold leading-none pt-5 text-[#0c3299]">13:00</p>
+                <span class="node"></span>
+                <div class="card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-[#0c3299]">London · now</p>
+                      <p class="text-sm font-bold mt-0.5">Mark London bias</p>
+                    </div>
+                    <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  </div>
+                  <input type="time" value="13:00" class="time nums mt-3" />
+                </div>
+                <p class="chan is-tg pt-6">Telegram</p>
+              </div>
+
+              <div class="tick is-on">
+                <p class="nums text-[15px] font-bold leading-none pt-5">19:00</p>
+                <span class="node"></span>
+                <div class="card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-primary">New York</p>
+                      <p class="text-sm font-bold mt-0.5">Mark NY bias</p>
+                    </div>
+                    <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  </div>
+                  <input type="time" value="19:00" class="time nums mt-3" />
+                </div>
+                <p class="chan is-tg pt-6">Telegram</p>
+              </div>
+
+              <div class="tick is-on">
+                <p class="nums text-[15px] font-bold leading-none pt-5">21:00</p>
+                <span class="node"></span>
+                <div class="card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-muted-fg">News</p>
+                      <p class="text-sm font-bold mt-0.5">Tomorrow’s calendar</p>
+                      <p class="text-[11px] text-muted-fg mt-1">USD EUR GBP JPY · High + Medium</p>
+                    </div>
+                    <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  </div>
+                  <input type="time" value="21:00" class="time nums mt-3" />
+                </div>
+                <p class="chan is-tg pt-6">Telegram</p>
+              </div>
+
+              <div class="tick is-on">
+                <p class="nums text-[13px] font-bold leading-tight pt-5">Sat<br />09:00</p>
+                <span class="node"></span>
+                <div class="card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-muted-fg">Weekend</p>
+                      <p class="text-sm font-bold mt-0.5">Weekly review</p>
+                    </div>
+                    <button type="button" class="tog is-on" data-tog><span class="tog-knob"></span></button>
+                  </div>
+                  <input type="time" value="09:00" class="time nums mt-3" />
+                </div>
+                <p class="chan is-local pt-6">Popup</p>
+              </div>
+            </div>
+
+            <div class="mt-6 grid lg:grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-border bg-white p-4">
+                <p class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Look</p>
+                <div class="mt-3 flex items-center gap-2">
+                  <button type="button" class="swatch is-on" style="background:#4C763B"></button>
+                  <button type="button" class="swatch" style="background:#0c3299"></button>
+                  <button type="button" class="swatch" style="background:#f97316"></button>
+                  <button type="button" class="swatch" style="background:#7c3aed"></button>
+                  <span class="text-xs font-bold text-muted-fg ml-2">Forest</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between">
+                  <span class="text-sm font-semibold">Trade grading</span>
+                  <button type="button" class="tog" data-tog><span class="tog-knob"></span></button>
+                </div>
+              </div>
+              <div class="rounded-2xl border border-border bg-white p-4">
+                <p class="text-[11px] font-bold uppercase tracking-widest text-muted-fg">Assets</p>
+                <p class="mt-2 nums text-sm font-bold">8 symbols · XAUUSD GC1! EURUSD…</p>
+                <button type="button" class="mt-3 h-9 px-3 rounded-xl border border-border text-xs font-bold">Manage</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav class="phone-only h-14 border-t border-border bg-white items-center justify-around text-[9px] font-black uppercase tracking-wider text-muted-fg shrink-0">
+          <span>Bias</span><span>Trades</span><span>Book</span><span>Review</span><span class="text-primary">Account</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll("[data-tog]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("is-on");
+        const tick = btn.closest(".tick");
+        if (tick) tick.classList.toggle("is-off", !btn.classList.contains("is-on"));
+      });
+    });
+    document.querySelectorAll(".swatch").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".swatch").forEach((s) => s.classList.remove("is-on"));
+        btn.classList.add("is-on");
+      });
+    });
+    document.querySelectorAll(".frame-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.body.dataset.frame = btn.dataset.frame;
+        document.querySelectorAll(".frame-btn").forEach((b) => {
+          b.classList.toggle("forest", b === btn);
+          b.classList.toggle("text-white", b === btn);
+          b.classList.toggle("text-muted-fg", b !== btn);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
