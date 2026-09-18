@@ -271,7 +271,7 @@ function Shell() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <a
-                    href="/admin/backups"
+                    href="/admin"
                     className={`w-full flex items-center rounded-xl text-sm font-medium text-primary hover:bg-primary/10 border border-primary/20 bg-primary/5 transition-all ${
                       collapsed && !isMobileOpen
                         ? "justify-center py-2.5"

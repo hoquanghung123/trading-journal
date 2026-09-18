@@ -1,24 +1,21 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  Users,
-  Search,
-  Eye,
-  ArrowLeft,
-  Loader2,
-  Calendar,
-  Shield,
-  ShieldAlert,
-  UserCheck,
-  Mail,
-  ExternalLink,
-  ChevronRight,
-} from "lucide-react";
+import { Users, Search, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfile {
   id: string;
@@ -158,6 +155,8 @@ export const Route = createFileRoute("/admin/users")({
 
 function AdminUsersDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingUser, setPendingUser] = useState<UserProfile | null>(null);
+  const [ackRisk, setAckRisk] = useState(false);
 
   // Query to fetch all users
   const { data: usersData, isLoading, refetch } = useQuery<{ success: boolean; users?: UserProfile[]; error?: string }>({
@@ -220,8 +219,8 @@ function AdminUsersDashboard() {
   const handleImpersonate = (user: UserProfile) => {
     if (impersonateMutation.isPending) return;
     toast.promise(impersonateMutation.mutateAsync(user), {
-      loading: `Đang chuẩn bị đóng vai user: ${user.display_name}...`,
-      success: "Đã tạo link đóng vai!",
+      loading: `Đang chuẩn bị đóng vai: ${user.display_name}...`,
+      success: "Đã tạo phiên đóng vai",
       error: (err) => `Lỗi: ${err.message}`,
     });
   };
@@ -245,221 +244,166 @@ function AdminUsersDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 md:p-10 font-sans relative overflow-hidden">
-      {/* Light glows */}
-      <div className="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="space-y-4 max-w-5xl">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="search"
+          placeholder="Tên hoặc email"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full h-10 bg-card border border-border rounded-xl pl-10 pr-4 text-sm outline-none focus:border-primary"
+        />
+      </div>
 
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
-        
-        {/* Navigation Breadcrumb */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors group"
-            >
-              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              Về Terminal
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link
-              to="/admin/users"
-              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-primary font-black" }}
-            >
-              👥 Users
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link
-              to="/admin/backups"
-              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-primary font-black" }}
-            >
-              💾 Backups
-            </Link>
-          </div>
-          <div className="h-6 px-3 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center self-start sm:self-auto">
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">
-              Admin Control Panel
-            </span>
-          </div>
-        </div>
-
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-glow-cyan">
-              User Management
-            </h1>
-            <p className="text-xs text-muted-foreground/80 font-semibold mt-1">
-              Quản lý danh sách các tài khoản người dùng đã đăng ký và hỗ trợ gỡ lỗi bằng cách Đóng vai (Impersonation).
-            </p>
-          </div>
-
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Users size={14} className="text-primary" />
+            {filteredUsers.length} tài khoản
+          </h2>
           <button
+            type="button"
             onClick={() => refetch()}
             disabled={isLoading}
-            className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white forest-gradient hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50"
+            className="text-[12px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
-            Làm mới danh sách
+            Làm mới
           </button>
         </div>
-
-        {/* Search Bar Widget */}
-        <div className="relative max-w-md group">
-          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 group-focus-within:text-primary transition-colors">
-            <Search className="w-5 h-5" />
-          </div>
-          <input
-            type="text"
-            placeholder="Tìm kiếm user bằng tên hiển thị hoặc email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-card/45 border border-border/60 rounded-2xl pl-14 pr-6 py-4 text-sm font-bold outline-none focus:bg-card focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-foreground backdrop-blur-md"
-          />
-        </div>
-
-        {/* Users Table Grid */}
-        <div className="bg-card/30 rounded-3xl border border-border/50 overflow-hidden backdrop-blur-md">
-          <div className="px-6 py-5 border-b border-border/40 bg-card/10 flex items-center justify-between">
-            <h2 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
-              <Users size={16} className="text-primary" />
-              Danh sách tài khoản ({filteredUsers.length})
-            </h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-border/30 text-muted-foreground/60 font-black uppercase tracking-widest">
-                  <th className="px-6 py-4">Tên hiển thị & Avatar</th>
-                  <th className="px-6 py-4">Email</th>
-                  <th className="px-6 py-4 text-center">Vai trò</th>
-                  <th className="px-6 py-4">Ngày đăng ký</th>
-                  <th className="px-6 py-4">Lần đăng nhập cuối</th>
-                  <th className="px-6 py-4 text-center">Hành động</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground">
+                <th className="px-4 py-3 font-semibold">Tên</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="px-4 py-3 font-semibold">Vai trò</th>
+                <th className="px-4 py-3 font-semibold">Đăng ký</th>
+                <th className="px-4 py-3 font-semibold">Đăng nhập cuối</th>
+                <th className="px-4 py-3 font-semibold"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                    <Loader2 size={18} className="animate-spin inline mr-2" />
+                    Đang tải…
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-border/20 font-semibold text-muted-foreground">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 size={24} className="animate-spin text-primary" />
-                        <span className="text-xs tracking-widest font-black uppercase text-muted-foreground/40">
-                          Đang tải danh sách user...
-                        </span>
+              ) : filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-muted/40">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        {user.avatar_url ? (
+                          <img
+                            src={user.avatar_url}
+                            alt=""
+                            className="w-8 h-8 rounded-full border border-border object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full forest-gradient grid place-items-center text-white text-[10px] font-bold">
+                            {user.display_name.substring(0, 2)}
+                          </div>
+                        )}
+                        <span className="font-semibold">{user.display_name}</span>
                       </div>
                     </td>
-                  </tr>
-                ) : filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <tr
-                      key={user.id}
-                      className="hover:bg-muted/10 transition-colors group/row"
-                    >
-                      {/* Name & Avatar */}
-                      <td className="px-6 py-4 whitespace-nowrap text-foreground">
-                        <div className="flex items-center gap-3">
-                          {user.avatar_url ? (
-                            <img
-                              src={user.avatar_url}
-                              alt={user.display_name}
-                              className="w-8 h-8 rounded-full border border-border bg-muted object-cover"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full forest-gradient flex items-center justify-center text-white text-[10px] font-black uppercase shadow-sm">
-                              {user.display_name.substring(0, 2)}
-                            </div>
-                          )}
-                          <span className="font-bold">{user.display_name}</span>
-                        </div>
-                      </td>
-
-                      {/* Email */}
-                      <td className="px-6 py-4 whitespace-nowrap text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Mail size={12} className="text-muted-foreground/50" />
-                          <span>{user.email || "N/A"}</span>
-                        </div>
-                      </td>
-
-                      {/* Role Badge */}
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
-                        {user.role === "admin" ? (
-                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-warning/10 text-warning border border-warning/20">
-                            <Shield size={10} />
-                            Admin
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
-                            <UserCheck size={10} />
-                            Member
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Created At */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={12} className="text-muted-foreground/50" />
-                          <span>{formatDate(user.created_at)}</span>
-                        </div>
-                      </td>
-
-                      {/* Last Sign In */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.last_sign_in_at ? (
-                          <span>{formatDate(user.last_sign_in_at)}</span>
-                        ) : (
-                          <span className="text-muted-foreground/30">—</span>
-                        )}
-                      </td>
-
-                      {/* Impersonate Action */}
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
-                        {user.role === "admin" ? (
-                          <button
-                            disabled
-                            className="inline-flex items-center gap-2 h-8 px-3 rounded-lg border border-border/40 text-muted-foreground/30 cursor-not-allowed text-[10px] font-black uppercase tracking-wider"
-                            title="Không thể đóng vai một tài khoản Admin khác"
-                          >
-                            <ShieldAlert size={12} />
-                            Bị khóa
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleImpersonate(user)}
-                            disabled={impersonateMutation.isPending}
-                            className="inline-flex items-center gap-2 h-8 px-3 rounded-lg border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:text-white transition-all active:scale-95 text-[10px] font-black uppercase tracking-wider shadow-sm group-hover/row:border-primary/40"
-                          >
-                            <Eye size={12} />
-                            Login As
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Users size={24} className="text-muted-foreground/30 animate-pulse" />
-                        <span className="text-xs tracking-widest font-black uppercase text-muted-foreground/30">
-                          Không tìm thấy người dùng nào phù hợp.
+                    <td className="px-4 py-3 font-sans tabular-nums text-[13px]">{user.email || "—"}</td>
+                    <td className="px-4 py-3">
+                      {user.role === "admin" ? (
+                        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-warning">
+                          <Shield size={11} /> Admin
                         </span>
-                      </div>
+                      ) : (
+                        <span className="text-[12px] font-medium">Member</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 font-sans tabular-nums text-[13px] text-muted-foreground">
+                      {formatDate(user.created_at)}
+                    </td>
+                    <td className="px-4 py-3 font-sans tabular-nums text-[13px] text-muted-foreground">
+                      {user.last_sign_in_at ? formatDate(user.last_sign_in_at) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {user.role === "admin" ? (
+                        <span className="text-[12px] text-muted-foreground">Khóa</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAckRisk(false);
+                            setPendingUser(user);
+                          }}
+                          disabled={impersonateMutation.isPending}
+                          className="h-8 px-3 rounded-lg border border-border text-[12px] font-semibold hover:bg-muted"
+                        >
+                          Đóng vai
+                        </button>
+                      )}
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    Không tìm thấy người dùng phù hợp.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
       </div>
+
+      <AlertDialog
+        open={!!pendingUser}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingUser(null);
+            setAckRisk(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Đăng nhập với tư cách {pendingUser?.display_name ?? "user này"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn sẽ rời phiên admin và xem journal đúng như user này. Banner vàng cho phép quay lại. Không dùng trên máy người khác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 accent-primary"
+              checked={ackRisk}
+              onChange={(e) => setAckRisk(e.target.checked)}
+            />
+            <span>Tôi hiểu phiên hiện tại sẽ bị thay bằng phiên của user này.</span>
+          </label>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setPendingUser(null);
+                setAckRisk(false);
+              }}
+            >
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!ackRisk || !pendingUser}
+              onClick={() => {
+                if (pendingUser) handleImpersonate(pendingUser);
+              }}
+            >
+              Đăng nhập với tư cách này
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

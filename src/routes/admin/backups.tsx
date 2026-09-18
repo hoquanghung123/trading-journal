@@ -1,34 +1,43 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  Database,
   CloudLightning,
   RefreshCw,
   FileText,
-  CheckCircle2,
-  XCircle,
   Loader2,
   Calendar,
   Layers,
-  HardDrive,
   Eye,
-  ArrowLeft,
-  Image as ImageIcon,
-  Activity,
   AlertTriangle,
   History,
-  Clock,
-  ChevronRight,
-  Check,
-  X,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { syncToOneDrive } from "@/lib/onedrive";
+import {
+  parseBackupTab,
+  sortFailedFirst,
+  backupFailed,
+  dedupeRealtimeLogs,
+  formatBytes,
+  type AdminBackupTab,
+  type BackupLog,
+  type RealtimeSyncLog,
+} from "@/lib/admin";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Server function to manually trigger a re-sync of a specific file from R2 to OneDrive
 const manualSyncFileFn = (createServerFn({ method: "POST" }) as any).handler(
@@ -69,17 +78,11 @@ const manualSyncFileFn = (createServerFn({ method: "POST" }) as any).handler(
 );
 
 export const Route = createFileRoute("/admin/backups")({
+  validateSearch: (search: Record<string, unknown>): { tab: AdminBackupTab } => ({
+    tab: parseBackupTab(search.tab),
+  }),
   component: AdminBackupsDashboard,
 });
-
-// Helper to format bytes to human readable sizes
-function formatBytes(bytes: number | null | undefined): string {
-  if (bytes === null || bytes === undefined || bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
 
 // Helper to format date
 function formatDate(dateStr: string): string {
@@ -114,31 +117,14 @@ function formatDateTime(dateStr: string): string {
   }
 }
 
-interface BackupLog {
-  id: string;
-  date: string;
-  db_status: "success" | "failed" | "running";
-  r2_status: "success" | "failed" | "running";
-  db_size_bytes: number | null;
-  r2_files_count: number | null;
-  r2_size_bytes: number | null;
-  log_message: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface RealtimeSyncLog {
-  id: string;
-  path: string;
-  status: "success" | "failed" | "starting";
-  error_message: string | null;
-  created_at: string;
-}
-
 function AdminBackupsDashboard() {
+  const { tab: activeTab } = Route.useSearch();
   const [selectedLog, setSelectedLog] = useState<BackupLog | null>(null);
   const [selectedRealtimeLog, setSelectedRealtimeLog] = useState<RealtimeSyncLog | null>(null);
-  const [activeTab, setActiveTab] = useState<"system" | "realtime" | "history">("system");
+  const [restorePrompt, setRestorePrompt] = useState<{
+    message: string;
+    run: () => void;
+  } | null>(null);
 
   // PITR States
   const getTodayLocalDate = () => {
@@ -256,15 +242,7 @@ function AdminBackupsDashboard() {
     }
   });
 
-  // Deduplicate by path, keeping only the most recent entry for each file (since they are ordered descending by created_at)
-  const realtimeLogs: RealtimeSyncLog[] = [];
-  const seenPaths = new Set<string>();
-  for (const log of realtimeLogsRaw || []) {
-    if (log.path && !seenPaths.has(log.path)) {
-      seenPaths.add(log.path);
-      realtimeLogs.push(log);
-    }
-  }
+  const realtimeLogs = dedupeRealtimeLogs(realtimeLogsRaw || []);
 
   // 3. Mutation to trigger manual file re-sync
   const syncFileMutation = useMutation({
@@ -310,21 +288,7 @@ function AdminBackupsDashboard() {
     },
   });
 
-  // Calculate quick stats from system logs
-  const totalBackups = logs?.length || 0;
   const lastSync = logs?.[0];
-  const successRate = totalBackups && logs
-    ? Math.round(
-        (logs.filter((l) => l.db_status === "success" && l.r2_status === "success")
-          .length /
-          totalBackups) *
-          100
-      )
-    : 100;
-
-  const totalOneDriveSpace = lastSync
-    ? (lastSync.db_size_bytes || 0) + (lastSync.r2_size_bytes || 0)
-    : 0;
 
   const handleForceSync = () => {
     if (triggerMutation.isPending) return;
@@ -344,272 +308,62 @@ function AdminBackupsDashboard() {
     });
   };
 
-  // Real-time stats calculations
-  const isToday = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const today = new Date();
-    return (
-      d.getDate() === today.getDate() &&
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
-    );
-  };
-
-  const todayLogs = realtimeLogs.filter((log) => isToday(log.created_at));
-  const countSuccessToday = todayLogs.filter((log) => log.status === "success").length;
-  const countFailedToday = todayLogs.filter((log) => log.status === "failed").length;
+  const orderedLogs = sortFailedFirst(logs || [], backupFailed);
+  const orderedRealtimeLogs = sortFailedFirst(realtimeLogs, (log) => log.status === "failed");
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 md:p-10 font-sans relative overflow-hidden">
-      {/* Dynamic light glows */}
-      <div className="absolute top-[-10%] left-[-15%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-15%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 relative z-10">
-        
-        {/* Navigation Breadcrumb */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors group"
-            >
-              <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-              Về Terminal
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link
-              to="/admin/users"
-              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-primary font-black" }}
-            >
-              👥 Users
-            </Link>
-            <span className="text-muted-foreground/30">|</span>
-            <Link
-              to="/admin/backups"
-              className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-primary font-black" }}
-            >
-              💾 Backups
-            </Link>
-          </div>
-          <div className="h-6 px-3 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center self-start sm:self-auto">
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">
-              Admin Control Panel
-            </span>
-          </div>
-        </div>
-
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border/40">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-glow-cyan">
-              OneDrive Backups & Sync
-            </h1>
-            <p className="text-xs text-muted-foreground/80 font-semibold mt-1">
-              Quản lý đồng bộ sao lưu tự động hệ thống định kỳ kết hợp truyền tải biểu đồ thời gian thực (Real-time) sang Microsoft OneDrive.
-            </p>
-          </div>
-
-          {activeTab === "system" && (
-            <button
-              onClick={handleForceSync}
-              disabled={triggerMutation.isPending || (lastSync && lastSync.db_status === "running")}
-              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white forest-gradient hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 disabled:pointer-events-none shrink-0"
-            >
-              {triggerMutation.isPending || (lastSync && lastSync.db_status === "running") ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Đang chạy sao lưu...
-                </>
-              ) : (
-                <>
-                  <RefreshCw size={14} />
-                  Force Sync Now
-                </>
-              )}
-            </button>
-          )}
-
-          {activeTab === "realtime" && (
-            <button
-              onClick={() => refetchRealtime()}
-              disabled={isRealtimeLoading}
-              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white forest-gradient hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 disabled:pointer-events-none shrink-0"
-            >
-              <RefreshCw size={14} className={isRealtimeLoading ? "animate-spin" : ""} />
-              Làm mới Logs
-            </button>
-          )}
-
-          {activeTab === "history" && (
-            <button
-              onClick={() => refetchHistory()}
-              disabled={isHistoryLoading}
-              className="inline-flex items-center justify-center gap-3 h-12 px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white forest-gradient hover:opacity-95 active:scale-95 transition-all shadow-lg shadow-primary/10 disabled:opacity-50 disabled:pointer-events-none shrink-0"
-            >
-              <RefreshCw size={14} className={isHistoryLoading ? "animate-spin" : ""} />
-              Làm mới Lịch sử
-            </button>
-          )}
-        </div>
-
-        {/* Tabs System Navigation */}
-        <div className="flex gap-6 border-b border-border/20">
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        {activeTab === "system" && (
           <button
-            onClick={() => setActiveTab("system")}
-            className={`pb-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all relative ${
-              activeTab === "system"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground/60 hover:text-foreground"
-            }`}
+            type="button"
+            onClick={handleForceSync}
+            disabled={triggerMutation.isPending || (lastSync && lastSync.db_status === "running")}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg forest-gradient text-white text-[12px] font-semibold disabled:opacity-50"
           >
-            System Backups (Hàng Ngày)
-            {activeTab === "system" && (
-              <span className="absolute bottom-[-2px] left-0 w-full h-[2px] bg-primary blur-[2px]" />
+            {triggerMutation.isPending || lastSync?.db_status === "running" ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Đang chạy sao lưu…
+              </>
+            ) : (
+              <>
+                <RefreshCw size={14} />
+                Chạy backup ngay
+              </>
             )}
           </button>
+        )}
+        {activeTab === "realtime" && (
           <button
-            onClick={() => setActiveTab("realtime")}
-            className={`pb-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all relative flex items-center gap-2 ${
-              activeTab === "realtime"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground/60 hover:text-foreground"
-            }`}
+            type="button"
+            onClick={() => refetchRealtime()}
+            disabled={isRealtimeLoading}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-border text-[12px] font-semibold disabled:opacity-50"
           >
-            Chart Sync Monitor (Real-time)
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            {activeTab === "realtime" && (
-              <span className="absolute bottom-[-2px] left-0 w-full h-[2px] bg-primary blur-[2px]" />
-            )}
+            <RefreshCw size={14} className={isRealtimeLoading ? "animate-spin" : ""} />
+            Làm mới
           </button>
+        )}
+        {activeTab === "history" && (
           <button
-            onClick={() => setActiveTab("history")}
-            className={`pb-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all relative flex items-center gap-2 ${
-              activeTab === "history"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground/60 hover:text-foreground"
-            }`}
+            type="button"
+            onClick={() => refetchHistory()}
+            disabled={isHistoryLoading}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-border text-[12px] font-semibold disabled:opacity-50"
           >
-            Temporal Rollback Explorer (PITR)
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/45 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            {activeTab === "history" && (
-              <span className="absolute bottom-[-2px] left-0 w-full h-[2px] bg-primary blur-[2px]" />
-            )}
+            <RefreshCw size={14} className={isHistoryLoading ? "animate-spin" : ""} />
+            Làm mới
           </button>
-        </div>
+        )}
+      </div>
 
         {/* TAB 1: SYSTEM BACKUPS */}
         {activeTab === "system" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Quick Stats Widgets Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Stat 1: Sync Status */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <CloudLightning size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Trạng thái mới nhất
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  {lastSync ? (
-                    lastSync.db_status === "running" ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin text-warning" />
-                        <span className="text-lg font-black text-warning uppercase tracking-wider">Đang đồng bộ</span>
-                      </>
-                    ) : lastSync.db_status === "success" && lastSync.r2_status === "success" ? (
-                      <>
-                        <CheckCircle2 size={18} className="text-bull" />
-                        <span className="text-lg font-black text-bull uppercase tracking-wider">Đồng bộ xong</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle size={18} className="text-destructive" />
-                        <span className="text-lg font-black text-destructive uppercase tracking-wider">Gặp lỗi</span>
-                      </>
-                    )
-                  ) : (
-                    <span className="text-lg font-black text-muted-foreground uppercase tracking-wider">Chưa có dữ liệu</span>
-                  )}
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  {lastSync ? `Ngày chạy: ${lastSync.date}` : "Chưa thực hiện backup nào"}
-                </p>
-              </div>
-
-              {/* Stat 2: DB Backup size */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <Database size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    SQL Database Backup
-                  </span>
-                </div>
-                <div className="text-lg font-black tracking-tight text-foreground mt-2">
-                  {lastSync?.db_size_bytes ? formatBytes(lastSync.db_size_bytes) : "0 Bytes"}
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  Lưu trữ định dạng SQL nén
-                </p>
-              </div>
-
-              {/* Stat 3: R2 synced assets count */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <Layers size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    R2 Charts Đã Đồng Bộ
-                  </span>
-                </div>
-                <div className="text-lg font-black tracking-tight text-foreground mt-2">
-                  {lastSync?.r2_files_count ? `${lastSync.r2_files_count.toLocaleString()} Tệp` : "0 Tệp"}
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  Dung lượng: {lastSync?.r2_size_bytes ? formatBytes(lastSync.r2_size_bytes) : "0 Bytes"}
-                </p>
-              </div>
-
-              {/* Stat 4: Total OneDrive Space used */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <HardDrive size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Dung lượng trên OneDrive
-                  </span>
-                </div>
-                <div className="text-lg font-black tracking-tight text-foreground mt-2">
-                  {formatBytes(totalOneDriveSpace)}
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  Tỷ lệ sao lưu thành công: {successRate}%
-                </p>
-              </div>
-            </div>
-
-            {/* Backups History Table */}
-            <div className="bg-card/30 rounded-3xl border border-border/50 overflow-hidden backdrop-blur-md">
-              <div className="px-6 py-5 border-b border-border/40 bg-card/10 flex items-center justify-between">
-                <h2 className="text-sm font-black uppercase tracking-widest text-foreground">
-                  Lịch sử sao lưu chi tiết mỗi ngày
-                </h2>
+          <div className="space-y-4">
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Lịch sử sao lưu mỗi ngày</h2>
                 {isLoading && <Loader2 size={16} className="animate-spin text-primary" />}
               </div>
 
@@ -638,8 +392,8 @@ function AdminBackupsDashboard() {
                           </div>
                         </td>
                       </tr>
-                    ) : logs && logs.length > 0 ? (
-                      logs.map((log) => (
+                    ) : orderedLogs.length > 0 ? (
+                      orderedLogs.map((log) => (
                         <tr
                           key={log.id}
                           className="hover:bg-muted/10 transition-colors group/row"
@@ -727,94 +481,10 @@ function AdminBackupsDashboard() {
 
         {/* TAB 2: REAL-TIME CHART SYNC MONITOR */}
         {activeTab === "realtime" && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Real-time Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
-              {/* Stat 1: Success Today */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <CheckCircle2 size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Đồng bộ hôm nay
-                  </span>
-                </div>
-                <div className="text-2xl font-black tracking-tight text-primary mt-2">
-                  {countSuccessToday} <span className="text-xs text-muted-foreground/60 font-semibold font-sans uppercase">Tệp tin</span>
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  Ghi nhận thành công thời gian thực
-                </p>
-              </div>
-
-              {/* Stat 2: Failed Today */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${countFailedToday > 0 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
-                    {countFailedToday > 0 ? <AlertTriangle size={18} /> : <XCircle size={18} />}
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Lỗi đồng bộ hôm nay
-                  </span>
-                </div>
-                <div className={`text-2xl font-black tracking-tight mt-2 ${countFailedToday > 0 ? "text-destructive animate-pulse" : "text-foreground"}`}>
-                  {countFailedToday} <span className="text-xs text-muted-foreground/60 font-semibold font-sans uppercase">Tệp tin</span>
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  {countFailedToday > 0 ? "Phát hiện lỗi cần được Re-sync!" : "Không phát hiện lỗi nào"}
-                </p>
-              </div>
-
-              {/* Stat 3: Total Synced All Time */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <ImageIcon size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Tổng số tệp đã log
-                  </span>
-                </div>
-                <div className="text-2xl font-black tracking-tight text-foreground mt-2">
-                  {realtimeLogs.length} <span className="text-xs text-muted-foreground/60 font-semibold font-sans uppercase">Tệp tin</span>
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  Bộ nhớ đệm log thời gian thực
-                </p>
-              </div>
-
-              {/* Stat 4: OneDrive Real-time Status */}
-              <div className="bg-card/40 rounded-2xl p-5 border border-border/50 hover:border-primary/20 transition-all group backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <Activity size={18} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Đồng bộ R2 → OneDrive
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                  </span>
-                  <span className="text-lg font-black text-primary uppercase tracking-wider">Hoạt động</span>
-                </div>
-                <p className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-wider mt-2">
-                  Tự động chuyển tiếp khi paste ảnh
-                </p>
-              </div>
-
-            </div>
-
-            {/* Realtime Logs History Table */}
-            <div className="bg-card/30 rounded-3xl border border-border/50 overflow-hidden backdrop-blur-md animate-in fade-in duration-500">
-              <div className="px-6 py-5 border-b border-border/40 bg-card/10 flex items-center justify-between">
-                <h2 className="text-sm font-black uppercase tracking-widest text-foreground">
-                  Lịch sử hoạt động đồng bộ biểu đồ thời gian thực
-                </h2>
+          <div className="space-y-4">
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Log đồng bộ chart</h2>
                 {isRealtimeLoading && <Loader2 size={16} className="animate-spin text-primary" />}
               </div>
 
@@ -842,8 +512,8 @@ function AdminBackupsDashboard() {
                           </div>
                         </td>
                       </tr>
-                    ) : realtimeLogs && realtimeLogs.length > 0 ? (
-                      realtimeLogs.map((log) => {
+                    ) : orderedRealtimeLogs.length > 0 ? (
+                      orderedRealtimeLogs.map((log) => {
                         const fileName = log.path.includes("/") 
                           ? log.path.substring(log.path.indexOf("/") + 1)
                           : log.path;
@@ -1012,8 +682,8 @@ function AdminBackupsDashboard() {
             {/* Revision List Block */}
             <div className="bg-card/30 rounded-3xl border border-border/50 overflow-hidden backdrop-blur-md">
               <div className="px-6 py-5 border-b border-border/40 bg-card/10 flex items-center justify-between">
-                <h2 className="text-sm font-black uppercase tracking-widest text-glow-cyan flex items-center gap-2">
-                  <History size={16} className="text-primary animate-pulse" />
+                <h2 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <History size={16} className="text-primary" />
                   Danh sách phiên bản sửa đổi (Temporal Timeline)
                 </h2>
                 <div className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
@@ -1063,7 +733,7 @@ function AdminBackupsDashboard() {
                           <div key={group.batch_id} className="relative group/timeline animate-in slide-in-from-left duration-300">
                             {/* Timeline Dot Indicator */}
                             <span className="absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-background border-2 border-primary/80 group-hover/timeline:border-primary transition-colors">
-                              <span className={`h-1.5 w-1.5 rounded-full ${isBatch ? "bg-cyan-400 animate-ping" : "bg-primary"}`} />
+                              <span className={`h-1.5 w-1.5 rounded-full bg-primary ${isBatch ? "animate-ping" : ""}`} />
                             </span>
 
                             <div className="bg-card/40 dark:bg-black/30 border border-border/50 hover:border-primary/30 p-5 rounded-2xl transition-all shadow-md hover:shadow-lg space-y-4">
@@ -1084,14 +754,14 @@ function AdminBackupsDashboard() {
                                         DELETE
                                       </span>
                                     )}
-                                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                    <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
                                       {group.table_name}
                                     </span>
                                   </div>
 
-                                  <div className="text-slate-300 font-bold text-xs">
+                                  <div className="text-muted-foreground font-semibold text-xs">
                                     {isBatch ? (
-                                      <span className="text-glow-cyan flex items-center gap-1.5">
+                                      <span className="text-primary flex items-center gap-1.5">
                                         <Layers size={12} className="text-primary" />
                                         Khôi phục Hàng loạt {tableNameViet} ({group.items.length} bản ghi)
                                       </span>
@@ -1106,15 +776,17 @@ function AdminBackupsDashboard() {
                                   {isBatch && (
                                     <button
                                       onClick={() => {
-                                        if (window.confirm(`Bạn có chắc chắn muốn HOÀN TÁC HÀNG LOẠT (${group.items.length} dòng) thuộc bảng ${group.table_name} về thời điểm ${formatDateTime(group.history_timestamp)}?`)) {
-                                          restoreBatchMutation.mutate({
-                                            batchTimestamp: group.history_timestamp,
-                                            tableName: group.table_name,
-                                          });
-                                        }
+                                        setRestorePrompt({
+                                          message: `Hoàn tác hàng loạt ${group.items.length} dòng thuộc ${group.table_name} về ${formatDateTime(group.history_timestamp)}?`,
+                                          run: () =>
+                                            restoreBatchMutation.mutate({
+                                              batchTimestamp: group.history_timestamp,
+                                              tableName: group.table_name,
+                                            }),
+                                        });
                                       }}
                                       disabled={restoreBatchMutation.isPending}
-                                      className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
+                                      className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
                                     >
                                       {restoreBatchMutation.isPending ? (
                                         <Loader2 size={12} className="animate-spin" />
@@ -1128,9 +800,10 @@ function AdminBackupsDashboard() {
                                   {!isBatch && (
                                     <button
                                       onClick={() => {
-                                        if (window.confirm(`Bạn có chắc chắn muốn khôi phục bản ghi ${tableNameViet} về phiên bản lưu lúc ${formatDateTime(group.history_timestamp)}?`)) {
-                                          restoreVersionMutation.mutate(group.items[0].history_id);
-                                        }
+                                        setRestorePrompt({
+                                          message: `Khôi phục bản ghi ${tableNameViet} về ${formatDateTime(group.history_timestamp)}?`,
+                                          run: () => restoreVersionMutation.mutate(group.items[0].history_id),
+                                        });
                                       }}
                                       disabled={restoreVersionMutation.isPending}
                                       className="inline-flex h-9 px-4 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary/100 hover:text-white transition-all text-xs font-black uppercase tracking-wider active:scale-95 disabled:opacity-50"
@@ -1175,9 +848,10 @@ function AdminBackupsDashboard() {
                                         {isBatch && (
                                           <button
                                             onClick={() => {
-                                              if (window.confirm(`Khôi phục riêng lẻ bản ghi này?`)) {
-                                                restoreVersionMutation.mutate(item.history_id);
-                                              }
+                                              setRestorePrompt({
+                                                message: "Khôi phục riêng bản ghi này?",
+                                                run: () => restoreVersionMutation.mutate(item.history_id),
+                                              });
                                             }}
                                             disabled={restoreVersionMutation.isPending}
                                             className="inline-flex h-7 px-3 items-center gap-1 rounded-lg border border-primary/20 dark:border-primary/10 bg-primary/5 dark:bg-primary/10 text-bull dark:text-primary hover:bg-primary/100 hover:text-white dark:hover:text-white transition-all text-[10px] font-black uppercase tracking-wider active:scale-95"
@@ -1217,8 +891,6 @@ function AdminBackupsDashboard() {
             </div>
           </div>
         )}
-
-      </div>
 
       {/* MODAL 1: System Backup detailed log terminal */}
       {selectedLog && (
@@ -1270,7 +942,7 @@ function AdminBackupsDashboard() {
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">
                   Console Output Message
                 </span>
-                <pre className="w-full bg-black/40 border border-border/30 rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed text-slate-400 font-mono whitespace-pre-wrap select-all max-h-[300px]">
+                <pre className="w-full bg-black/40 border border-border/30 rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed text-slate-400 font-sans whitespace-pre-wrap select-all max-h-[300px]">
                   {selectedLog.log_message || "No logs messages generated."}
                 </pre>
               </div>
@@ -1289,7 +961,7 @@ function AdminBackupsDashboard() {
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <CloudLightning size={16} className="text-primary animate-pulse" />
+                <CloudLightning size={16} className="text-primary" />
                 <span className="text-xs font-black uppercase tracking-widest text-foreground">
                   Real-time Sync Log Details
                 </span>
@@ -1359,7 +1031,7 @@ function AdminBackupsDashboard() {
                   <span className="text-[9px] font-black uppercase tracking-widest text-destructive block flex items-center gap-1.5">
                     <AlertTriangle size={12} /> Thông tin lỗi từ Microsoft Graph API
                   </span>
-                  <pre className="w-full bg-destructive/10 border border-destructive/30 rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed text-destructive font-mono whitespace-pre-wrap select-all max-h-[150px]">
+                  <pre className="w-full bg-destructive/10 border border-destructive/30 rounded-xl p-4 overflow-x-auto text-[11px] leading-relaxed text-destructive font-sans whitespace-pre-wrap select-all max-h-[150px]">
                     {selectedRealtimeLog.error_message || "Không ghi nhận thông điệp lỗi cụ thể từ API."}
                   </pre>
                 </div>
@@ -1419,7 +1091,7 @@ function AdminBackupsDashboard() {
               {/* Modal Header */}
               <div className="px-6 py-4 border-b border-border/40 bg-card/20 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
-                  <History size={16} className="text-primary animate-pulse" />
+                  <History size={16} className="text-primary" />
                   <span className="text-xs font-black uppercase tracking-widest text-foreground">
                     Bản sao lưu {tableNameViet} ({formatDateTime(selectedHistoryVersion.history_timestamp)})
                   </span>
@@ -1441,7 +1113,7 @@ function AdminBackupsDashboard() {
                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground block">
                       Hành động
                     </span>
-                    <span className={`font-bold text-xs uppercase ${selectedHistoryVersion.history_action === 'DELETE' ? 'text-destructive text-glow-rose' : 'text-warning text-glow-cyan'}`}>
+                    <span className={`font-bold text-xs uppercase ${selectedHistoryVersion.history_action === 'DELETE' ? 'text-destructive text-destructive' : 'text-warning text-primary'}`}>
                       {selectedHistoryVersion.history_action}
                     </span>
                   </div>
@@ -1514,7 +1186,7 @@ function AdminBackupsDashboard() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {snap.weekly_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">weekly outlook chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">weekly outlook chart</span>
                             <a href={`/storage/${snap.weekly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.weekly_img}`} alt="Weekly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1522,7 +1194,7 @@ function AdminBackupsDashboard() {
                         )}
                         {snap.daily_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily outlook chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">daily outlook chart</span>
                             <a href={`/storage/${snap.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.daily_img}`} alt="Daily Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1530,7 +1202,7 @@ function AdminBackupsDashboard() {
                         )}
                         {snap.monthly_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">monthly outlook chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">monthly outlook chart</span>
                             <a href={`/storage/${snap.monthly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.monthly_img}`} alt="Monthly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1538,7 +1210,7 @@ function AdminBackupsDashboard() {
                         )}
                         {snap.yearly_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">yearly outlook chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">yearly outlook chart</span>
                             <a href={`/storage/${snap.yearly_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.yearly_img}`} alt="Yearly Outlook" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1595,7 +1267,7 @@ function AdminBackupsDashboard() {
                       </div>
                       <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-center">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block">Net Profit/Loss</span>
-                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-bull dark:text-primary text-glow-cyan" : "text-destructive dark:text-destructive text-glow-rose"}`}>
+                        <span className={`font-black text-sm block mt-1 ${parseFloat(snap.net_pnl || "0") >= 0 ? "text-bull dark:text-primary text-primary" : "text-destructive dark:text-destructive text-destructive"}`}>
                           ${snap.net_pnl || "0.00"}
                         </span>
                       </div>
@@ -1654,7 +1326,7 @@ function AdminBackupsDashboard() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {snap.before_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">before entry chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">before entry chart</span>
                             <a href={`/storage/${snap.before_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.before_img}`} alt="Before Entry" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1662,7 +1334,7 @@ function AdminBackupsDashboard() {
                         )}
                         {snap.after_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">after exit chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">after exit chart</span>
                             <a href={`/storage/${snap.after_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.after_img}`} alt="After Exit" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1670,7 +1342,7 @@ function AdminBackupsDashboard() {
                         )}
                         {snap.daily_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">daily chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">daily chart</span>
                             <a href={`/storage/${snap.daily_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.daily_img}`} alt="Daily Chart" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1678,7 +1350,7 @@ function AdminBackupsDashboard() {
                         )}
                         {snap.h1_img && (
                           <div className="border border-border/40 rounded-2xl overflow-hidden bg-muted/30 dark:bg-black/40 p-3 space-y-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-glow-cyan block">H1 chart</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary block">H1 chart</span>
                             <a href={`/storage/${snap.h1_img}`} target="_blank" rel="noreferrer" className="block relative group/img cursor-pointer max-h-[220px] overflow-hidden rounded-lg">
                               <img src={`/storage/${snap.h1_img}`} alt="H1 Chart" className="w-full h-full object-contain rounded-lg hover:scale-102 transition-transform" />
                             </a>
@@ -1757,10 +1429,14 @@ function AdminBackupsDashboard() {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC bản ghi này về phiên bản lưu lúc ${formatDateTime(selectedHistoryVersion.history_timestamp)}?`)) {
-                        setSelectedHistoryVersion(null);
-                        restoreVersionMutation.mutate(selectedHistoryVersion.history_id);
-                      }
+                      setRestorePrompt({
+                        message: `Khôi phục bản ghi này về ${formatDateTime(selectedHistoryVersion.history_timestamp)}?`,
+                        run: () => {
+                          const id = selectedHistoryVersion.history_id;
+                          setSelectedHistoryVersion(null);
+                          restoreVersionMutation.mutate(id);
+                        },
+                      });
                     }}
                     disabled={restoreVersionMutation.isPending}
                     className="inline-flex h-10 px-5 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 text-primary hover:bg-primary/100 hover:text-white transition-all active:scale-95 text-xs font-black uppercase tracking-wider disabled:opacity-50"
@@ -1775,6 +1451,26 @@ function AdminBackupsDashboard() {
           </div>
         );
       })()}
+
+      <AlertDialog open={!!restorePrompt} onOpenChange={(open) => { if (!open) setRestorePrompt(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận khôi phục</AlertDialogTitle>
+            <AlertDialogDescription>{restorePrompt?.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRestorePrompt(null)}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                restorePrompt?.run();
+                setRestorePrompt(null);
+              }}
+            >
+              Khôi phục
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
