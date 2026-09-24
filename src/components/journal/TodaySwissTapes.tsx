@@ -97,6 +97,7 @@ export function TodaySwissTapes({
   focusTick = 0,
 }: Props) {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [pasteTarget, setPasteTarget] = useState<{ id: string; slot: string } | null>(null);
   const loggedAssets = new Set(entries.map((e) => e.asset));
   const dock = watchlist.filter((name) => !loggedAssets.has(name));
 
@@ -122,6 +123,18 @@ export function TodaySwissTapes({
     }, 150);
     return () => window.clearTimeout(id);
   }, [focusKillzone, focusTick]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest("[data-paste-target]")) setPasteTarget(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const slotSelected = (entryId: string, slot: string) =>
+    pasteTarget?.id === entryId && pasteTarget.slot === slot;
 
   // Toggle expanded row
   const toggleRow = (entryId: string) => {
@@ -331,7 +344,15 @@ export function TodaySwissTapes({
                 >
                   {/* Monthly Panel */}
                   {showMonthly && (
-                    <div className="space-y-2 bg-card/40 p-3 rounded-xl border border-border/60">
+                    <div
+                      data-paste-target
+                      onClick={() => setPasteTarget({ id: entry.id, slot: "monthly" })}
+                      className={`space-y-2 bg-card/40 p-3 rounded-xl border transition-colors ${
+                        slotSelected(entry.id, "monthly")
+                          ? "border-primary/50 ring-1 ring-primary/20"
+                          : "border-border/60"
+                      }`}
+                    >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
                         <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                           Monthly Timeframe
@@ -371,6 +392,9 @@ export function TodaySwissTapes({
                         label="M"
                         image={entry.monthlyImg}
                         onChange={(url) => onUpdate({ ...entry, monthlyImg: url })}
+                        focused={slotSelected(entry.id, "monthly")}
+                        onFocus={() => setPasteTarget({ id: entry.id, slot: "monthly" })}
+                        selectToPaste
                         fitImage
                         className="w-full"
                       />
@@ -378,7 +402,15 @@ export function TodaySwissTapes({
                   )}
 
                   {/* Weekly Panel */}
-                  <div className="space-y-2 bg-card/40 p-3 rounded-xl border border-border/60">
+                  <div
+                    data-paste-target
+                    onClick={() => setPasteTarget({ id: entry.id, slot: "weekly" })}
+                    className={`space-y-2 bg-card/40 p-3 rounded-xl border transition-colors ${
+                      slotSelected(entry.id, "weekly")
+                        ? "border-primary/50 ring-1 ring-primary/20"
+                        : "border-border/60"
+                    }`}
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
                       <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                         Weekly Timeframe
@@ -418,13 +450,24 @@ export function TodaySwissTapes({
                       label="W"
                       image={entry.weeklyImg}
                       onChange={(url) => onUpdate({ ...entry, weeklyImg: url })}
+                      focused={slotSelected(entry.id, "weekly")}
+                      onFocus={() => setPasteTarget({ id: entry.id, slot: "weekly" })}
+                      selectToPaste
                       fitImage
                       className="w-full"
                     />
                   </div>
 
                   {/* Daily Panel */}
-                  <div className="space-y-2 bg-card/40 p-3 rounded-xl border border-border/60">
+                  <div
+                    data-paste-target
+                    onClick={() => setPasteTarget({ id: entry.id, slot: "daily" })}
+                    className={`space-y-2 bg-card/40 p-3 rounded-xl border transition-colors ${
+                      slotSelected(entry.id, "daily")
+                        ? "border-primary/50 ring-1 ring-primary/20"
+                        : "border-border/60"
+                    }`}
+                  >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
                       <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                         Daily Timeframe
@@ -464,6 +507,9 @@ export function TodaySwissTapes({
                       label="D"
                       image={entry.dailyImg}
                       onChange={(url) => onUpdate({ ...entry, dailyImg: url })}
+                      focused={slotSelected(entry.id, "daily")}
+                      onFocus={() => setPasteTarget({ id: entry.id, slot: "daily" })}
+                      selectToPaste
                       fitImage
                       className="w-full"
                     />
@@ -493,8 +539,12 @@ export function TodaySwissTapes({
                         <div
                           key={sessionName}
                           id={`today-h4-${entry.id}-${sessionName}`}
-                          className={`space-y-2 bg-card/40 p-3 rounded-xl border ${
-                            sessionName === focusedH4
+                          data-paste-target
+                          onClick={() =>
+                            setPasteTarget({ id: entry.id, slot: `h4-${sessionName}` })
+                          }
+                          className={`space-y-2 bg-card/40 p-3 rounded-xl border transition-colors ${
+                            slotSelected(entry.id, `h4-${sessionName}`) || sessionName === focusedH4
                               ? "border-primary/50 ring-1 ring-primary/20"
                               : "border-border/60"
                           }`}
@@ -535,6 +585,11 @@ export function TodaySwissTapes({
                                 },
                               });
                             }}
+                            focused={slotSelected(entry.id, `h4-${sessionName}`)}
+                            onFocus={() =>
+                              setPasteTarget({ id: entry.id, slot: `h4-${sessionName}` })
+                            }
+                            selectToPaste
                             fitImage
                             className="w-full"
                           />

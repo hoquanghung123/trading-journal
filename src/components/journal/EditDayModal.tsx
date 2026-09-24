@@ -365,6 +365,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                     }
                     focused={focusKey === "yearly"}
                     onFocus={() => setFocusKey("yearly")}
+                    selectToPaste
                     className="h-56"
                     showChartActions
                     showPasteTarget
@@ -401,6 +402,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                     }
                     focused={focusKey === "monthly"}
                     onFocus={() => setFocusKey("monthly")}
+                    selectToPaste
                     className="h-56"
                     showChartActions
                     showPasteTarget
@@ -434,6 +436,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                     }
                     focused={focusKey === "weekly"}
                     onFocus={() => setFocusKey("weekly")}
+                    selectToPaste
                     className="h-56"
                     showChartActions
                     showPasteTarget
@@ -465,6 +468,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                     }
                     focused={focusKey === "daily"}
                     onFocus={() => setFocusKey("daily")}
+                    selectToPaste
                     className="h-64"
                     showChartActions
                     showPasteTarget
@@ -550,6 +554,7 @@ export function EditDayModal({ entry, onSave, onDelete, onClose }: Props) {
                       }
                       focused={focusKey === `h4-${session}`}
                       onFocus={() => setFocusKey(`h4-${session}`)}
+                      selectToPaste
                       className="h-64"
                       showChartActions
                       showPasteTarget

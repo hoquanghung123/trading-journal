@@ -164,6 +164,7 @@ function MonthBox({
             image={yearlyImg}
             focused={focusedSlot === "yearly"}
             onFocus={() => setFocusedSlot("yearly")}
+            selectToPaste
             onChange={(u) => {
               if (yearlyHolder) {
                 onUpdate({ ...yearlyHolder, yearlyImg: u });
@@ -207,6 +208,7 @@ function MonthBox({
                     image={e.monthlyImg}
                     focused={focusedSlot === `monthly-${e.id}`}
                     onFocus={() => setFocusedSlot(`monthly-${e.id}`)}
+                    selectToPaste
                     onChange={(u) => onUpdate({ ...e, monthlyImg: u })}
                     className="h-[180px] rounded-xl border border-border/50"
                   >

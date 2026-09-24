@@ -53,6 +53,8 @@ interface Props {
   showPasteTarget?: boolean;
   /** Timeline: 16:9 slot. Today: native landscape ratio, 16:9 for portrait. */
   fitImage?: boolean;
+  /** Click selects the slot for paste. Does not open the file picker. */
+  selectToPaste?: boolean;
 }
 
 export function PasteSlot({
@@ -67,6 +69,7 @@ export function PasteSlot({
   showChartActions = false,
   showPasteTarget = false,
   fitImage = false,
+  selectToPaste = false,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -175,6 +178,7 @@ export function PasteSlot({
   const [containImage, setContainImage] = useState(false);
   const measureRef = useRef<() => void>(() => {});
   const slotHeight = ownHeight ?? fitHeight;
+  const compactEmpty = selectToPaste && !displayUrl && !fit;
 
   useEffect(() => {
     if (!fitImage) return;
@@ -218,7 +222,7 @@ export function PasteSlot({
       tabIndex={0}
       onClick={() => {
         onFocus?.();
-        if (!displayUrl) fileRef.current?.click();
+        if (!selectToPaste && !displayUrl) fileRef.current?.click();
       }}
       onDoubleClick={() => displayUrl && setZoom(true)}
       onFocus={onFocus}
@@ -236,7 +240,9 @@ export function PasteSlot({
       className={cn(
         "relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none",
         focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30",
-        fitImage && slotHeight == null && (fit ? "h-44" : "h-36"),
+        compactEmpty
+          ? "h-12"
+          : fitImage && slotHeight == null && (fit ? "h-44" : "h-36"),
         className,
       )}
       style={fitImage && slotHeight ? { height: slotHeight } : undefined}
@@ -257,6 +263,20 @@ export function PasteSlot({
             }
           />
         </>
+      ) : selectToPaste ? (
+        <div className="w-full h-full flex items-center justify-center gap-2 px-3 text-muted-foreground">
+          <span className="font-black uppercase tracking-wider text-[10px] text-primary/80">
+            {label}
+          </span>
+          <span
+            className={cn(
+              "text-[10px] font-black uppercase tracking-wider",
+              focused ? "text-primary" : "text-muted-foreground",
+            )}
+          >
+            {focused ? "Paste" : "Select"}
+          </span>
+        </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground font-medium text-xs">
           <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center mb-1">

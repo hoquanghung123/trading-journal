@@ -194,6 +194,7 @@ export function DayColumn({
             }
             focused={isFocused(`h4-${session}` as SlotKind)}
             onFocus={() => focus(`h4-${session}` as SlotKind)}
+            selectToPaste
             fitImage
             className="border-border/50"
           >
@@ -271,6 +272,7 @@ function SlotWithBias({
       focused={focused}
       onFocus={onFocus}
       onChange={onImg}
+      selectToPaste
       fitImage
     >
       {!hideBiasAndTick && (
