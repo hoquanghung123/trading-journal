@@ -222,8 +222,14 @@ export function JournalView() {
 
   // Subscribe to smart-link focus events from Trade Log
   useEffect(() => {
-    return onBiasFocus((entryId, assetName) => {
+    return onBiasFocus((entryId, assetName, opts) => {
       pinnedDate.current = null;
+      if (opts?.view === "today") {
+        setViewMode("today");
+        setExpandTapeId(entryId);
+        setPendingFocusId(entryId);
+        return;
+      }
       setViewMode("timeline");
       setMonth("ALL");
       const fromList = entries.find((e) => e.id === entryId);

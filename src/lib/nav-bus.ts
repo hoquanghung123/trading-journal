@@ -60,7 +60,9 @@ function writeUrl(page: PageId, date?: string, mode: "push" | "replace" = "push"
   document.title = `${PAGE_TITLES[page]} · Chartmate`;
 }
 
-type BiasListener = (entryId: string, asset?: string) => void;
+export type BiasFocusView = "today" | "timeline";
+
+type BiasListener = (entryId: string, asset?: string, opts?: { view?: BiasFocusView }) => void;
 const biasListeners = new Set<BiasListener>();
 
 export function onBiasFocus(fn: BiasListener): () => void {
@@ -70,8 +72,12 @@ export function onBiasFocus(fn: BiasListener): () => void {
   };
 }
 
-export function focusBiasEntry(entryId: string, asset?: string) {
-  biasListeners.forEach((fn) => fn(entryId, asset));
+export function focusBiasEntry(
+  entryId: string,
+  asset?: string,
+  opts?: { view?: BiasFocusView },
+) {
+  biasListeners.forEach((fn) => fn(entryId, asset, opts));
 }
 
 type PageListener = (p: PageId) => void;

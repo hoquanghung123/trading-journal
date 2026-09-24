@@ -241,7 +241,7 @@ function RootComponent() {
         // Switch to Bias page and scroll to entry
         navigateToPage("bias");
         setTimeout(() => {
-          focusBiasEntry(updatedEntry.id, targetAsset);
+          focusBiasEntry(updatedEntry.id, targetAsset, { view: "today" });
         }, 100);
 
         // Smooth update without full reload
