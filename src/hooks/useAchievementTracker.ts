@@ -6,6 +6,10 @@ import {
   calculateLevel,
   ACHIEVEMENT_CONFIG,
   fetchUserAchievements,
+  asAchievementLevel,
+  higherLevel,
+  levelRank,
+  type AchievementLevel,
 } from "@/lib/achievements";
 import { journalTradingDate } from "@/lib/journal";
 import { toast } from "sonner";
@@ -15,6 +19,24 @@ export function useAchievementTracker() {
     try {
       // Fetch current achievements to compare levels later
       const prevAchievements = await fetchUserAchievements();
+
+      async function saveLevel(
+        key: keyof typeof ACHIEVEMENT_CONFIG,
+        value: number,
+        calculated: AchievementLevel,
+      ) {
+        const prev = prevAchievements.find((a) => a.achievementKey === key);
+        const previous = asAchievementLevel(prev?.highestLevel);
+        const kept = higherLevel(calculated, previous);
+        await updateAchievement(key, value, kept);
+        if (levelRank(kept) > levelRank(previous)) {
+          toast.success(`Achievement Unlocked: ${ACHIEVEMENT_CONFIG[key].name}!`, {
+            description: `You've reached ${kept} level. Keep going!`,
+            duration: 8000,
+          });
+        }
+      }
+
       const trades = await fetchTrades();
       const { data: journalEntries } = await supabase
         .from("journal_entries")
@@ -36,10 +58,6 @@ export function useAchievementTracker() {
           toast.warning("Discipline Alert: More than 1 trade taken today.", {
             description: "Overtrading is a common pitfall.",
             duration: 5000,
-          });
-        } else {
-          toast.success("Discipline Maintained!", {
-            description: "Risk rule followed. 1 trade/day limit respected.",
           });
         }
       }
@@ -66,7 +84,7 @@ export function useAchievementTracker() {
       }
 
       const riskLevel = calculateLevel("risk_manager", riskStreak);
-      await updateAchievement("risk_manager", riskStreak, riskLevel);
+      await saveLevel("risk_manager", riskStreak, riskLevel);
 
       // 2. Win Streak (Performance)
       let currentWinStreak = 0;
@@ -80,12 +98,12 @@ export function useAchievementTracker() {
         }
       }
       const streakLevel = calculateLevel("win_streak", maxWinStreak);
-      await updateAchievement("win_streak", maxWinStreak, streakLevel);
+      await saveLevel("win_streak", maxWinStreak, streakLevel);
 
       // 3. Wealth Builder (Performance)
       const totalPnl = trades.reduce((sum, t) => sum + t.netPnl, 0);
       const pnlLevel = calculateLevel("pnl_growth", totalPnl);
-      await updateAchievement("pnl_growth", totalPnl, pnlLevel);
+      await saveLevel("pnl_growth", totalPnl, pnlLevel);
 
       // 4. Research Scholar (Knowledge - Count total images)
       let totalImages = 0;
@@ -102,26 +120,7 @@ export function useAchievementTracker() {
         }
       });
       const researchLevel = calculateLevel("knowledge_base", totalImages);
-      await updateAchievement("knowledge_base", totalImages, researchLevel);
-
-      // Notification logic for new levels
-      const newLevels = [
-        { key: "risk_manager", level: riskLevel },
-        { key: "win_streak", level: streakLevel },
-        { key: "pnl_growth", level: pnlLevel },
-        { key: "knowledge_base", level: researchLevel },
-      ];
-
-      for (const item of newLevels) {
-        const prev = prevAchievements.find((a) => a.achievementKey === item.key);
-        if (item.level !== "None" && (!prev || item.level !== prev.highestLevel)) {
-          const config = ACHIEVEMENT_CONFIG[item.key as keyof typeof ACHIEVEMENT_CONFIG];
-          toast.success(`Achievement Unlocked: ${config.name}!`, {
-            description: `You've reached ${item.level} level. Keep going!`,
-            duration: 8000,
-          });
-        }
-      }
+      await saveLevel("knowledge_base", totalImages, researchLevel);
     } catch (error) {
       console.error("Error tracking achievements:", error);
     }

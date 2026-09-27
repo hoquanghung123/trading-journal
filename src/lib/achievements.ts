@@ -94,3 +94,27 @@ export function calculateLevel(
   if (value >= config.milestones.Bronze) return "Bronze";
   return "None";
 }
+
+const LEVEL_RANK: Record<AchievementLevel, number> = {
+  None: 0,
+  Bronze: 1,
+  Silver: 2,
+  Gold: 3,
+  Diamond: 4,
+};
+
+export function asAchievementLevel(value: string | null | undefined): AchievementLevel {
+  if (value === "Bronze" || value === "Silver" || value === "Gold" || value === "Diamond") {
+    return value;
+  }
+  return "None";
+}
+
+/** Keep a badge that was already earned when the live value drops. */
+export function higherLevel(a: AchievementLevel, b: AchievementLevel): AchievementLevel {
+  return LEVEL_RANK[a] >= LEVEL_RANK[b] ? a : b;
+}
+
+export function levelRank(level: AchievementLevel): number {
+  return LEVEL_RANK[level];
+}

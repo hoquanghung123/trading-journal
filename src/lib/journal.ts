@@ -784,80 +784,64 @@ export function isPrepDay(entries: DayEntry[]): boolean {
 export interface StreakStats {
   currentStreak: number;
   longestStreak: number;
-  streakDays: string[]; // Dates that qualify as prep days
+  streakDays: string[]; // Weekday dates that qualify as prep days
   isTodayComplete: boolean;
+  isClosedToday: boolean;
+}
+
+/** Saturday and Sunday do not count, and do not break a streak. */
+export function isClosedJournalDay(yyyyMmDd: string): boolean {
+  const dow = weekdayOf(yyyyMmDd);
+  return dow === "SAT" || dow === "SUN";
+}
+
+/** True when a weekday sits strictly between the two dates. */
+function missesWeekday(earlier: string, later: string): boolean {
+  let cursor = addCalendarDays(earlier, 1);
+  while (cursor < later) {
+    if (!isClosedJournalDay(cursor)) return true;
+    cursor = addCalendarDays(cursor, 1);
+  }
+  return false;
 }
 
 export function calculateStreak(allEntries: DayEntry[]): StreakStats {
-  // 1. Group entries by date
   const byDate: Record<string, DayEntry[]> = {};
   allEntries.forEach((e) => {
     if (!byDate[e.date]) byDate[e.date] = [];
     byDate[e.date].push(e);
   });
 
-  // 2. Identify all prep days (sorted by date)
-  const sortedDates = Object.keys(byDate).sort();
-  const prepDates = sortedDates.filter((d) => isPrepDay(byDate[d]));
+  const todayStr = journalTradingDate();
+  const isClosedToday = isClosedJournalDay(todayStr);
+  const prepDates = Object.keys(byDate)
+    .filter((d) => !isClosedJournalDay(d) && isPrepDay(byDate[d]))
+    .sort();
+  const isTodayComplete = !isClosedToday && isPrepDay(byDate[todayStr] ?? []);
 
   if (prepDates.length === 0) {
-    return { currentStreak: 0, longestStreak: 0, streakDays: [], isTodayComplete: false };
+    return { currentStreak: 0, longestStreak: 0, streakDays: [], isTodayComplete, isClosedToday };
   }
 
-  // 3. Calculate longest streak
   let longest = 0;
-  let currentCounter = 0;
-  let lastDate: Date | null = null;
+  let run = 0;
+  let prev: string | null = null;
+  for (const date of prepDates) {
+    if (!prev || missesWeekday(prev, date)) run = 1;
+    else run += 1;
+    longest = Math.max(longest, run);
+    prev = date;
+  }
 
-  const getDayDiff = (d1: Date, d2: Date) => {
-    const t1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
-    const t2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
-    return Math.round((t1 - t2) / (1000 * 60 * 60 * 24));
-  };
-
-  prepDates.forEach((dateStr) => {
-    const currDate = new Date(dateStr + "T00:00:00");
-    if (!lastDate) {
-      currentCounter = 1;
-    } else {
-      const diff = getDayDiff(currDate, lastDate);
-      if (diff === 1) {
-        currentCounter++;
-      } else if (diff > 1) {
-        currentCounter = 1;
-      }
-    }
-    longest = Math.max(longest, currentCounter);
-    lastDate = currDate;
-  });
-
-  // 4. Calculate current streak (working backwards from today/last entry)
-  const todayStr = journalTradingDate();
-  const isTodayComplete = isPrepDay(byDate[todayStr] ?? []);
-
+  const eligible = prepDates.filter((d) => d <= todayStr);
   let current = 0;
-  const reversedPrepDates = [...prepDates].reverse();
-
-  if (reversedPrepDates.length > 0) {
-    const lastCheckedDate = todayStr;
-    const latestPrepDate = reversedPrepDates[0];
-
-    // If the latest prep was today or yesterday, the streak is alive
-    const diffLatest = getDayDiff(
-      new Date(lastCheckedDate + "T00:00:00"),
-      new Date(latestPrepDate + "T00:00:00"),
-    );
-
-    if (diffLatest <= 1) {
+  if (eligible.length > 0) {
+    const latest = eligible[eligible.length - 1];
+    if (!missesWeekday(latest, todayStr)) {
       current = 1;
-      for (let i = 0; i < reversedPrepDates.length - 1; i++) {
-        const d1 = new Date(reversedPrepDates[i] + "T00:00:00");
-        const d2 = new Date(reversedPrepDates[i + 1] + "T00:00:00");
-        if (getDayDiff(d1, d2) === 1) {
-          current++;
-        } else {
-          break;
-        }
+      for (let i = eligible.length - 1; i > 0; i--) {
+        if (missesWeekday(eligible[i - 1], eligible[i])) break;
+        current++;
       }
     }
   }
@@ -867,7 +851,26 @@ export function calculateStreak(allEntries: DayEntry[]): StreakStats {
     longestStreak: longest,
     streakDays: prepDates,
     isTodayComplete,
+    isClosedToday,
   };
+}
+
+export async function syncProfileStreak(stats: StreakStats): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      current_streak: stats.currentStreak,
+      longest_streak: stats.longestStreak,
+      last_streak_update: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+
+  if (error) throw error;
 }
 
 export async function fetchLeaderboard(): Promise<Profile[]> {

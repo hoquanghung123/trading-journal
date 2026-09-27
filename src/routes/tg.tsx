@@ -18,6 +18,7 @@ import {
   type Bias,
 } from "../lib/journal";
 import { getAssetIconUrl } from "../lib/symbols";
+import { useSyncProfileStreak } from "../hooks/useSyncProfileStreak";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const MOCK_USER_ID = "a14a793c-cf04-4e80-9717-d7f077b6f5a3";
@@ -545,7 +546,11 @@ function StreakScreen({ entries }: { entries: DayEntry[] }) {
           </div>
         </div>
         <p style={{ color: "#8AAB7C", fontSize: 12 }}>
-          {stats.isTodayComplete ? "✅ Hôm nay đã hoàn thành!" : "⏳ Chưa có bias hôm nay"}
+          {stats.isClosedToday
+            ? "Cuối tuần không tính streak"
+            : stats.isTodayComplete
+              ? "✅ Hôm nay đã hoàn thành!"
+              : "⏳ Chưa có bias hôm nay"}
         </p>
       </div>
 
@@ -622,6 +627,7 @@ function TgMiniApp() {
   const [linkedUserId, setLinkedUserId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("bias");
   const [entries, setEntries] = useState<DayEntry[]>([]);
+  const [entriesReady, setEntriesReady] = useState(false);
   const [countdown, setCountdown] = useState(getSecondsUntilCutoff());
   const [selectedAsset, setSelectedAsset] = useState<string>(TODAY_CHIP);
   const [userAssets, setUserAssets] = useState<string[]>([]);
@@ -725,7 +731,10 @@ function TgMiniApp() {
 
     // Fetch entries — RLS hoạt động bình thường sau setSession
     fetchEntries()
-      .then(setEntries)
+      .then((data) => {
+        setEntries(data);
+        setEntriesReady(true);
+      })
       .catch(() => {});
 
     // Fetch non-forex symbols from DB (same source as web app)
@@ -773,6 +782,7 @@ function TgMiniApp() {
   }, []);
 
   // ── Streak stats ──────────────────────────────────────────────────────────────
+  useSyncProfileStreak(entriesReady ? entries : undefined);
   const stats = calculateStreak(entries);
   const isBeforeCutoff = isBeforeJournalReset();
   const cutoffLabel = `Ngày GD: ${tradingDate}`;

@@ -57,7 +57,7 @@ export function Leaderboard() {
               Streak Leaderboard
             </h2>
             <p className="text-xs text-muted-foreground font-medium">
-              Top disciplined traders this month
+              Ranked by the prep streak that is still running
             </p>
           </div>
         </div>

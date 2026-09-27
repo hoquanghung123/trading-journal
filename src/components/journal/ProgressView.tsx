@@ -62,6 +62,10 @@ export function ProgressView() {
   }, [activeTab]);
 
   const stats = useMemo(() => calculateStreak(entries), [entries]);
+  const monthPrep = useMemo(() => {
+    const key = format(currentMonth, "yyyy-MM");
+    return stats.streakDays.filter((d) => d.startsWith(key)).length;
+  }, [stats.streakDays, currentMonth]);
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth));
@@ -196,9 +200,11 @@ export function ProgressView() {
                       Your Streak is on Fire!
                     </h2>
                     <p className="text-muted-foreground font-medium mt-2">
-                      {stats.isTodayComplete
-                        ? "You've completed your prep for today. Keep it up tomorrow!"
-                        : "Finish your Weekly, Daily, and H4 Asian markup to maintain your streak."}
+                      {stats.isClosedToday
+                        ? "The market is closed. Saturday and Sunday do not count toward your streak."
+                        : stats.isTodayComplete
+                          ? "You've completed your prep for today. Keep it up tomorrow!"
+                          : "Finish your Weekly, Daily, and H4 Asian markup to maintain your streak."}
                     </p>
                   </div>
                   <div className="flex flex-wrap justify-center md:justify-start gap-4">
@@ -211,7 +217,7 @@ export function ProgressView() {
                     <StatCard
                       icon={<Target className="w-4 h-4" />}
                       label="Monthly Goal"
-                      value={`${stats.streakDays.length}/20`}
+                      value={`${monthPrep}/20`}
                       color="text-primary"
                     />
                   </div>

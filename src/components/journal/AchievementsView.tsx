@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   fetchUserAchievements,
   ACHIEVEMENT_CONFIG,
   calculateLevel,
-  type AchievementLevel,
+  asAchievementLevel,
+  higherLevel,
 } from "@/lib/achievements";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,7 +20,6 @@ import {
   TrendingUp,
   Search,
   Award,
-  Lock,
   Flame,
   CheckCircle2,
   Check,
@@ -38,33 +39,46 @@ const CATEGORY_ICONS = {
   Knowledge: <BookOpen className="w-6 h-6" />,
 };
 
+function BadgeArt({ src, alt, fallback }: { src: string; alt: string; fallback: React.ReactNode }) {
+  const [ok, setOk] = useState(true);
+  if (!ok) return <>{fallback}</>;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="w-full h-full object-contain drop-shadow-lg brightness-110"
+      onError={() => setOk(false)}
+    />
+  );
+}
+
 const KEY_ICONS: Record<string, React.ReactNode> = {
   risk_manager: (
-    <img 
-      src="/achievements/risk_manager.png" 
-      alt="Risk Manager" 
-      className="w-full h-full object-contain drop-shadow-lg brightness-110"
+    <BadgeArt
+      src="/achievements/risk_manager.png"
+      alt="Risk Manager"
+      fallback={<Shield className="w-8 h-8" />}
     />
   ),
   win_streak: (
-    <img 
-      src="/achievements/win_streak.png" 
-      alt="Streak Master" 
-      className="w-full h-full object-contain drop-shadow-lg brightness-110"
+    <BadgeArt
+      src="/achievements/win_streak.png"
+      alt="Streak Master"
+      fallback={<Flame className="w-8 h-8" />}
     />
   ),
   pnl_growth: (
-    <img 
-      src="/achievements/pnl_growth.png" 
-      alt="Wealth Builder" 
-      className="w-full h-full object-contain drop-shadow-lg brightness-110"
+    <BadgeArt
+      src="/achievements/pnl_growth.png"
+      alt="Wealth Builder"
+      fallback={<Trophy className="w-8 h-8" />}
     />
   ),
   knowledge_base: (
-    <img 
-      src="/achievements/research_scholar.png" 
-      alt="Research Scholar" 
-      className="w-full h-full object-contain drop-shadow-lg brightness-110"
+    <BadgeArt
+      src="/achievements/research_scholar.png"
+      alt="Research Scholar"
+      fallback={<BookOpen className="w-8 h-8" />}
     />
   ),
 };
@@ -90,7 +104,10 @@ export function AchievementsView() {
   const achievements = Object.entries(ACHIEVEMENT_CONFIG).map(([key, config]) => {
     const userStat = userAchievements.find((a) => a.achievementKey === key);
     const currentValue = userStat?.currentValue || 0;
-    const currentLevel = calculateLevel(key as any, currentValue);
+    const currentLevel = higherLevel(
+      calculateLevel(key as keyof typeof ACHIEVEMENT_CONFIG, currentValue),
+      asAchievementLevel(userStat?.highestLevel),
+    );
 
     // Calculate target for current level
     const milestones = config.milestones;
@@ -322,8 +339,8 @@ function AchievementCard({ achievement, isActive }: { achievement: any; isActive
                             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
                           />
                           <span className="relative z-10 flex items-center gap-1">
-                            {isActive ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                            {isActive ? "Đang Sử Dụng" : `Mở Khóa: ${achievement.title}`}
+                            {isActive ? <Check className="w-3 h-3" /> : null}
+                            {isActive ? "Đang dùng" : "Gắn danh hiệu"}
                           </span>
                         </button>
                       </div>

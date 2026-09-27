@@ -391,7 +391,7 @@ export function JournalView() {
         ...entries.filter((x) => x.date === e.date && x.id !== e.id),
         e,
       ]);
-      if (!dateWasComplete && isNowComplete) {
+      if (!dateWasComplete && isNowComplete && e.date === journalTradingDate()) {
         const stats = calculateStreak([...entries.filter((x) => x.id !== e.id), e]);
         setCelebrationStreak(stats.currentStreak);
         setShowCelebration(true);

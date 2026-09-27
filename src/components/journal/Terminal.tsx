@@ -42,6 +42,7 @@ import { CommandPalette } from "@/components/shared/CommandPalette";
 import { OnboardingModal } from "@/components/shared/OnboardingModal";
 import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
+import { useSyncProfileStreak } from "@/hooks/useSyncProfileStreak";
 import { fetchSettings } from "@/lib/settings";
 
 const NAV_PRIMARY: { id: PageId; label: string; icon: React.ComponentType<{ className?: string }> }[] =
@@ -166,11 +167,12 @@ function Shell() {
     queryFn: fetchMyProfile,
   });
 
+  useSyncProfileStreak(entries);
+
   const streak = useMemo(() => {
-    if (profile) return profile.currentStreak;
-    if (!entries) return 0;
-    return calculateStreak(entries).currentStreak;
-  }, [profile, entries]);
+    if (entries) return calculateStreak(entries).currentStreak;
+    return profile?.currentStreak ?? 0;
+  }, [entries, profile]);
 
   const signOut = async () => {
     await supabase.auth.signOut();

@@ -228,7 +228,7 @@ function RootComponent() {
         ];
         const isNowComplete = isPrepDay(updatedList.filter((x) => x.date === updatedEntry.date));
 
-        if (!dateWasComplete && isNowComplete) {
+        if (!dateWasComplete && isNowComplete && updatedEntry.date === journalTradingDate()) {
           const stats = calculateStreak(updatedList);
           triggerCelebration(stats.currentStreak);
         }
