@@ -9,6 +9,7 @@ export const uploadToR2 = createServerFn({ method: "POST" })
   .inputValidator((data: { path: string; base64: string; contentType: string }) => data)
   .handler(
     async ({ data }) => {
+      if (data.path.startsWith("bias-delivery/") || data.path.includes("/bias-submissions/")) throw new Error("Reserved homework storage path.");
       const request = getRequest();
       // @ts-ignore
       const rawEnv = request?.context?.cloudflare?.env || request?.context || {};
@@ -93,6 +94,7 @@ export const deleteFromR2 = createServerFn({ method: "POST" })
   .inputValidator((data: string) => data)
   .handler(
     async ({ data: path }) => {
+      if (path.startsWith("bias-delivery/") || path.includes("/bias-submissions/")) throw new Error("Homework archives cannot be deleted through journal storage.");
       const request = getRequest();
       // @ts-ignore
       const rawEnv = request?.context?.cloudflare?.env || request?.context || {};
@@ -115,6 +117,7 @@ export const fetchFromR2 = createServerFn({ method: "GET" })
   .inputValidator((data: string) => data)
   .handler(
     async ({ data: path }) => {
+    if (path.startsWith("bias-delivery/")) return new Response("Not Found", { status: 404 });
     const request = getRequest();
     // @ts-ignore
     const rawEnv = request?.context?.cloudflare?.env || request?.context || {};

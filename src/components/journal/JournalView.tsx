@@ -58,6 +58,8 @@ const newEntry = (asset: string, prior: DayEntry[] = [], date = journalTradingDa
   return prev ? applyHtfCarry(base, prev, "bias") : base;
 };
 
+import { BiasHomeworkPanel } from "./BiasHomeworkPanel";
+
 export function JournalView() {
   const { data: assetList = [] } = useSymbols();
   const ASSETS = useMemo(() => assetList.filter((s) => !s.isForex).map((s) => s.name), [assetList]);
@@ -574,6 +576,7 @@ export function JournalView() {
           </div>
         )}
       </header>
+      <BiasHomeworkPanel entries={entries} assets={ASSETS} />
 
       <main className="px-4 py-5">
         {entriesPending ? (

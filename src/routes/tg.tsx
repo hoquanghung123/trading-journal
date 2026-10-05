@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BiasHomeworkPanel } from "../components/journal/BiasHomeworkPanel";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../integrations/supabase/client";
 import {
@@ -890,6 +891,7 @@ function TgMiniApp() {
       </div>
 
       {/* Bias Tab */}
+      {tab === "bias" && entriesReady && <BiasHomeworkPanel entries={entries} assets={userAssets} />}
       {tab === "bias" && (() => {
         // Chỉ hiển thị assets đã có entry trong DB cho ngày giao dịch
         const todayAssets = userAssets.filter((a) =>

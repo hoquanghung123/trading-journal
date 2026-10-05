@@ -12,6 +12,9 @@
     }
   ],
   "vars": {
-    "NODE_VERSION": "22.16.0"
+    "NODE_VERSION": "22.16.0",
+    "LMS_BIAS_ENABLED": "true",
+    "LMS_BIAS_URL": "https://learning.hibacsi.com",
+    "TRADING_JOURNAL_URL": "https://trading.hibacsi.com"
   }
 }

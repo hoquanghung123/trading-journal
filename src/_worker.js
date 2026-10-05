@@ -14,6 +14,10 @@ export default {
       if (env.SUPABASE_SERVICE_ROLE_KEY)
         globalThis.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
       if (env.R2) globalThis.R2 = env.R2;
+      // Server-only integration settings; never include these in window.ENV.
+      for (const key of ["LMS_BIAS_ENABLED", "LMS_BIAS_URL", "LMS_BIAS_SECRET", "TRADING_JOURNAL_URL"]) {
+        globalThis[key] = env[key];
+      }
       if (env.RCLONE_CONFIG_ONEDRIVE)
         globalThis.RCLONE_CONFIG_ONEDRIVE = env.RCLONE_CONFIG_ONEDRIVE;
 
@@ -30,6 +34,7 @@ export default {
 
         try {
           const path = debug.path;
+          if (path.startsWith("bias-delivery/")) return new Response("Not Found", { status: 404 });
           let object = null;
 
           try {

@@ -42,6 +42,7 @@ supabase/.env.local
 *.sw?
 
 .wrangler
+.local-bias-store/
 
 .agent/
 .gemini/

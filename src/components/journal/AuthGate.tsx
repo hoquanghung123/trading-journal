@@ -4,6 +4,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { LogIn, Loader2, Mail, Lock, Terminal as TerminalIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { readBiasLinkHandoff } from "@/lib/bias-link-handoff";
 
 interface Props {
   children: (user: User) => React.ReactNode;
@@ -19,6 +20,7 @@ export function AuthGate({ children }: Props) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    readBiasLinkHandoff();
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);

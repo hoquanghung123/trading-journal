@@ -44,6 +44,7 @@ import { AppErrorBoundary } from "@/components/shared/AppErrorBoundary";
 import { useQuery } from "@tanstack/react-query";
 import { useSyncProfileStreak } from "@/hooks/useSyncProfileStreak";
 import { fetchSettings } from "@/lib/settings";
+import { readBiasLinkHandoff } from "@/lib/bias-link-handoff";
 
 const NAV_PRIMARY: { id: PageId; label: string; icon: React.ComponentType<{ className?: string }> }[] =
   [
@@ -130,7 +131,7 @@ function NavButton({
 }
 
 function Shell() {
-  const initial = parseNavFromUrl();
+  const initial = readBiasLinkHandoff() ? { page: "bias" as const, date: undefined } : parseNavFromUrl();
   const [page, setPage] = useState<PageId>(initial.page);
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(true);
