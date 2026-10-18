@@ -333,6 +333,7 @@ export function MissedTradeModal({
                     label={i === 0 ? "Chart setup *" : "Diễn biến sau · Tùy chọn"}
                     path={draft[key]}
                     file={files[key]}
+                    disabled={busy}
                     onChange={(file) => {
                       setFiles((prev) => ({ ...prev, [key]: file }));
                       setDirty(true);
@@ -435,12 +436,14 @@ function ChartField({
   label,
   path,
   file,
+  disabled = false,
   onChange,
 }: {
   id: string;
   label: string;
   path: string | null;
   file?: File;
+  disabled?: boolean;
   onChange: (f: File | undefined) => void;
 }) {
   const [preview, setPreview] = useState("");
@@ -453,18 +456,51 @@ function ChartField({
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [path, file]);
+  const acceptFile = (image: File) => {
+    if (disabled) return;
+    if (!image.type.startsWith("image/") || image.size > 15 * 1024 * 1024) {
+      toast.error("Chọn ảnh nhỏ hơn 15 MB.");
+      return;
+    }
+    onChange(image);
+  };
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="text-xs font-medium">
         {label}
       </label>
-      {preview && (
-        <img
-          src={preview}
-          alt={label}
-          className="max-h-64 w-full rounded-lg border border-border object-contain"
-        />
-      )}
+      <div
+        role="group"
+        aria-label={`Dán ảnh vào ${label}`}
+        aria-disabled={disabled}
+        tabIndex={disabled ? -1 : 0}
+        onClick={(e) => e.currentTarget.focus()}
+        onPaste={(e) => {
+          if (disabled) return;
+          const item = Array.from(e.clipboardData.items).find((item) =>
+            item.type.startsWith("image/"),
+          );
+          const image = item?.getAsFile();
+          if (!image) return;
+          e.preventDefault();
+          e.stopPropagation();
+          acceptFile(image);
+        }}
+        className="cursor-pointer rounded-xl border border-dashed border-border bg-muted/20 p-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+      >
+        {preview ? (
+          <img src={preview} alt={label} className="max-h-64 w-full rounded-lg object-contain" />
+        ) : (
+          <p className="px-3 py-8 text-center text-xs leading-relaxed text-muted-foreground">
+            Bấm vào đây rồi nhấn Cmd+V / Ctrl+V để dán ảnh chart
+          </p>
+        )}
+        {preview && (
+          <p className="mt-2 text-center text-[10px] text-muted-foreground">
+            Cmd+V / Ctrl+V để thay ảnh
+          </p>
+        )}
+      </div>
       <input
         id={id}
         type="file"
@@ -472,12 +508,8 @@ function ChartField({
         className="block w-full min-w-0 text-xs file:mr-2 file:rounded-lg file:border file:border-border file:bg-card file:px-3 file:py-2 file:text-foreground"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f && (!f.type.startsWith("image/") || f.size > 15 * 1024 * 1024)) {
-            toast.error("Chọn ảnh nhỏ hơn 15 MB.");
-            e.target.value = "";
-            return;
-          }
-          onChange(f);
+          if (f) acceptFile(f);
+          e.target.value = "";
         }}
       />
       <p className="text-[10px] text-muted-foreground">Ảnh tối đa 15 MB · Chỉ tải lên khi lưu.</p>
