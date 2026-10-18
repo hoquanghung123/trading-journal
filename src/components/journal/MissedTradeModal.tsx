@@ -22,6 +22,7 @@ import { MISS_REASONS, type MissedTrade } from "@/lib/missed-trades";
 import { deleteChartImage, getChartUrl, uploadChartImage } from "@/lib/journal";
 import { toast } from "sonner";
 import { timelineDay } from "@/lib/trade-timeline";
+import { useSymbols } from "@/lib/symbols";
 
 const inputClass =
   "w-full min-w-0 rounded-lg border border-input bg-card px-3 py-2 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 md:text-sm";
@@ -47,6 +48,12 @@ export function MissedTradeModal({
   const [confirmation, setConfirmation] = useState<"discard" | "delete" | null>(null);
   const [error, setError] = useState("");
   const { models } = usePlaybook();
+  const {
+    data: symbols = [],
+    isLoading: symbolsLoading,
+    error: symbolsError,
+    refetch: retrySymbols,
+  } = useSymbols();
   useEffect(() => {
     setDraft(trade ? { ...trade } : null);
     setFiles({});
@@ -163,13 +170,46 @@ export function MissedTradeModal({
                   <div className="grid min-w-0 gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       {label("miss-symbol", "Symbol", true)}
-                      <input
+                      <select
                         id="miss-symbol"
                         required
                         value={draft.symbol}
                         onChange={(e) => update({ symbol: e.target.value })}
+                        disabled={symbolsLoading && !draft.symbol}
                         className={`${inputClass} h-11 md:h-10`}
-                      />
+                      >
+                        <option value="">
+                          {symbolsLoading ? "Đang tải symbol…" : "Chọn symbol"}
+                        </option>
+                        {draft.symbol &&
+                          !symbols.some((symbol) => symbol.name === draft.symbol) && (
+                            <option value={draft.symbol}>{draft.symbol}</option>
+                          )}
+                        {symbols.map((symbol) => (
+                          <option key={symbol.id} value={symbol.name}>
+                            {symbol.name}
+                          </option>
+                        ))}
+                      </select>
+                      {symbolsError ? (
+                        <p role="alert" className="text-[11px] text-destructive">
+                          Không tải được danh sách symbol.{" "}
+                          <button
+                            type="button"
+                            onClick={() => void retrySymbols()}
+                            className="underline"
+                          >
+                            Thử lại
+                          </button>
+                        </p>
+                      ) : (
+                        !symbolsLoading &&
+                        !symbols.length && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Thêm cặp giao dịch trong Assets để chọn tại đây.
+                          </p>
+                        )
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       {label("miss-side", "Hướng giao dịch", true)}
