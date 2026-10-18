@@ -1,15 +1,11 @@
+import { MissedTradeReview } from "./MissedTradeReview";
+import { timelineDay } from "@/lib/trade-timeline";
 import { useMemo, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchTrades,
-  upsertTrade,
-  computeOutcome,
-  outcomeStyle,
-  type Trade,
-} from "@/lib/trades";
+import { fetchTrades, upsertTrade, computeOutcome, outcomeStyle, type Trade } from "@/lib/trades";
 import { RichEditor } from "@/components/ui/rich-editor";
 import { getAssetIconUrl } from "@/lib/symbols";
-import { isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 import { CheckCircle2, AlertCircle, FileText, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -257,8 +253,10 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
   const periodTrades = useMemo(() => {
     if (!dateRange) return allTrades;
     return allTrades.filter((t) => {
-      const date = parseISO(t.entryTime);
-      return isWithinInterval(date, { start: dateRange.start, end: dateRange.end });
+      const day = timelineDay(t.entryTime);
+      return (
+        day >= format(dateRange.start, "yyyy-MM-dd") && day <= format(dateRange.end, "yyyy-MM-dd")
+      );
     });
   }, [allTrades, dateRange]);
 
@@ -297,13 +295,12 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
       {/* Stats bar */}
       <div className="flex items-center gap-6 px-1">
         <div className="text-sm font-bold text-muted-foreground">
-          <span className="text-foreground font-black text-lg">{periodTrades.length}</span>
-          {" "}trades this period
+          <span className="text-foreground font-black text-lg">{periodTrades.length}</span> trades
+          this period
         </div>
         <div className="w-px h-5 bg-border" />
         <div className="text-sm font-bold text-muted-foreground">
-          <span className="text-primary font-black text-lg">{withNotes}</span>
-          {" "}with notes
+          <span className="text-primary font-black text-lg">{withNotes}</span> with notes
         </div>
         {periodTrades.length > 0 && (
           <>
@@ -385,6 +382,10 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
           ))}
         </div>
       )}
+      <MissedTradeReview
+        start={dateRange ? format(dateRange.start, "yyyy-MM-dd") : undefined}
+        end={dateRange ? format(dateRange.end, "yyyy-MM-dd") : undefined}
+      />
     </div>
   );
 }

@@ -1,3 +1,11 @@
+type MissedTradeRecord = {
+  id: string; user_id: string; setup_time: string; symbol: string; side: 'buy' | 'sell';
+  setup_id: string | null; reason: string; analysis: string; lesson: string;
+  planned_entry: number | null; planned_sl: number | null; planned_tp: number | null;
+  hypothetical_r: number | null; before_img: string; after_img: string | null;
+  created_at: string; updated_at: string;
+};
+
 export type Json =
   | string
   | number
@@ -14,6 +22,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      missed_trades: {
+        Row: MissedTradeRecord;
+        Insert: Omit<MissedTradeRecord, 'created_at' | 'updated_at'> & { created_at?: string; updated_at?: string };
+        Update: Partial<MissedTradeRecord>;
+        Relationships: [];
+      };
       backup_logs: {
         Row: {
           created_at: string

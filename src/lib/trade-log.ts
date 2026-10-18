@@ -1,10 +1,11 @@
 import { computeOutcome, type Trade, type TradeStatus } from "@/lib/trades";
 import { getActiveKillzone, KILLZONE_NY } from "@/lib/journal";
 
-export type TradeLogView = "tape" | "ledger" | "tickets" | "killzone";
+export type TradeLogView = "timeline" | "tape" | "ledger" | "tickets" | "killzone";
 export type TradeKillzoneLane = "ASIA" | "LDN" | "NY";
 
 export const TRADE_LOG_VIEWS: { id: TradeLogView; label: string }[] = [
+  { id: "timeline", label: "Timeline" },
   { id: "tape", label: "Tape" },
   { id: "ledger", label: "Ledger" },
   { id: "tickets", label: "Tickets" },
@@ -12,10 +13,12 @@ export const TRADE_LOG_VIEWS: { id: TradeLogView; label: string }[] = [
 ];
 
 export function normalizeTradeLogView(raw?: string | null): TradeLogView {
+  if (raw === "timeline") return "timeline";
+  if (raw === "ledger" || raw === "table") return "ledger";
   if (raw === "tape") return "tape";
   if (raw === "tickets" || raw === "gallery") return "tickets";
   if (raw === "killzone") return "killzone";
-  return "ledger";
+  return "timeline";
 }
 
 const nyParts = (iso: string, opts: Intl.DateTimeFormatOptions) => {

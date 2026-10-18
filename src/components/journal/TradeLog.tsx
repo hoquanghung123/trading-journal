@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Settings2,
@@ -9,6 +9,7 @@ import {
   Table2,
   Timer,
   Search,
+  CalendarDays,
 } from "lucide-react";
 import {
   computeOutcome,
@@ -24,6 +25,24 @@ import { DateRangePicker } from "../shared/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { onRequestNewTrade, onRequestOpenTrade } from "@/lib/nav-bus";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { TradeTimelineView } from "./TradeTimelineView";
+import { MissedTradeModal } from "./MissedTradeModal";
+import {
+  fetchMissedTrades,
+  missedTradesQueryKey,
+  newMissedTrade,
+  saveMissedTrade,
+  deleteMissedTrade,
+  type MissedTrade,
+} from "@/lib/missed-trades";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { TradeModal } from "./TradeModal";
 import { TradeTapeView } from "./TradeTapeView";
 import { TradeLedgerView } from "./TradeLedgerView";
@@ -39,21 +58,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { fetchSettings, updateSettings } from "@/lib/settings";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { fetchSettings } from "@/lib/settings";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
   computeFilterPulse,
   formatPnl,
   formatSigned,
-  normalizeTradeLogView,
   TRADE_LOG_VIEWS,
   type TradeLogView,
 } from "@/lib/trade-log";
@@ -139,7 +150,9 @@ function loadCols(): Record<ColKey, boolean> {
   try {
     const s = localStorage.getItem(COLS_KEY);
     if (s) return { ...DEFAULT_COLS, ...JSON.parse(s) };
-  } catch {}
+  } catch {
+    // A corrupt local preference should fall back to the default columns.
+  }
   return { ...DEFAULT_COLS };
 }
 
@@ -151,24 +164,35 @@ export function TradeLog() {
   const { models: playbookSetups } = usePlaybook();
   const [editing, setEditing] = useState<Trade | null>(null);
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(savedFilters.query ?? "");
-  const [symbolFilter, setSymbolFilter] = useState(savedFilters.symbolFilter ?? "ALL");
-  const [sideFilter, setSideFilter] = useState<SideFilter>(savedFilters.sideFilter ?? "ALL");
-  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>(
-    savedFilters.outcomeFilter ?? "ALL",
-  );
-  const [setupFilter, setSetupFilter] = useState(savedFilters.setupFilter ?? "ALL");
-  const [complianceFilter, setComplianceFilter] = useState<ComplianceFilter>(
-    savedFilters.complianceFilter ?? "ALL",
-  );
-  const [viewOverride, setViewOverride] = useState<TradeLogView | null>(null);
+  const [query, setQuery] = useState("");
+  const [symbolFilter, setSymbolFilter] = useState("ALL");
+  const [sideFilter, setSideFilter] = useState<SideFilter>("ALL");
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>("ALL");
+  const [setupFilter, setSetupFilter] = useState("ALL");
+  const [complianceFilter, setComplianceFilter] = useState<ComplianceFilter>("ALL");
+  // Each visit starts at Timeline / current week; switching views is local to this visit.
+  const [viewMode, setViewMode] = useState<TradeLogView>("timeline");
+  const [chooseType, setChooseType] = useState(false);
+  const [editingMissed, setEditingMissed] = useState<MissedTrade | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
 
-  const { data: trades = [], isLoading: loading, error } = useQuery({
+  const {
+    data: trades = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
     queryKey: tradesQueryKey,
     queryFn: fetchTrades,
+  });
+  const {
+    data: missed = [],
+    isLoading: missedLoading,
+    error: missedError,
+    refetch: retryMissed,
+  } = useQuery({
+    queryKey: missedTradesQueryKey,
+    queryFn: fetchMissedTrades,
   });
   const tradesRef = useRef(trades);
   tradesRef.current = trades;
@@ -202,10 +226,14 @@ export function TradeLog() {
     if (error) toast.error(error instanceof Error ? error.message : "Failed to load");
   }, [error]);
 
-  const handleUpdateView = async (view: TradeLogView) => {
-    setViewOverride(view);
-    await updateSettings({ tradeLogView: view });
-    queryClient.invalidateQueries({ queryKey: ["user_settings"] });
+  const handleUpdateView = (view: TradeLogView) => setViewMode(view);
+  const saveMissed = async (trade: MissedTrade) => {
+    await saveMissedTrade(trade);
+    await queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
+  };
+  const removeMissed = async (trade: MissedTrade) => {
+    await deleteMissedTrade(trade);
+    await queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
   };
 
   const openNew = () => {
@@ -216,7 +244,7 @@ export function TradeLog() {
     setOpen(true);
   };
 
-  useEffect(() => onRequestNewTrade(openNew), []);
+  useEffect(() => onRequestNewTrade(() => setChooseType(true)), []);
 
   useEffect(
     () =>
@@ -257,7 +285,7 @@ export function TradeLog() {
   const filteredTrades = useMemo(() => {
     const q = query.trim().toLowerCase();
     return trades.filter((t) => {
-      if (dateRange?.from) {
+      if (viewMode !== "timeline" && dateRange?.from) {
         const start = startOfDay(dateRange.from);
         const end = endOfDay(dateRange.to || dateRange.from);
         const entryDate = parseISO(t.entryTime);
@@ -280,6 +308,7 @@ export function TradeLog() {
     });
   }, [
     trades,
+    viewMode,
     dateRange,
     query,
     symbolFilter,
@@ -294,15 +323,32 @@ export function TradeLog() {
     [filteredTrades],
   );
 
-  const savedView = normalizeTradeLogView(settings?.tradeLogView);
-  const viewMode = viewOverride ?? (settings ? savedView : isMobile ? "tickets" : "ledger");
+  const filteredMissed = useMemo(
+    () =>
+      missed.filter((t) => {
+        if (outcomeFilter !== "ALL" || complianceFilter !== "ALL") return false;
+        if (symbolFilter !== "ALL" && t.symbol !== symbolFilter) return false;
+        if (sideFilter !== "ALL" && t.side !== sideFilter) return false;
+        if (setupFilter !== "ALL" && t.setup_id !== setupFilter) return false;
+        const q = query.trim().toLowerCase();
+        return (
+          !q ||
+          `${t.symbol} ${t.analysis} ${t.lesson} ${t.side} ${t.reason}`.toLowerCase().includes(q)
+        );
+      }),
+    [missed, outcomeFilter, complianceFilter, symbolFilter, sideFilter, setupFilter, query],
+  );
 
   const symbolsInLog = useMemo(
-    () => Array.from(new Set(trades.map((t) => t.symbol))).sort(),
-    [trades],
+    () =>
+      Array.from(new Set([...trades.map((t) => t.symbol), ...missed.map((t) => t.symbol)])).sort(),
+    [trades, missed],
   );
   const pulse = useMemo(() => computeFilterPulse(sorted), [sorted]);
-  const playbookName = (id?: string) => playbookSetups.find((s) => s.id === id)?.name;
+  const playbookName = useCallback(
+    (id?: string) => playbookSetups.find((s) => s.id === id)?.name,
+    [playbookSetups],
+  );
 
   const filtersActive =
     query.trim() !== "" ||
@@ -311,7 +357,7 @@ export function TradeLog() {
     outcomeFilter !== "ALL" ||
     setupFilter !== "ALL" ||
     complianceFilter !== "ALL" ||
-    !!dateRange?.from;
+    (viewMode !== "timeline" && !!dateRange?.from);
 
   const clearFilters = () => {
     setQuery("");
@@ -358,7 +404,7 @@ export function TradeLog() {
       onClear: () => setComplianceFilter("ALL"),
     });
   }
-  if (dateRange?.from) {
+  if (viewMode !== "timeline" && dateRange?.from) {
     const from = format(dateRange.from, "d MMM");
     const to = dateRange.to ? format(dateRange.to, "d MMM") : from;
     activeChips.push({
@@ -381,9 +427,10 @@ export function TradeLog() {
       map.set(name, g);
     }
     return Array.from(map.values());
-  }, [sorted, playbookSetups]);
+  }, [sorted, playbookName]);
 
   const viewIcon = (id: TradeLogView) => {
+    if (id === "timeline") return CalendarDays;
     if (id === "tape") return List;
     if (id === "ledger") return Table2;
     if (id === "tickets") return LayoutGrid;
@@ -399,9 +446,11 @@ export function TradeLog() {
               <FileText className="w-6 h-6 text-primary" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Trade Log</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                Trade Log
+              </h1>
               <p className="text-[10px] lg:text-xs text-muted-foreground font-semibold uppercase tracking-widest">
-                NY blotter
+                {viewMode === "timeline" ? "Daily timeline · UTC+7" : "NY blotter"}
               </p>
             </div>
           </div>
@@ -455,7 +504,7 @@ export function TradeLog() {
             )}
             <button
               type="button"
-              onClick={openNew}
+              onClick={() => setChooseType(true)}
               aria-label="New trade"
               className="lg:hidden forest-gradient flex items-center justify-center w-10 h-10 text-white rounded-xl shadow-lg active:scale-95"
             >
@@ -463,7 +512,7 @@ export function TradeLog() {
             </button>
             <button
               type="button"
-              onClick={openNew}
+              onClick={() => setChooseType(true)}
               className="hidden lg:flex forest-gradient items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-lg hover:opacity-90 active:scale-95"
             >
               <Plus className="w-5 h-5" /> New trade
@@ -510,7 +559,9 @@ export function TradeLog() {
                 <SheetTitle>Filters</SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-4">
-                <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full" />
+                {viewMode !== "timeline" && (
+                  <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full" />
+                )}
                 <div className="flex flex-wrap gap-2">
                   <FilterControls
                     symbolsInLog={symbolsInLog}
@@ -533,7 +584,9 @@ export function TradeLog() {
         </div>
 
         <div className="hidden sm:flex flex-wrap items-center gap-2">
-          <DateRangePicker date={dateRange} setDate={setDateRange} className="w-auto" />
+          {viewMode !== "timeline" && (
+            <DateRangePicker date={dateRange} setDate={setDateRange} className="w-auto" />
+          )}
           <FilterControls
             symbolsInLog={symbolsInLog}
             playbookSetups={playbookSetups}
@@ -574,7 +627,7 @@ export function TradeLog() {
           </div>
         )}
 
-        {sorted.length > 0 && (
+        {viewMode !== "timeline" && sorted.length > 0 && (
           <div className="flex overflow-hidden rounded-xl border border-border bg-card">
             <PulseCell label="Trades" value={String(pulse.count)} />
             <PulseCell
@@ -596,11 +649,32 @@ export function TradeLog() {
           </div>
         )}
 
+        {viewMode === "timeline" && missedError && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-3 rounded-xl border border-destructive/30 p-4 text-xs text-destructive"
+          >
+            <span>
+              Không tải được trade miss. Lệnh thật vẫn hiển thị; số tổng kết miss chưa đầy đủ.
+            </span>
+            <button type="button" onClick={() => void retryMissed()} className="underline">
+              Thử lại
+            </button>
+          </div>
+        )}
         <div className="w-full">
-          {loading ? (
+          {loading || (viewMode === "timeline" && missedLoading) ? (
             <div className="p-20 text-center bg-card rounded-3xl border border-border/50">
               <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
             </div>
+          ) : viewMode === "timeline" ? (
+            <TradeTimelineView
+              trades={sorted}
+              missed={filteredMissed}
+              playbookName={playbookName}
+              onOpen={openEdit}
+              onOpenMissed={setEditingMissed}
+            />
           ) : trades.length === 0 ? (
             <EmptyState
               icon={FileText}
@@ -632,10 +706,15 @@ export function TradeLog() {
                     <h3 className="text-sm font-black tracking-tight">{g.name}</h3>
                     <p
                       className={`tabular-nums text-[11px] font-bold ${
-                        g.pnl > 0 ? "text-primary" : g.pnl < 0 ? "text-destructive" : "text-muted-foreground"
+                        g.pnl > 0
+                          ? "text-primary"
+                          : g.pnl < 0
+                            ? "text-destructive"
+                            : "text-muted-foreground"
                       }`}
                     >
-                      {g.rows.length} {g.rows.length === 1 ? "trade" : "trades"} · {formatPnl(g.pnl)}
+                      {g.rows.length} {g.rows.length === 1 ? "trade" : "trades"} ·{" "}
+                      {formatPnl(g.pnl)}
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -659,13 +738,49 @@ export function TradeLog() {
               cols={cols}
               showGrade={settings?.showTradeGrade}
               playbookName={playbookName}
-              executionSchema={settings?.executionSchema as any[]}
+              executionSchema={settings?.executionSchema}
               onOpen={openEdit}
             />
           )}
         </div>
       </div>
 
+      <Dialog open={chooseType} onOpenChange={setChooseType}>
+        <DialogContent className="w-[calc(100%-24px)] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Bạn muốn ghi loại trade nào?</DialogTitle>
+            <DialogDescription>Chọn loại để mở đúng form phân tích.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setChooseType(false);
+                openNew();
+              }}
+            >
+              Đã vào lệnh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setChooseType(false);
+                setEditingMissed(newMissedTrade());
+              }}
+            >
+              Bị miss
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <MissedTradeModal
+        trade={editingMissed}
+        onClose={() => setEditingMissed(null)}
+        onSave={saveMissed}
+        onDelete={
+          editingMissed && missed.some((t) => t.id === editingMissed.id) ? removeMissed : undefined
+        }
+      />
       <TradeModal
         open={open}
         trade={editing}
@@ -690,7 +805,9 @@ function PulseCell({
 }) {
   return (
     <div className={`px-3 py-2 border-l border-border first:border-l-0 min-w-0 ${className}`}>
-      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
       <p
         className={`tabular-nums text-base font-bold ${
           tone === "up" ? "text-primary" : tone === "down" ? "text-destructive" : "text-foreground"

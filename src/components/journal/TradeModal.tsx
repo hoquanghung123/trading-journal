@@ -487,7 +487,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </div>
               </div>
 
-              {/* Missed Confluences Checklist */}
+              {/* Điều kiện setup chưa đáp ứng Checklist */}
               {!t.complianceCheck && t.setupId && (
                 <div className="bg-destructive/5 border border-destructive/10 rounded-[32px] p-8 space-y-6 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex items-center gap-3">
@@ -496,7 +496,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-destructive uppercase tracking-widest">
-                        Missed Confluences
+                        Điều kiện setup chưa đáp ứng
                       </h4>
                       <p className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-0.5">
                         Specify what rules were not followed in this execution
