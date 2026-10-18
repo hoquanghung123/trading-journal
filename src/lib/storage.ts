@@ -39,12 +39,14 @@ export const uploadToR2 = createServerFn({ method: "POST" })
         if (ctx && typeof ctx.waitUntil === "function") {
           ctx.waitUntil(syncPromise);
         } else {
-          // Fallback: if waitUntil is not available (like in some ServerFn runtimes),
-          // we MUST await the promise so Cloudflare does not terminate the execution immediately.
+          // TanStack ServerFn does not always expose Cloudflare's context on Request.
+          // Use the request-scoped runtime API instead of blocking a successful R2 upload.
           try {
-            await syncPromise;
-          } catch (err) {
-            console.error("Failed to sync to OneDrive:", err);
+            const { waitUntil } = await import("cloudflare:workers");
+            waitUntil(syncPromise);
+          } catch {
+            // Local Node development has no Workers runtime. Backup remains best-effort.
+            void syncPromise.catch((err) => console.error("Failed to sync to OneDrive:", err));
           }
         }
       } else {

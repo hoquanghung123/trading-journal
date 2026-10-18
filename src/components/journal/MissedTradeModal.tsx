@@ -1,3 +1,4 @@
+import { withTimeout } from "@/lib/async-timeout";
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -42,6 +43,7 @@ export function MissedTradeModal({
   const [files, setFiles] = useState<{ before_img?: File; after_img?: File }>({});
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saveStage, setSaveStage] = useState("");
   const [confirmation, setConfirmation] = useState<"discard" | "delete" | null>(null);
   const [error, setError] = useState("");
   const { models } = usePlaybook();
@@ -86,28 +88,40 @@ export function MissedTradeModal({
     setBusy(true);
     setError("");
     const next = { ...draft, symbol: draft.symbol.trim().toUpperCase() };
-    const uploaded: string[] = [];
     try {
       for (const key of ["before_img", "after_img"] as const) {
         if (files[key]) {
-          const path = await uploadChartImage(files[key]!);
-          uploaded.push(path);
+          setSaveStage(key === "before_img" ? "Đang tải chart setup…" : "Đang tải ảnh diễn biến…");
+          const path = await withTimeout(
+            uploadChartImage(files[key]!),
+            60000,
+            "Tải ảnh quá 60 giây. Nội dung được giữ lại; kiểm tra kết nối rồi thử lưu lại.",
+          );
           next[key] = path;
+          // Keep acknowledged uploads on failure so a retry reuses them.
+          setDraft((prev) => (prev ? { ...prev, [key]: path } : prev));
+          setFiles((prev) => ({ ...prev, [key]: undefined }));
         }
       }
-      await onSave(next);
+      setSaveStage("Đang ghi trade…");
+      await withTimeout(
+        onSave(next),
+        50000,
+        "Chưa nhận được xác nhận lưu. Nội dung và ảnh vẫn được giữ; kiểm tra timeline trước khi thử lại.",
+      );
       // Only remove replaced files once the database points to their replacements.
       const replaced = [trade?.before_img, trade?.after_img].filter(
         (p): p is string => !!p && p !== next.before_img && p !== next.after_img,
       );
-      await Promise.allSettled(replaced.map(deleteChartImage));
+      void Promise.allSettled(replaced.map(deleteChartImage));
       toast.success("Đã lưu trade bị miss");
       onClose();
     } catch (e) {
-      await Promise.allSettled(uploaded.map(deleteChartImage));
+      // A timed-out write might have committed. Do not delete images it may reference.
       setError(e instanceof Error ? e.message : "Không lưu được. Nội dung vẫn được giữ lại.");
     } finally {
       setBusy(false);
+      setSaveStage("");
     }
   };
   const remove = async () => {
@@ -362,6 +376,11 @@ export function MissedTradeModal({
               </div>
             </fieldset>
             <div className="sticky bottom-0 space-y-3 border-t border-border bg-card p-4 sm:px-6">
+              {busy && saveStage && (
+                <p role="status" className="text-xs text-muted-foreground">
+                  {saveStage}
+                </p>
+              )}
               {error && (
                 <p role="alert" className="text-xs text-destructive">
                   {error}

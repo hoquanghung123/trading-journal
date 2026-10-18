@@ -229,11 +229,18 @@ export function TradeLog() {
   const handleUpdateView = (view: TradeLogView) => setViewMode(view);
   const saveMissed = async (trade: MissedTrade) => {
     await saveMissedTrade(trade);
-    await queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
+    queryClient.setQueryData<MissedTrade[]>(missedTradesQueryKey, (old) => [
+      trade,
+      ...(old ?? []).filter((t) => t.id !== trade.id),
+    ]);
+    void queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
   };
   const removeMissed = async (trade: MissedTrade) => {
     await deleteMissedTrade(trade);
-    await queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
+    queryClient.setQueryData<MissedTrade[]>(missedTradesQueryKey, (old) =>
+      (old ?? []).filter((t) => t.id !== trade.id),
+    );
+    void queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
   };
 
   const openNew = () => {

@@ -30,11 +30,18 @@ export function MissedTradeReview({ start, end }: { start?: string; end?: string
   );
   const save = async (t: MissedTrade) => {
     await saveMissedTrade(t);
-    await queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
+    queryClient.setQueryData<MissedTrade[]>(missedTradesQueryKey, (old) => [
+      t,
+      ...(old ?? []).filter((row) => row.id !== t.id),
+    ]);
+    void queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
   };
   const remove = async (t: MissedTrade) => {
     await deleteMissedTrade(t);
-    await queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
+    queryClient.setQueryData<MissedTrade[]>(missedTradesQueryKey, (old) =>
+      (old ?? []).filter((row) => row.id !== t.id),
+    );
+    void queryClient.invalidateQueries({ queryKey: missedTradesQueryKey });
   };
   return (
     <section className="space-y-4 border-t border-border pt-6">

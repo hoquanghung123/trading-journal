@@ -1,3 +1,4 @@
+import { withTimeout } from "./async-timeout";
 import { supabase } from "@/integrations/supabase/client";
 import { generateId } from "./utils";
 import { deleteChartImage } from "./journal";
@@ -47,16 +48,23 @@ export async function saveMissedTrade(trade: MissedTrade) {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await withTimeout(
+    supabase.auth.getUser(),
+    15000,
+    "Xác thực quá lâu. Vui lòng kiểm tra kết nối và thử lại.",
+  );
   if (authError) throw authError;
   if (!user) throw new Error("Vui lòng đăng nhập để lưu trade.");
-  const { error } = await supabase.from("missed_trades").upsert({ ...trade, user_id: user.id });
+  const { error } = await supabase
+    .from("missed_trades")
+    .upsert({ ...trade, user_id: user.id })
+    .abortSignal(AbortSignal.timeout(30000));
   if (error) throw error;
 }
 export async function deleteMissedTrade(trade: MissedTrade) {
   const { error } = await supabase.from("missed_trades").delete().eq("id", trade.id);
   if (error) throw error;
-  await Promise.allSettled(
+  void Promise.allSettled(
     [trade.before_img, trade.after_img].filter((p): p is string => !!p).map(deleteChartImage),
   );
 }
