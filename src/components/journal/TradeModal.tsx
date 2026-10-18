@@ -1,3 +1,4 @@
+import { toNyLocal, nyLocalToIso } from "@/lib/trade-time";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -101,9 +102,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
       .catch(() => {});
   }, [open]);
 
-  const tradeJournalDate = t?.entryTime
-    ? journalTradingDate(t.entryTime)
-    : journalTradingDate();
+  const tradeJournalDate = t?.entryTime ? journalTradingDate(t.entryTime) : journalTradingDate();
 
   const filteredBias = useMemo(
     () =>
@@ -148,55 +147,8 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
         }
       : { label: outcome.label, className: outcomeStyle[outcome.color] };
 
-  const toNyLocal = (iso: string) => {
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/New_York",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    const parts = formatter
-      .formatToParts(new Date(iso))
-      .reduce<Record<string, string>>((acc, p) => {
-        if (p.type !== "literal") acc[p.type] = p.value;
-        return acc;
-      }, {});
-    const hh = parts.hour === "24" ? "00" : parts.hour;
-    return `${parts.year}-${parts.month}-${parts.day}T${hh}:${parts.minute}`;
-  };
-
   const dtLocal = toNyLocal(t.entryTime);
   const exitDtLocal = t.exitTime ? toNyLocal(t.exitTime) : "";
-
-  const nyLocalToIso = (local: string): string => {
-    const [datePart, timePart] = local.split("T");
-    const [y, m, d] = datePart.split("-").map(Number);
-    const [hh, mm] = timePart.split(":").map(Number);
-    const date = new Date(Date.UTC(y, m - 1, d, hh, mm));
-
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/New_York",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      hour12: false,
-    });
-
-    const p = formatter.formatToParts(date).reduce<Record<string, number>>((acc, part) => {
-      if (part.type !== "literal" && !isNaN(Number(part.value)))
-        acc[part.type] = Number(part.value);
-      return acc;
-    }, {});
-
-    const nyUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour === 24 ? 0 : p.hour, p.minute);
-    const diff = date.getTime() - nyUtc;
-    return new Date(date.getTime() + diff).toISOString();
-  };
 
   const save = async () => {
     setBusy(true);
@@ -291,7 +243,13 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     onChange={(e) => {
                       const v = e.target.value;
                       if (!v) return;
-                      update({ entryTime: nyLocalToIso(v) });
+                      try {
+                        update({ entryTime: nyLocalToIso(v) });
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error ? error.message : "Ngày giờ không hợp lệ.",
+                        );
+                      }
                     }}
                     className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                   />
@@ -302,7 +260,13 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     value={exitDtLocal}
                     onChange={(e) => {
                       const v = e.target.value;
-                      update({ exitTime: v ? nyLocalToIso(v) : undefined });
+                      try {
+                        update({ exitTime: v ? nyLocalToIso(v) : undefined });
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error ? error.message : "Ngày giờ không hợp lệ.",
+                        );
+                      }
                     }}
                     className="h-12 bg-muted/30 border-border rounded-xl font-bold px-4 focus:ring-primary/20"
                   />
@@ -543,7 +507,9 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                           >
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                                isMissed ? "bg-destructive border-destructive" : "bg-background border-muted"
+                                isMissed
+                                  ? "bg-destructive border-destructive"
+                                  : "bg-background border-muted"
                               }`}
                             >
                               {isMissed && (
@@ -572,7 +538,9 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 trade={t}
                 settings={settings}
                 onUpdate={update}
-                onRefreshSettings={() => queryClient.invalidateQueries({ queryKey: ["user_settings"] })}
+                onRefreshSettings={() =>
+                  queryClient.invalidateQueries({ queryKey: ["user_settings"] })
+                }
               />
             ) : (
               <div className="flex justify-center py-20">
@@ -775,9 +743,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                     .from("journal-charts")
                     .upload(path, file, { upsert: true });
                   if (error) throw error;
-                  const { data } = supabase.storage
-                    .from("journal-charts")
-                    .getPublicUrl(path);
+                  const { data } = supabase.storage.from("journal-charts").getPublicUrl(path);
                   return data.publicUrl;
                 }}
               />

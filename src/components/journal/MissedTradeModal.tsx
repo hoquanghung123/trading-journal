@@ -21,15 +21,12 @@ import { usePlaybook } from "@/hooks/usePlaybook";
 import { MISS_REASONS, type MissedTrade } from "@/lib/missed-trades";
 import { deleteChartImage, getChartUrl, uploadChartImage } from "@/lib/journal";
 import { toast } from "sonner";
-import { timelineDay } from "@/lib/trade-timeline";
+import { toNyLocal, nyLocalToIso } from "@/lib/trade-time";
 import { useSymbols } from "@/lib/symbols";
 
 const inputClass =
   "w-full min-w-0 rounded-lg border border-input bg-card px-3 py-2 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 md:text-sm";
 const numberKeys = ["planned_entry", "planned_sl", "planned_tp", "hypothetical_r"] as const;
-function localTime(iso: string) {
-  return `${timelineDay(iso)}T${new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso))}`;
-}
 export function MissedTradeModal({
   trade,
   onClose,
@@ -224,17 +221,21 @@ export function MissedTradeModal({
                       </select>
                     </div>
                     <div className="min-w-0 space-y-1.5">
-                      {label("miss-time", "Thời điểm setup · UTC+7", true)}
+                      {label("miss-time", "Thời điểm setup (NY)", true)}
                       <input
                         id="miss-time"
                         type="datetime-local"
                         required
-                        value={localTime(draft.setup_time)}
+                        value={toNyLocal(draft.setup_time)}
                         onChange={(e) => {
-                          if (e.target.value)
-                            update({
-                              setup_time: new Date(`${e.target.value}:00+07:00`).toISOString(),
-                            });
+                          if (!e.target.value) return;
+                          try {
+                            update({ setup_time: nyLocalToIso(e.target.value) });
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error ? error.message : "Ngày giờ không hợp lệ.",
+                            );
+                          }
                         }}
                         className={`${inputClass} h-11 md:h-10`}
                       />
