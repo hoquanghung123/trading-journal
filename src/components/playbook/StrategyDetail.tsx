@@ -967,7 +967,7 @@ export function StrategyDetail({
                   
                   <div className="grid grid-cols-1 gap-4">
                     {filteredTrades.map((trade) => {
-                      const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl);
+                      const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl, trade.brokerData);
                       const style = outcomeStyle[outcome.color];
                       return (
                         <div

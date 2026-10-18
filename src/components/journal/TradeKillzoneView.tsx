@@ -198,7 +198,7 @@ export function TradeKillzoneView({
                       </span>
                     )}
                     {fills.map((t) => {
-                      const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+                      const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData);
                       const color =
                         outcome.label === "Win"
                           ? "bg-primary text-white"

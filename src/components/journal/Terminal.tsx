@@ -1,3 +1,4 @@
+import { Mt5Notifications } from "./Mt5Integration";
 import { useEffect, useState, useMemo } from "react";
 import {
   LayoutDashboard,
@@ -366,6 +367,7 @@ function Shell() {
             </button>
           )}
 
+          <Mt5Notifications />
           <div className="h-full">
             {page === "bias" && <JournalView />}
             {page === "dashboard" && <DashboardPage />}

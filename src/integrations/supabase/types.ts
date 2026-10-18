@@ -14,6 +14,37 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+type Mt5ConnectionRecord = {
+  id: string;
+  user_id: string;
+  name: string;
+  account_login: string;
+  server: string;
+  token_hash: string;
+  created_at: string;
+  revoked_at: string | null;
+  last_seen_at: string | null;
+  last_error: string | null;
+  mappings: Json;
+  offset_rules: Json;
+  history_from: string | null;
+  history_to: string | null;
+  scan_version: string;
+};
+type Mt5InboxRecord = {
+  id: string;
+  user_id: string;
+  connection_id: string;
+  position_key: string;
+  revision: number;
+  fingerprint: string;
+  event_time: string;
+  payload: Json;
+  state: string;
+  trade_id: string | null;
+  updated_at: string;
+};
+
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -28,6 +59,27 @@ export type Database = {
         Update: Partial<MissedTradeRecord>;
         Relationships: [];
       };
+      mt5_connections: {
+        Row: Mt5ConnectionRecord;
+        Insert: Partial<Mt5ConnectionRecord> &
+          Pick<
+            Mt5ConnectionRecord,
+            "user_id" | "name" | "account_login" | "server" | "token_hash" | "offset_rules"
+          >;
+        Update: Partial<Mt5ConnectionRecord>;
+        Relationships: [];
+      };
+      mt5_inbox: {
+        Row: Mt5InboxRecord;
+        Insert: Partial<Mt5InboxRecord> &
+          Pick<
+            Mt5InboxRecord,
+            "user_id" | "connection_id" | "position_key" | "fingerprint" | "event_time" | "payload"
+          >;
+        Update: Partial<Mt5InboxRecord>;
+        Relationships: [];
+      };
+
       backup_logs: {
         Row: {
           created_at: string
@@ -410,6 +462,8 @@ export type Database = {
       }
       trades: {
         Row: {
+          broker_data: Json | null
+          mt5_inbox_id: string | null
           actual_rr: number
           after_img: string | null
           before_img: string | null
@@ -443,6 +497,8 @@ export type Database = {
           weekly_img: string | null
         }
         Insert: {
+          broker_data?: Json | null
+          mt5_inbox_id?: string | null
           actual_rr?: number
           after_img?: string | null
           before_img?: string | null
@@ -476,6 +532,8 @@ export type Database = {
           weekly_img?: string | null
         }
         Update: {
+          broker_data?: Json | null
+          mt5_inbox_id?: string | null
           actual_rr?: number
           after_img?: string | null
           before_img?: string | null

@@ -98,7 +98,7 @@ function TradeNoteCard({ trade }: { trade: Trade }) {
   const [draft, setDraft] = useState<string>(trade.notes ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
-  const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl);
+  const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl, trade.brokerData);
 
   const handleBlur = useCallback(async () => {
     if (draft === (trade.notes ?? "")) return; // no change
@@ -264,7 +264,7 @@ export function TradeNotesTab({ period }: TradeNotesTabProps) {
     return periodTrades
       .filter((t) => {
         if (outcomeFilter === "all") return true;
-        const o = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+        const o = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData);
         if (outcomeFilter === "win") return o.color === "green";
         if (outcomeFilter === "loss") return o.color === "red";
         if (outcomeFilter === "be") return o.color === "amber";

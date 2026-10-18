@@ -1,3 +1,4 @@
+import type { BrokerData } from "./mt5/protocol";
 import { supabase } from "@/integrations/supabase/client";
 
 export type TradeSide = "buy" | "sell";
@@ -6,6 +7,8 @@ export type TradeStatus = "Not Started" | "Opened" | "Closed";
 export type TradeOutcome = "Win" | "Loss" | "BE";
 
 export interface Trade {
+  brokerData?: BrokerData;
+  mt5InboxId?: string;
   id: string;
   entryTime: string; // ISO
   exitTime?: string; // ISO
@@ -37,6 +40,8 @@ export interface Trade {
 }
 
 type Row = {
+  broker_data?: BrokerData | null;
+  mt5_inbox_id?: string | null;
   id: string;
   entry_time: string;
   exit_time: string | null;
@@ -69,6 +74,8 @@ type Row = {
 
 const fromRow = (r: Row): Trade => ({
   id: r.id,
+  brokerData: r.broker_data ?? undefined,
+  mt5InboxId: r.mt5_inbox_id ?? undefined,
   entryTime: r.entry_time,
   exitTime: r.exit_time ?? undefined,
   symbol: r.symbol,
@@ -180,7 +187,13 @@ export interface Outcome {
   color: OutcomeColor;
 }
 
-export function computeOutcome(actualRr: number, _maxRr: number, _netPnl: number): Outcome {
+export function computeOutcome(
+  actualRr: number,
+  _maxRr: number,
+  _netPnl: number,
+  brokerData?: BrokerData,
+): Outcome {
+  if (brokerData && !brokerData.rKnown && actualRr === 0) actualRr = _netPnl;
   if (actualRr > 0) return { label: "Win", color: "green" };
   if (actualRr < 0) return { label: "Loss", color: "red" };
   return { label: "BE", color: "amber" };

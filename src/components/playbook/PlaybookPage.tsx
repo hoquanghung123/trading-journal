@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { AlertTriangle, TrendingUp, Loader2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { onPlaybookFocus } from "@/lib/nav-bus";
-import { fetchTrades, Trade, upsertTrade, deleteTrade, tradesQueryKey } from "@/lib/trades";
+import { fetchTrades, computeOutcome, Trade, upsertTrade, deleteTrade, tradesQueryKey } from "@/lib/trades";
 
 export function PlaybookPage() {
   const queryClient = useQueryClient();
@@ -48,7 +48,7 @@ export function PlaybookPage() {
     models.forEach((m) => {
       const modelTrades = tradesBySetup[m.id] || [];
       const followedTrades = modelTrades.filter((t) => t.complianceCheck);
-      const wins = followedTrades.filter((t) => t.actualRr > 0).length;
+      const wins = followedTrades.filter((t) => computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label === "Win").length;
       const wr = followedTrades.length > 0 ? (wins / followedTrades.length) * 100 : 0;
       const totalRr = followedTrades.reduce((acc, t) => acc + t.actualRr, 0);
       const avgRr = followedTrades.length > 0 ? totalRr / followedTrades.length : 0;

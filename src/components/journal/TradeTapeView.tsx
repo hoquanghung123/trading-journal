@@ -32,7 +32,7 @@ export function TradeTapeView({
         <span>Model</span>
       </div>
       {trades.map((t) => {
-        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData);
         const model = playbookName(t.setupId);
         const rail =
           outcome.label === "Win"
@@ -81,7 +81,7 @@ export function TradeTapeView({
                 {formatNyDateTime(t.entryTime)}
               </span>
               <span className="hidden lg:block tabular-nums text-[12px] font-bold">
-                {formatSigned(t.actualRr, 1)}R
+                {t.brokerData && !t.brokerData.rKnown && t.actualRr === 0 ? "R —" : `${formatSigned(t.actualRr, 1)}R`}
               </span>
               <span
                 className={`tabular-nums text-[12px] font-bold ${

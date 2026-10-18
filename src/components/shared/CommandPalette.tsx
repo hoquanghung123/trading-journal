@@ -148,7 +148,7 @@ export function CommandPalette() {
             <CommandSeparator />
             <CommandGroup heading="Trades">
               {recentTrades.map((t) => {
-                const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl).label;
+                const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label;
                 const when = format(parseISO(t.entryTime), "MMM d HH:mm");
                 return (
                   <CommandItem

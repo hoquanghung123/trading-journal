@@ -1,3 +1,4 @@
+import { Mt5Settings } from "./Mt5Integration";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -192,6 +193,7 @@ export function AccountSettings({ onManageAssets }: { onManageAssets?: () => voi
           </p>
         </div>
 
+        <Mt5Settings />
         <section className="overflow-hidden rounded-2xl border border-border bg-card">
           <div className="flex flex-col gap-5 p-4 lg:flex-row lg:p-5">
             <div className="min-w-0 flex-1">

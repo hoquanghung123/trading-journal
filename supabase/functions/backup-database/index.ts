@@ -17,6 +17,8 @@ const TABLES = [
   "user_settings",
   "symbols",
   "journal_entries",
+  "mt5_connections",
+  "mt5_inbox",
   "trades",
   "psychology_logs",
   "trading_reviews",

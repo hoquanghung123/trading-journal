@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { TradingCalendar } from "./TradingCalendar";
 import { EquityCurveChart } from "./DashboardCharts";
 import { DisciplineGauge, MistakesCard, ActionPlanCard } from "./PerformanceWidgets";
-import { fetchTrades, tradesQueryKey, type Trade } from "@/lib/trades";
+import { fetchTrades, tradesQueryKey, computeOutcome, type Trade } from "@/lib/trades";
 import { fetchFunding, fundingQueryKey, type MonthlyFunding } from "@/lib/funding";
 import { fetchReviews, reviewsQueryKey } from "@/lib/reviews";
 import { AccountModal } from "./AccountModal";
@@ -105,7 +105,7 @@ export function DashboardPage() {
 
     const disciplinedTrades = activeTrades.filter((t) => t.complianceCheck);
     const totalDisciplined = disciplinedTrades.length;
-    const wins = cohort.filter((t) => t.actualRr > 0);
+    const wins = cohort.filter((t) => computeOutcome(t.actualRr,t.maxRr,t.netPnl,t.brokerData).label === "Win");
     const winRate = cohort.length > 0 ? (wins.length / cohort.length) * 100 : 0;
     const totalPnl = activeTrades.reduce((acc, t) => acc + t.netPnl, 0);
 

@@ -187,7 +187,7 @@ function DayBlock({
         </tr>
       )}
       {group.rows.map((t, i) => {
-        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+        const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData);
         const model = playbookName(t.setupId);
         const excerpt = notesExcerpt(t.notes);
         return (
@@ -291,7 +291,7 @@ function DayBlock({
                   {formatPnl(t.netPnl)}
                 </td>
                 <td className="p-2 lg:p-3 tabular-nums text-[12px]">
-                  {formatSigned(t.actualRr, 1)} / {t.maxRr}
+                  {t.brokerData && !t.brokerData.rKnown && t.actualRr === 0 ? "— / —" : `${formatSigned(t.actualRr, 1)} / ${t.maxRr}`}
                 </td>
               </>
             )}

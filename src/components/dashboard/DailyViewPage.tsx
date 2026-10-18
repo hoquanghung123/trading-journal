@@ -157,7 +157,7 @@ export function DailyViewPage() {
               {trades
                 .sort((a, b) => +new Date(a.entryTime) - +new Date(b.entryTime))
                 .map((t, i) => {
-                  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+                  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData);
                   return (
                     <div
                       key={t.id}

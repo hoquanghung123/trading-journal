@@ -1,3 +1,4 @@
+import { nyDay } from "@/lib/mt5/protocol";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
@@ -20,7 +21,7 @@ import {
   upsertTrade,
   type Trade,
 } from "@/lib/trades";
-import { isWithinInterval, startOfDay, endOfDay, parseISO, format } from "date-fns";
+import { parseISO, format } from "date-fns";
 import { DateRangePicker } from "../shared/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { onRequestNewTrade, onRequestOpenTrade } from "@/lib/nav-bus";
@@ -184,6 +185,7 @@ export function TradeLog() {
   } = useQuery({
     queryKey: tradesQueryKey,
     queryFn: fetchTrades,
+    refetchInterval: 10000,
   });
   const {
     data: missed = [],
@@ -293,10 +295,10 @@ export function TradeLog() {
     const q = query.trim().toLowerCase();
     return trades.filter((t) => {
       if (viewMode !== "timeline" && dateRange?.from) {
-        const start = startOfDay(dateRange.from);
-        const end = endOfDay(dateRange.to || dateRange.from);
-        const entryDate = parseISO(t.entryTime);
-        if (!isWithinInterval(entryDate, { start, end })) return false;
+        const start = format(dateRange.from, "yyyy-MM-dd");
+        const end = format(dateRange.to || dateRange.from, "yyyy-MM-dd");
+        const day = nyDay(t.entryTime);
+        if (day < start || day > end) return false;
       }
       if (symbolFilter !== "ALL" && t.symbol !== symbolFilter) return false;
       if (sideFilter !== "ALL" && t.side !== sideFilter) return false;
@@ -304,7 +306,7 @@ export function TradeLog() {
       if (complianceFilter === "yes" && !t.complianceCheck) return false;
       if (complianceFilter === "no" && t.complianceCheck) return false;
       if (outcomeFilter !== "ALL") {
-        const o = computeOutcome(t.actualRr, t.maxRr, t.netPnl).label;
+        const o = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label;
         if (o !== outcomeFilter) return false;
       }
       if (q) {

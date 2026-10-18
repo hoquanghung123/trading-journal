@@ -1,3 +1,4 @@
+import { computeOutcome } from "@/lib/trades";
 import { useMemo, useState } from "react";
 import {
   getQuarter,
@@ -32,7 +33,7 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
     const total = filteredTrades.length;
     if (total === 0) return { total: 0, wins: 0, winRate: 0, pnl: 0 };
 
-    const wins = filteredTrades.filter((t) => t.actualRr > 0).length;
+    const wins = filteredTrades.filter((t) => computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label === "Win").length;
     const winRate = (wins / total) * 100;
     const pnl = filteredTrades.reduce((acc, t) => acc + t.netPnl, 0);
 
@@ -44,7 +45,7 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
     filteredTrades.forEach((t) => {
       if (!groups[t.symbol]) groups[t.symbol] = { total: 0, wins: 0 };
       groups[t.symbol].total++;
-      if (t.actualRr > 0) groups[t.symbol].wins++;
+      if (computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label === "Win") groups[t.symbol].wins++;
     });
 
     return Object.entries(groups)
@@ -62,7 +63,7 @@ export function PlaybookPerformance({ trades, playbooks }: PlaybookPerformancePr
       const name = setup?.name || "Unknown Setup";
       if (!groups[name]) groups[name] = { total: 0, wins: 0 };
       groups[name].total++;
-      if (t.actualRr > 0) groups[name].wins++;
+      if (computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label === "Win") groups[name].wins++;
     });
 
     return Object.entries(groups)

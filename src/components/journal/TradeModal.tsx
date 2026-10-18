@@ -1,4 +1,5 @@
 import { toNyLocal, nyLocalToIso } from "@/lib/trade-time";
+import { Mt5Details } from "./Mt5Integration";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -134,7 +135,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
 
   if (!t) return null;
 
-  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl);
+  const outcome = computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData);
   const hasResult = t.actualRr !== 0 || t.netPnl !== 0;
   const headerBadge =
     t.status !== "Closed" && !hasResult
@@ -231,6 +232,16 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
           ref={bodyRef}
           className="flex-1 overflow-y-auto px-6 sm:px-10 py-6 sm:py-8 space-y-8 sm:space-y-10 hide-scrollbar"
         >
+          {t.brokerData && (
+            <section className="rounded-xl border border-border p-4 space-y-3">
+              <h3 className="font-semibold">MT5 Pepperstone · dữ liệu broker · New York</h3>
+              <Mt5Details data={t.brokerData} />
+              <p className="text-xs text-muted-foreground">
+                Giá/volume/P&L từ CFD Pepperstone, không quy đổi futures.
+                R chưa xác định nếu chưa nhập rủi ro.
+              </p>
+            </section>
+          )}
           {/* Tab: Execution */}
           {activeTab === "execution" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -273,7 +284,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
                 </Field>
                 <Field label="Symbol / Asset">
                   <SelectField value={t.symbol} onChange={(v) => update({ symbol: v })}>
-                    {SYMBOLS.map((s) => (
+                    {Array.from(new Set([t.symbol, ...SYMBOLS])).filter(Boolean).map((s) => (
                       <option key={s} value={s}>
                         {s}
                       </option>

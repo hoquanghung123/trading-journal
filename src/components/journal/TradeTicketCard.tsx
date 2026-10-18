@@ -20,7 +20,7 @@ export function TradeTicketCard({
   onClick: () => void;
 }) {
   const [cut, setCut] = useState(50);
-  const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl);
+  const outcome = computeOutcome(trade.actualRr, trade.maxRr, trade.netPnl, trade.brokerData);
   const pre = trade.beforeImg ? getChartUrl(trade.beforeImg) : "";
   const post = trade.afterImg ? getChartUrl(trade.afterImg) : "";
   const stamp = killzoneStamp(trade.entryTime);
@@ -38,7 +38,7 @@ export function TradeTicketCard({
     <article
       role="button"
       tabIndex={0}
-      aria-label={`${trade.symbol} ${trade.side} ${formatSigned(trade.actualRr, 1)}R`}
+      aria-label={`${trade.symbol} ${trade.side} ${trade.brokerData && !trade.brokerData.rKnown && trade.actualRr === 0 ? "R —" : `${formatSigned(trade.actualRr, 1)}R`}`}
       onClick={onClick}
       onKeyDown={onKeyDown}
       className="relative bg-card rounded-[18px] border border-border overflow-hidden cursor-pointer hover:border-primary/30 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
@@ -126,7 +126,7 @@ export function TradeTicketCard({
               win ? "text-primary" : loss ? "text-destructive" : "text-warning"
             }`}
           >
-            {formatSigned(trade.actualRr, 1)}R
+            {trade.brokerData && !trade.brokerData.rKnown && trade.actualRr === 0 ? "R —" : `${formatSigned(trade.actualRr, 1)}R`}
           </p>
           <p
             className={`tabular-nums text-xs font-bold mt-1 ${

@@ -5,3 +5,8 @@ verify_jwt = false
 
 [functions.telegram-bot]
 verify_jwt = false
+[functions.mt5-sync]
+verify_jwt = false
+
+[functions.mt5-manage]
+verify_jwt = false
