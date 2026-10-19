@@ -31,7 +31,7 @@ function fixture(options: { receipt?: boolean; missing?: boolean; unauthorized?:
       assert.ok(url.searchParams.get("id")?.includes(entryId));
       return Response.json(options.missing ? [] : [{ id: entryId, user_id: userId, date: biasTradingDate(), asset: "GC1!", weekly_bias: "consolidation", daily_bias: "consolidation", notes, daily_img: options.image ? `${userId}/daily.png` : null, h4: options.image ? {"NY AM": { bias: "bullish", img: `${userId}/ny.png` }} : {} }]);
     }
-    if (url.hostname === "trading.hibacsi.com" && url.pathname.startsWith("/storage/")) return new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/png" } });
+    if (url.hostname === "supabase.example" && url.pathname.startsWith("/storage/v1/object/public/journal-charts/")) return new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/png" } });
     assert.equal(url.hostname, "lms.example");
     assert.equal(req.redirect, "manual");
     if (options.redirectLms) return new Response(null, { status: 302, headers: { Location: "https://other.example/" } });
@@ -201,5 +201,42 @@ test("R2 denial of an existing snapshot does not permit a replacement submission
     await assert.rejects(executeBiasHomework({ action: "submit", requestId: randomUUID(), entryIds: [entryId] }, request(), f.env), /Access Denied/);
     assert.equal(f.deliveries(), 0);
     assert.equal(f.archived.size, 0);
+  } finally { f.restore(); }
+});
+
+
+test("owned R2 charts are copied without fetching the public Journal URL", async () => {
+  const f = fixture({ image: true });
+  const get = f.env.R2.get;
+  const bytes = new Uint8Array([9, 8, 7]);
+  f.env.R2.get = async (path: string) =>
+    [ `${userId}/daily.png`, `${userId}/ny.png` ].includes(path)
+      ? { body: bytes, httpMetadata: { contentType: "image/png" } }
+      : get(path);
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const req = input instanceof Request ? input : new Request(input, init);
+    assert.ok(!new URL(req.url).pathname.startsWith("/storage/"), "R2 images must not use HTTP storage routes");
+    return fetch(input, init);
+  };
+  try {
+    const requestId = randomUUID();
+    const result = await executeBiasHomework({ action: "submit", requestId, entryIds: [entryId] }, request(), f.env);
+    assert.ok(result.submission);
+    assert.deepEqual(f.archived.get(`${userId}/bias-submissions/${requestId}/${entryId}/daily`), bytes);
+  } finally { f.restore(); }
+});
+
+test("unreadable chart identifies the asset and frame and never delivers incomplete homework", async () => {
+  const f = fixture({ image: true });
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const req = input instanceof Request ? input : new Request(input, init);
+    if (new URL(req.url).pathname.startsWith("/storage/")) return new Response("Not found", { status: 404 });
+    return fetch(input, init);
+  };
+  try {
+    await assert.rejects(executeBiasHomework({ action: "submit", requestId: randomUUID(), entryIds: [entryId] }, request(), f.env), /GC1! · daily: Không đọc được chart/);
+    assert.equal(f.deliveries(), 0);
   } finally { f.restore(); }
 });

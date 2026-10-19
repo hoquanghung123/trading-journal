@@ -136,8 +136,23 @@ export async function executeBiasHomework(data: { action: "status" | "link" | "s
     if (!r2) throw new Error("Kho chart chưa sẵn sàng. Thử lại sau hoặc liên hệ coach.");
     const path = `${userId}/bias-submissions/${data.requestId}/${entryId}/${slot}`;
     if (!(await readStoredObject(r2, path, "head"))) {
-      const response = await fetch(source, { redirect: "manual", signal: AbortSignal.timeout(20000) });
-      const type = response.headers.get("content-type")?.split(";")[0];
+      // Read owned charts through the binding, avoiding a same-zone Worker fetch.
+      // Older charts may still live in the public Supabase bucket.
+      const url = new URL(source);
+      let response: Response;
+      if (url.origin === new URL(journalUrl).origin) {
+        const key = decodeURIComponent(url.pathname.slice("/storage/".length));
+        const object = env("R2") ? await readStoredObject(r2, key) : null;
+        if (object) {
+          response = new Response(object.body, { headers: { "Content-Type": object.httpMetadata?.contentType || "application/octet-stream" } });
+        } else {
+          const legacy = new URL(`/storage/v1/object/public/journal-charts/${key.split("/").map(encodeURIComponent).join("/")}`, supabaseUrl);
+          response = await fetch(legacy, { redirect: "manual", signal: AbortSignal.timeout(20000) });
+        }
+      } else {
+        response = await fetch(source, { redirect: "manual", signal: AbortSignal.timeout(20000) });
+      }
+      const type = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
       if (!response.ok || !type || !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(type)) throw new Error("Không đọc được chart. Kiểm tra ảnh rồi thử nộp lại.");
       const reader = response.body?.getReader();
       if (!reader) throw new Error("Chart không có dữ liệu.");
@@ -172,12 +187,22 @@ export async function executeBiasHomework(data: { action: "status" | "link" | "s
     const entry: Record<string, unknown> = { id: row.id, asset: row.asset, notes: row.notes ?? null };
     for (const frame of ["yearly", "monthly", "weekly", "daily"]) {
       entry[`${frame}_bias`] = row[`${frame}_bias`] ?? null;
-      entry[`${frame}_img`] = await snapshotImage(row[`${frame}_img`], row.id, frame);
+      try {
+        entry[`${frame}_img`] = await snapshotImage(row[`${frame}_img`], row.id, frame);
+      } catch (error) {
+        throw new Error(`${row.asset} · ${frame}: ${error instanceof Error ? error.message : "Không đọc được chart."}`);
+      }
     }
     const h4: Record<string, unknown> = {};
     for (const session of ["ASIA", "LDN", "NY", "NY AM", "NY PM"]) {
       const value = row.h4?.[session];
-      if (value) h4[session] = { bias: value.bias ?? null, notes: value.notes ?? null, img: await snapshotImage(value.img, row.id, `h4-${session}`) };
+      if (value) {
+        try {
+          h4[session] = { bias: value.bias ?? null, notes: value.notes ?? null, img: await snapshotImage(value.img, row.id, `h4-${session}`) };
+        } catch (error) {
+          throw new Error(`${row.asset} · H4 ${session}: ${error instanceof Error ? error.message : "Không đọc được chart."}`);
+        }
+      }
     }
     entry.h4 = h4;
     entries.push(entry);
