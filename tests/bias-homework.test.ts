@@ -9,7 +9,7 @@ const entryId = "37e4fac2-7745-4d0d-a32f-1146eb8be191";
 const secret = "integration-test-secret-at-least-32-characters";
 const request = () => new Request("https://trading.hibacsi.com/_serverFn/test", { headers: { Authorization: "Bearer test-session" } });
 
-function fixture(options: { receipt?: boolean; missing?: boolean; unauthorized?: boolean; image?: boolean; failDelivery?: boolean; failBeforeDelivery?: boolean } = {}) {
+function fixture(options: { receipt?: boolean; missing?: boolean; unauthorized?: boolean; redirectLms?: boolean; image?: boolean; failDelivery?: boolean; failBeforeDelivery?: boolean } = {}) {
   const originalFetch = globalThis.fetch;
   const calls: { url: string; body: any }[] = [];
   const archived = new Map<string, Uint8Array | string>();
@@ -33,6 +33,8 @@ function fixture(options: { receipt?: boolean; missing?: boolean; unauthorized?:
     }
     if (url.hostname === "trading.hibacsi.com" && url.pathname.startsWith("/storage/")) return new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/png" } });
     assert.equal(url.hostname, "lms.example");
+    assert.equal(req.redirect, "manual");
+    if (options.redirectLms) return new Response(null, { status: 302, headers: { Location: "https://other.example/" } });
     const bodyText = await req.text();
     const body = JSON.parse(bodyText);
     assert.equal(body.journal_user_id, userId);
@@ -158,5 +160,46 @@ test("invalid Supabase sessions cannot link or submit", async () => {
   try {
     await assert.rejects(executeBiasHomework({ action: "link", code: "a-long-link-code" }, request(), f.env), /đăng nhập hết hạn/);
     assert.equal(f.calls.length, 0);
+  } finally { f.restore(); }
+});
+
+test("LMS redirects are rejected without forwarding signed requests", async () => {
+  const f = fixture({ redirectLms: true });
+  try {
+    await assert.rejects(executeBiasHomework({ action: "status" }, request(), f.env), /API LMS đang chuyển hướng/);
+    assert.equal(f.calls.length, 0);
+  } finally { f.restore(); }
+});
+
+test("R2 missing-key access denials are verified through listing before preparing a submission", async () => {
+  const f = fixture({ image: true });
+  const store = f.env.R2;
+  const get = store.get;
+  const head = store.head;
+  store.get = async (path: string) => {
+    if (!f.archived.has(path)) throw new Error("get: Access Denied (10003)");
+    return get(path);
+  };
+  store.head = async (path: string) => {
+    if (!f.archived.has(path)) throw new Error("head: Access Denied (10003)");
+    return head(path);
+  };
+  store.list = async ({ prefix }: { prefix: string }) => ({ objects: [...f.archived.keys()].filter((key) => key.startsWith(prefix)).sort().slice(0, 1).map((key) => ({ key })) });
+  try {
+    const result = await executeBiasHomework({ action: "submit", requestId: randomUUID(), entryIds: [entryId] }, request(), f.env);
+    assert.ok(result.submission);
+    assert.equal(f.deliveries(), 1);
+    assert.equal(f.archived.size, 3);
+  } finally { f.restore(); }
+});
+
+test("R2 denial of an existing snapshot does not permit a replacement submission", async () => {
+  const f = fixture();
+  f.env.R2.get = async () => { throw new Error("get: Access Denied (10003)"); };
+  f.env.R2.list = async ({ prefix }: { prefix: string }) => ({ objects: [{ key: prefix }] });
+  try {
+    await assert.rejects(executeBiasHomework({ action: "submit", requestId: randomUUID(), entryIds: [entryId] }, request(), f.env), /Access Denied/);
+    assert.equal(f.deliveries(), 0);
+    assert.equal(f.archived.size, 0);
   } finally { f.restore(); }
 });

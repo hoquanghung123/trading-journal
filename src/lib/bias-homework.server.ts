@@ -7,6 +7,19 @@ const hex = (bytes: ArrayBuffer) => Array.from(new Uint8Array(bytes), (b) => b.t
 const encoder = new TextEncoder();
 class BiasSubmissionRejected extends Error {}
 
+async function readStoredObject(store: any, path: string, operation: "get" | "head" = "get") {
+  try {
+    return await store[operation](path);
+  } catch (error) {
+    // This R2 account returns 10003 for missing objects. Verify absence through
+    // its strongly consistent listing; never suppress denial of an existing key.
+    if (!(error instanceof Error) || !/Access Denied \(10003\)/.test(error.message) || !store.list) throw error;
+    const listing = await store.list({ prefix: path, limit: 1 });
+    if (!Array.isArray(listing.objects) || listing.objects.some((object: any) => object.key === path)) throw error;
+    return null;
+  }
+}
+
 export async function handleBiasHomework(data: { action: "status" | "link" | "submit"; code?: string; requestId?: string; entryIds?: string[] }): Promise<BiasHomeworkState> {
   const request = getRequest() as any;
   const bindings = request?.context?.cloudflare?.env || request?.context || {};
@@ -54,10 +67,13 @@ export async function executeBiasHomework(data: { action: "status" | "link" | "s
       response = await fetch(target, { method: "POST", headers: {
         "Content-Type": "application/json", Accept: "application/json", "X-Journal-Timestamp": timestamp,
         "X-Journal-Nonce": nonce, "X-Journal-Signature": signature,
-      }, body, signal: AbortSignal.timeout(30000), redirect: "error" });
+      }, body, signal: AbortSignal.timeout(30000), redirect: "manual" });
     } catch {
-      throw new Error("Chưa nhận được xác nhận từ LMS. Bấm thử lại để kiểm tra và nộp cùng yêu cầu.");
+      throw new Error(endpoint === "submissions"
+        ? "Chưa nhận được xác nhận từ LMS. Bấm thử lại để kiểm tra và nộp cùng yêu cầu."
+        : "Chưa kết nối được LMS. Thử tải lại trạng thái kết nối.");
     }
+    if (response.status >= 300 && response.status < 400) throw new Error("API LMS đang chuyển hướng. Liên hệ coach để kiểm tra địa chỉ kết nối LMS.");
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       const messages: Record<number, string> = {
@@ -102,7 +118,7 @@ export async function executeBiasHomework(data: { action: "status" | "link" | "s
   const r2 = env("R2") || env("LOCAL_BIAS_STORE");
   if (!r2) throw new Error("Kho bài nộp chưa sẵn sàng. Thử lại sau hoặc liên hệ coach.");
   const snapshotPath = `bias-delivery/${userId}/${data.requestId}/snapshot.json`;
-  const frozenObject = await r2.get(snapshotPath);
+  const frozenObject = await readStoredObject(r2, snapshotPath);
   if (frozenObject) {
     const frozen = await frozenObject.json();
     if (frozen.trading_date !== tradingDate) throw new Error("Lần nộp này thuộc ngày giao dịch trước. Mở lại Journal để nộp ngày hiện tại.");
@@ -119,8 +135,8 @@ export async function executeBiasHomework(data: { action: "status" | "link" | "s
     const source = normalizeChartSource(value, userId, journalUrl, supabaseUrl);
     if (!r2) throw new Error("Kho chart chưa sẵn sàng. Thử lại sau hoặc liên hệ coach.");
     const path = `${userId}/bias-submissions/${data.requestId}/${entryId}/${slot}`;
-    if (!(await r2.head(path))) {
-      const response = await fetch(source, { redirect: "error", signal: AbortSignal.timeout(20000) });
+    if (!(await readStoredObject(r2, path, "head"))) {
+      const response = await fetch(source, { redirect: "manual", signal: AbortSignal.timeout(20000) });
       const type = response.headers.get("content-type")?.split(";")[0];
       if (!response.ok || !type || !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(type)) throw new Error("Không đọc được chart. Kiểm tra ảnh rồi thử nộp lại.");
       const reader = response.body?.getReader();
