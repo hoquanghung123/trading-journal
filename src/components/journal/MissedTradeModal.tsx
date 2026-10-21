@@ -25,7 +25,15 @@ import {
   type MissedTradeImageKey,
   type MissedTrade,
 } from "@/lib/missed-trades";
-import { deleteChartImage, uploadChartImage } from "@/lib/journal";
+import {
+  deleteChartImage,
+  uploadChartImage,
+  fetchEntries,
+  journalTradingDate,
+  ddmm,
+} from "@/lib/journal";
+import { useQuery } from "@tanstack/react-query";
+import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 import { PasteSlot } from "./PasteSlot";
 import { toast } from "sonner";
 import { toNyLocal, nyLocalToIso } from "@/lib/trade-time";
@@ -51,7 +59,7 @@ export function MissedTradeModal({
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveStage, setSaveStage] = useState("");
-  const [confirmation, setConfirmation] = useState<"discard" | "delete" | null>(null);
+  const [confirmation, setConfirmation] = useState<"discard" | "delete" | "bias" | null>(null);
   const [error, setError] = useState("");
   const { models } = usePlaybook();
   const {
@@ -60,6 +68,12 @@ export function MissedTradeModal({
     error: symbolsError,
     refetch: retrySymbols,
   } = useSymbols();
+  const biasQuery = useQuery({
+    queryKey: ["missed-trade-bias", trade?.id],
+    queryFn: () => fetchEntries(),
+    enabled: !!trade,
+    staleTime: 0,
+  });
   useEffect(() => {
     setDraft(trade ? { ...trade } : null);
     setFiles({});
@@ -69,8 +83,29 @@ export function MissedTradeModal({
     setConfirmation(null);
   }, [trade]);
   if (!draft) return null;
+  const biasDate = journalTradingDate(draft.setup_time);
+  const matchingBias = (biasQuery.data ?? []).filter(
+    (entry) => entry.asset === draft.symbol && entry.date === biasDate,
+  );
+  const openBias = () => {
+    if (!draft.bias_entry_id) return;
+    const entryId = draft.bias_entry_id;
+    navigateToPage("bias");
+    setTimeout(() => focusBiasEntry(entryId, draft.symbol), 50);
+    onClose();
+  };
   const update = (patch: Partial<MissedTrade>) => {
-    setDraft((prev) => (prev ? { ...prev, ...patch } : prev));
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      if (
+        next.symbol !== prev.symbol ||
+        journalTradingDate(next.setup_time) !== journalTradingDate(prev.setup_time)
+      ) {
+        next.bias_entry_id = null;
+      }
+      return next;
+    });
     setDirty(true);
   };
   const close = () => {
@@ -298,6 +333,57 @@ export function MissedTradeModal({
                       )}
                     </div>
                   </div>
+                  <div className="space-y-1.5">
+                    {label("miss-bias", `Bias trong ngày · ${ddmm(biasDate)} · Tùy chọn`)}
+                    <div className="flex min-w-0 gap-2">
+                      <select
+                        id="miss-bias"
+                        value={draft.bias_entry_id ?? ""}
+                        onChange={(e) => update({ bias_entry_id: e.target.value || null })}
+                        className={`${inputClass} h-11 flex-1 md:h-10`}
+                      >
+                        <option value="">Không gắn bias</option>
+                        {draft.bias_entry_id &&
+                          !matchingBias.some((entry) => entry.id === draft.bias_entry_id) && (
+                            <option value={draft.bias_entry_id}>Bias đã gắn</option>
+                          )}
+                        {matchingBias.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {ddmm(entry.date)} — {entry.asset} — {entry.dailyBias.toUpperCase()}
+                          </option>
+                        ))}
+                      </select>
+                      {draft.bias_entry_id && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => (dirty ? setConfirmation("bias") : openBias())}
+                        >
+                          Mở bias
+                        </Button>
+                      )}
+                    </div>
+                    {biasQuery.isLoading ? (
+                      <p role="status" className="text-[11px] text-muted-foreground">
+                        Đang tải bias…
+                      </p>
+                    ) : biasQuery.isError ? (
+                      <p role="alert" className="text-[11px] text-destructive">
+                        Không tải được bias.{" "}
+                        <button
+                          type="button"
+                          className="underline"
+                          onClick={() => void biasQuery.refetch()}
+                        >
+                          Thử lại
+                        </button>
+                      </p>
+                    ) : !matchingBias.length ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        Chưa có bias cho {draft.symbol || "symbol này"} trong ngày giao dịch này.
+                      </p>
+                    ) : null}
+                  </div>
                 </section>
                 <section className="space-y-4 border-t border-border pt-5">
                   <h3 className="text-sm font-semibold">02 · Kế hoạch & lý do miss</h3>
@@ -493,11 +579,16 @@ export function MissedTradeModal({
                 if (confirmation === "delete") void remove();
                 else {
                   setConfirmation(null);
-                  onClose();
+                  if (confirmation === "bias") openBias();
+                  else onClose();
                 }
               }}
             >
-              {confirmation === "delete" ? "Xóa trade" : "Bỏ thay đổi"}
+              {confirmation === "delete"
+                ? "Xóa trade"
+                : confirmation === "bias"
+                  ? "Bỏ thay đổi và mở bias"
+                  : "Bỏ thay đổi"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

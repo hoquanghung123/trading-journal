@@ -1,4 +1,5 @@
 type MissedTradeRecord = {
+  bias_entry_id: string | null;
   id: string; user_id: string; setup_time: string; symbol: string; side: 'buy' | 'sell';
   setup_id: string | null; reason: string; analysis: string; lesson: string;
   planned_entry: number | null; planned_sl: number | null; planned_tp: number | null;

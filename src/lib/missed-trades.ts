@@ -36,6 +36,7 @@ export function newMissedTrade(): MissedTrade {
     symbol: "",
     side: "buy",
     setup_id: null,
+    bias_entry_id: null,
     reason: "Do dự",
     analysis: "",
     lesson: "",
