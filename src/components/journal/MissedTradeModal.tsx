@@ -19,8 +19,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { usePlaybook } from "@/hooks/usePlaybook";
-import { MISS_REASONS, type MissedTrade } from "@/lib/missed-trades";
-import { deleteChartImage, getChartUrl, uploadChartImage } from "@/lib/journal";
+import {
+  MISS_REASONS,
+  missedTradeImageKeys,
+  type MissedTradeImageKey,
+  type MissedTrade,
+} from "@/lib/missed-trades";
+import { deleteChartImage, uploadChartImage } from "@/lib/journal";
+import { PasteSlot } from "./PasteSlot";
 import { toast } from "sonner";
 import { toNyLocal, nyLocalToIso } from "@/lib/trade-time";
 import { useSymbols } from "@/lib/symbols";
@@ -40,7 +46,8 @@ export function MissedTradeModal({
   onDelete?: (t: MissedTrade) => Promise<void>;
 }) {
   const [draft, setDraft] = useState<MissedTrade | null>(null);
-  const [files, setFiles] = useState<{ before_img?: File; after_img?: File }>({});
+  const [files, setFiles] = useState<Partial<Record<MissedTradeImageKey, File | string>>>({});
+  const [focusedImage, setFocusedImage] = useState<MissedTradeImageKey | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saveStage, setSaveStage] = useState("");
@@ -56,6 +63,7 @@ export function MissedTradeModal({
   useEffect(() => {
     setDraft(trade ? { ...trade } : null);
     setFiles({});
+    setFocusedImage(null);
     setDirty(false);
     setError("");
     setConfirmation(null);
@@ -89,11 +97,13 @@ export function MissedTradeModal({
     setError("");
     const next = { ...draft, symbol: draft.symbol.trim().toUpperCase() };
     try {
-      for (const key of ["before_img", "after_img"] as const) {
+      for (const key of missedTradeImageKeys) {
         if (files[key]) {
-          setSaveStage(key === "before_img" ? "Đang tải chart setup…" : "Đang tải ảnh diễn biến…");
+          setSaveStage(
+            `Đang tải ảnh ${missedTradeImageKeys.indexOf(key) + 1}/${missedTradeImageKeys.length}…`,
+          );
           const path = await withTimeout(
-            uploadChartImage(files[key]!),
+            uploadChartImage(files[key]!, 15 * 1024 * 1024),
             60000,
             "Tải ảnh quá 60 giây. Nội dung được giữ lại; kiểm tra kết nối rồi thử lưu lại.",
           );
@@ -110,9 +120,10 @@ export function MissedTradeModal({
         "Chưa nhận được xác nhận lưu. Nội dung và ảnh vẫn được giữ; kiểm tra timeline trước khi thử lại.",
       );
       // Only remove replaced files once the database points to their replacements.
-      const replaced = [trade?.before_img, trade?.after_img].filter(
-        (p): p is string => !!p && p !== next.before_img && p !== next.after_img,
-      );
+      const retained = new Set(missedTradeImageKeys.map((key) => next[key]));
+      const replaced = missedTradeImageKeys
+        .map((key) => trade?.[key])
+        .filter((p): p is string => !!p && !retained.has(p));
       void Promise.allSettled(replaced.map(deleteChartImage));
       toast.success("Đã lưu trade bị miss");
       onClose();
@@ -128,7 +139,14 @@ export function MissedTradeModal({
     if (!onDelete) return;
     setBusy(true);
     try {
-      await onDelete(draft);
+      await onDelete(trade ?? draft);
+      const savedPaths = new Set(missedTradeImageKeys.map((key) => trade?.[key]));
+      void Promise.allSettled(
+        missedTradeImageKeys
+          .map((key) => draft[key])
+          .filter((path): path is string => !!path && !savedPaths.has(path))
+          .map(deleteChartImage),
+      );
       toast.success("Đã xóa trade bị miss");
       onClose();
     } catch (e) {
@@ -341,20 +359,56 @@ export function MissedTradeModal({
                 </section>
               </div>
               <div className="min-w-0 space-y-5">
-                {(["before_img", "after_img"] as const).map((key, i) => (
-                  <ChartField
-                    key={key}
-                    id={`miss-${key}`}
-                    label={i === 0 ? "Chart setup *" : "Diễn biến sau · Tùy chọn"}
-                    path={draft[key]}
-                    file={files[key]}
-                    disabled={busy}
-                    onChange={(file) => {
-                      setFiles((prev) => ({ ...prev, [key]: file }));
-                      setDirty(true);
-                    }}
-                  />
+                {(
+                  [
+                    ["before_img", "Chart setup *"],
+                    ["after_img", "Diễn biến sau · Tùy chọn"],
+                    ...(symbols.find((symbol) => symbol.name === draft.symbol)?.isForex
+                      ? [
+                          ["monthly_img", "Monthly"],
+                          ["weekly_img", "Weekly"],
+                          ["daily_img", "Daily"],
+                          ["h4_img", "H4"],
+                          ["h1_img", "H1"],
+                          ["m15_img", "M15"],
+                        ]
+                      : [
+                          ["h1_img", "H1 Structure"],
+                          ["m15_img", "M15 Context"],
+                          ["m5_img", "M5 Execution"],
+                        ]),
+                  ] as [MissedTradeImageKey, string][]
+                ).map(([key, title], index) => (
+                  <div key={key} className="space-y-2">
+                    {index === 2 && (
+                      <h3 className="border-t border-border pt-5 text-sm font-semibold">
+                        Phân tích đa khung thời gian · Tùy chọn
+                      </h3>
+                    )}
+                    <p className="text-xs font-medium">{title}</p>
+                    <PasteSlot
+                      label={title}
+                      image={draft[key] || undefined}
+                      pendingImage={files[key]}
+                      disabled={busy}
+                      focused={focusedImage === key}
+                      onFocus={() => setFocusedImage(key)}
+                      onChange={(path) =>
+                        update({ [key]: path || (key === "before_img" ? "" : null) })
+                      }
+                      onPendingImageChange={(image) => {
+                        setFiles((prev) => ({ ...prev, [key]: image }));
+                        setDirty(true);
+                      }}
+                      className="h-48 sm:h-64"
+                      showChartActions
+                      showPasteTarget
+                    />
+                  </div>
                 ))}
+                <p className="text-[10px] text-muted-foreground">
+                  Ảnh tối đa 15 MB · Chỉ tải lên khi lưu.
+                </p>
                 <div className="space-y-2 rounded-xl border border-border p-4">
                   {label("miss-r", "R giả định · Tùy chọn")}
                   <input
@@ -449,90 +503,5 @@ export function MissedTradeModal({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  );
-}
-function ChartField({
-  id,
-  label,
-  path,
-  file,
-  disabled = false,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  path: string | null;
-  file?: File;
-  disabled?: boolean;
-  onChange: (f: File | undefined) => void;
-}) {
-  const [preview, setPreview] = useState("");
-  useEffect(() => {
-    if (!file) {
-      setPreview(path ? getChartUrl(path) : "");
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [path, file]);
-  const acceptFile = (image: File) => {
-    if (disabled) return;
-    if (!image.type.startsWith("image/") || image.size > 15 * 1024 * 1024) {
-      toast.error("Chọn ảnh nhỏ hơn 15 MB.");
-      return;
-    }
-    onChange(image);
-  };
-  return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-xs font-medium">
-        {label}
-      </label>
-      <div
-        role="group"
-        aria-label={`Dán ảnh vào ${label}`}
-        aria-disabled={disabled}
-        tabIndex={disabled ? -1 : 0}
-        onClick={(e) => e.currentTarget.focus()}
-        onPaste={(e) => {
-          if (disabled) return;
-          const item = Array.from(e.clipboardData.items).find((item) =>
-            item.type.startsWith("image/"),
-          );
-          const image = item?.getAsFile();
-          if (!image) return;
-          e.preventDefault();
-          e.stopPropagation();
-          acceptFile(image);
-        }}
-        className="cursor-pointer rounded-xl border border-dashed border-border bg-muted/20 p-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-      >
-        {preview ? (
-          <img src={preview} alt={label} className="max-h-64 w-full rounded-lg object-contain" />
-        ) : (
-          <p className="px-3 py-8 text-center text-xs leading-relaxed text-muted-foreground">
-            Bấm vào đây rồi nhấn Cmd+V / Ctrl+V để dán ảnh chart
-          </p>
-        )}
-        {preview && (
-          <p className="mt-2 text-center text-[10px] text-muted-foreground">
-            Cmd+V / Ctrl+V để thay ảnh
-          </p>
-        )}
-      </div>
-      <input
-        id={id}
-        type="file"
-        accept="image/*"
-        className="block w-full min-w-0 text-xs file:mr-2 file:rounded-lg file:border file:border-border file:bg-card file:px-3 file:py-2 file:text-foreground"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) acceptFile(f);
-          e.target.value = "";
-        }}
-      />
-      <p className="text-[10px] text-muted-foreground">Ảnh tối đa 15 MB · Chỉ tải lên khi lưu.</p>
-    </div>
   );
 }

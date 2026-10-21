@@ -1,4 +1,13 @@
-import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState, createContext } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  createContext,
+} from "react";
 import { ImageIcon, Loader2, Maximize2, Replace, Trash2 } from "lucide-react";
 import {
   deleteChartImage,
@@ -39,6 +48,10 @@ export function ChartFitProvider({ children }: { children: React.ReactNode }) {
 }
 
 interface Props {
+  /** Opt-in staging: preview locally and let the parent upload on save. */
+  pendingImage?: File | string;
+  onPendingImageChange?: (image: File | string | undefined) => void;
+  disabled?: boolean;
   label: string;
   image?: string; // storage path OR legacy data URL
   onChange: (path: string | undefined) => void;
@@ -59,6 +72,9 @@ interface Props {
 
 export function PasteSlot({
   label,
+  pendingImage,
+  onPendingImageChange,
+  disabled = false,
   image,
   onChange,
   onBusyChange,
@@ -88,14 +104,32 @@ export function PasteSlot({
 
   // Resolve storage path -> signed URL (or pass through legacy data URL)
   useEffect(() => {
+    if (pendingImage instanceof File) {
+      const url = URL.createObjectURL(pendingImage);
+      setDisplayUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    if (typeof pendingImage === "string") {
+      setDisplayUrl(pendingImage);
+      return;
+    }
     if (!image) {
       setDisplayUrl("");
       return;
     }
     setDisplayUrl(getChartUrl(image));
-  }, [image]);
+  }, [image, pendingImage]);
 
   const handleFile = async (file: File) => {
+    if (disabled || busy) return;
+    if (onPendingImageChange) {
+      if (!file.type.startsWith("image/") || file.size > 15 * 1024 * 1024) {
+        toast.error("Chọn ảnh nhỏ hơn 15 MB.");
+        return;
+      }
+      onPendingImageChange(file);
+      return;
+    }
     setBusy(true);
     onBusyChangeRef.current?.(true);
     try {
@@ -113,12 +147,23 @@ export function PasteSlot({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (disabled || busy) return;
+    if (onPendingImageChange) {
+      onPendingImageChange(undefined);
+      onChange(undefined);
+      return;
+    }
     const old = image;
     onChange(undefined);
     if (old) deleteChartImage(old).catch(() => {});
   };
 
   const handleDataUrl = async (dataUrl: string) => {
+    if (disabled || busy) return;
+    if (onPendingImageChange) {
+      onPendingImageChange(dataUrl);
+      return;
+    }
     setBusy(true);
     onBusyChangeRef.current?.(true);
     try {
@@ -143,7 +188,7 @@ export function PasteSlot({
   });
 
   useEffect(() => {
-    if (!focused) return;
+    if (!focused || disabled) return;
     const handler = async (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -170,7 +215,7 @@ export function PasteSlot({
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
-  }, [focused]);
+  }, [focused, disabled]);
 
   const reportFit = fit?.report;
   const fitHeight = fit?.height;
@@ -219,8 +264,11 @@ export function PasteSlot({
   return (
     <div
       ref={ref}
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
+      aria-label={label}
+      aria-disabled={disabled}
       onClick={() => {
+        if (disabled) return;
         onFocus?.();
         if (!selectToPaste && !displayUrl) fileRef.current?.click();
       }}
@@ -240,9 +288,7 @@ export function PasteSlot({
       className={cn(
         "relative group rounded-xl overflow-hidden border border-border bg-muted/20 transition-all cursor-pointer outline-none",
         focused || drag ? "ring-2 ring-primary/20 border-primary/50" : "hover:border-primary/30",
-        compactEmpty
-          ? "h-12"
-          : fitImage && slotHeight == null && (fit ? "h-44" : "h-36"),
+        compactEmpty ? "h-12" : fitImage && slotHeight == null && (fit ? "h-44" : "h-36"),
         className,
       )}
       style={fitImage && slotHeight ? { height: slotHeight } : undefined}
@@ -317,7 +363,7 @@ export function PasteSlot({
           Paste target
         </div>
       )}
-      {showChartActions && displayUrl && !busy && (
+      {showChartActions && displayUrl && !busy && !disabled && (
         <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
           <button
             type="button"

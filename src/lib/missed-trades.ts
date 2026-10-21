@@ -4,6 +4,19 @@ import { generateId } from "./utils";
 import { deleteChartImage } from "./journal";
 import type { Database } from "@/integrations/supabase/types";
 
+export const missedTradeImageKeys = [
+  "before_img",
+  "after_img",
+  "monthly_img",
+  "weekly_img",
+  "daily_img",
+  "h4_img",
+  "h1_img",
+  "m15_img",
+  "m5_img",
+] as const;
+export type MissedTradeImageKey = (typeof missedTradeImageKeys)[number];
+
 export const MISS_REASONS = [
   "Không có mặt",
   "Thấy quá muộn",
@@ -32,6 +45,13 @@ export function newMissedTrade(): MissedTrade {
     hypothetical_r: null,
     before_img: "",
     after_img: null,
+    monthly_img: null,
+    weekly_img: null,
+    daily_img: null,
+    h4_img: null,
+    h1_img: null,
+    m15_img: null,
+    m5_img: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -65,6 +85,9 @@ export async function deleteMissedTrade(trade: MissedTrade) {
   const { error } = await supabase.from("missed_trades").delete().eq("id", trade.id);
   if (error) throw error;
   void Promise.allSettled(
-    [trade.before_img, trade.after_img].filter((p): p is string => !!p).map(deleteChartImage),
+    missedTradeImageKeys
+      .map((key) => trade[key])
+      .filter((p): p is string => !!p)
+      .map(deleteChartImage),
   );
 }

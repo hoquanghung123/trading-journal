@@ -691,7 +691,7 @@ export function fileToDataURL(file: File): Promise<string> {
 }
 
 /** Upload a data URL or File to Storage. Returns a public path stored in DB. */
-export async function uploadChartImage(input: string | File): Promise<string> {
+export async function uploadChartImage(input: string | File, maxBytes?: number): Promise<string> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not authenticated");
 
@@ -725,6 +725,13 @@ export async function uploadChartImage(input: string | File): Promise<string> {
       reader.onerror = reject;
       reader.readAsDataURL(input);
     });
+  }
+
+  const bytes =
+    Math.floor((base64.length * 3) / 4) -
+    (base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0);
+  if (maxBytes !== undefined && bytes > maxBytes) {
+    throw new Error("Chọn ảnh nhỏ hơn 15 MB.");
   }
 
   const path = `${u.user.id}/${generateId()}.${ext}`;

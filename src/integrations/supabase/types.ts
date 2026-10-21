@@ -3,6 +3,13 @@ type MissedTradeRecord = {
   setup_id: string | null; reason: string; analysis: string; lesson: string;
   planned_entry: number | null; planned_sl: number | null; planned_tp: number | null;
   hypothetical_r: number | null; before_img: string; after_img: string | null;
+  monthly_img: string | null;
+  weekly_img: string | null;
+  daily_img: string | null;
+  h4_img: string | null;
+  h1_img: string | null;
+  m15_img: string | null;
+  m5_img: string | null;
   created_at: string; updated_at: string;
 };
 
