@@ -366,10 +366,6 @@ function TimelineEvent({
   const isMiss = item.kind === "miss";
   const t = item.trade;
   const actual = item.kind === "taken" ? item.trade : null;
-  const broker =
-    actual && "brokerData" in actual
-      ? (actual.brokerData as { rKnown: boolean } | undefined)
-      : undefined;
   const miss = item.kind === "miss" ? item.trade : null;
   const before = actual?.beforeImg ?? miss?.before_img;
   const after = actual?.afterImg ?? miss?.after_img;
@@ -380,7 +376,6 @@ function TimelineEvent({
         ? "Đang mở"
         : "Đã đóng"
     : miss?.reason;
-  const known = actual && (!broker || broker.rKnown || actual.actualRr !== 0);
   return (
     <details className="overflow-hidden rounded-xl border border-border bg-card">
       <summary className="grid cursor-pointer list-none grid-cols-[34px_minmax(0,1fr)_64px] items-center gap-2 p-3 sm:grid-cols-[44px_76px_minmax(0,1fr)_88px] sm:gap-4 sm:p-4 [&::-webkit-details-marker]:hidden">
@@ -420,7 +415,7 @@ function TimelineEvent({
         <div
           className={`text-right text-xs font-semibold sm:text-base ${actual ? tone(actual.actualRr) : "text-muted-foreground"}`}
         >
-          {actual?.status === "Closed" && known ? `${formatSigned(actual.actualRr, 1)}R` : "—"}
+          {actual?.status === "Closed" ? `${formatSigned(actual.actualRr, 1)}R` : "—"}
           <span className="mt-1 block text-[9px] font-normal text-muted-foreground">
             {isMiss
               ? "Xem lý do ↓"

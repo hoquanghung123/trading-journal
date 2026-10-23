@@ -43,7 +43,7 @@ export function shiftTimelinePeriod(anchor: string, mode: "week" | "month", delt
 }
 export function timelinePerformance(trades: TimelineTrade[]) {
   const closed = trades.filter((t) => t.status === "Closed");
-  const known = closed.filter((t) => !t.brokerData || t.brokerData.rKnown || t.actualRr !== 0);
+  const known = closed.filter((t) => Number.isFinite(t.actualRr));
   return {
     r: known.reduce((s, t) => s + t.actualRr, 0),
     known: known.length,

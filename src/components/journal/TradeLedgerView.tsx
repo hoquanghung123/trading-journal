@@ -291,7 +291,7 @@ function DayBlock({
                   {formatPnl(t.netPnl)}
                 </td>
                 <td className="p-2 lg:p-3 tabular-nums text-[12px]">
-                  {t.brokerData && !t.brokerData.rKnown && t.actualRr === 0 ? "— / —" : `${formatSigned(t.actualRr, 1)} / ${t.maxRr}`}
+                  {`${formatSigned(t.actualRr, 1)} / ${t.maxRr}`}
                 </td>
               </>
             )}

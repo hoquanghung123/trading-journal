@@ -23,7 +23,7 @@ test("months and navigation handle leap years and year boundaries", () => {
   assert.equal(shiftTimelinePeriod("2027-01-01", "month", -1), "2026-12-01");
   assert.equal(shiftTimelinePeriod("2027-01-01", "week", -1), "2026-12-25");
 });
-test("performance excludes drafts, open trades, and unknown broker R; BE is excluded from win-rate denominator", () => {
+test("performance excludes drafts and open trades; zero broker R counts as BE", () => {
   const result = timelinePerformance([
     { status: "Closed", actualRr: 2, netPnl: 100 },
     { status: "Opened", actualRr: 99, netPnl: 999 },
@@ -32,7 +32,7 @@ test("performance excludes drafts, open trades, and unknown broker R; BE is excl
     { status: "Closed", actualRr: 0, netPnl: 0 },
     { status: "Closed", actualRr: 0, netPnl: 10, brokerData: { rKnown: false } },
   ] as Trade[]);
-  assert.deepEqual(result, { r: 1, known: 3, closed: 4, pnl: 60, winRate: 50 });
+  assert.deepEqual(result, { r: 1, known: 4, closed: 4, pnl: 60, winRate: 50 });
   assert.deepEqual(timelinePerformance([]), { r: 0, known: 0, closed: 0, pnl: 0, winRate: null });
 });
 
@@ -44,4 +44,6 @@ test("zero Actual R stays BE in win rate despite positive or negative P&L", () =
   ] as Trade[]);
   assert.equal(result.winRate, null);
   assert.equal(result.pnl, -4);
+  assert.equal(result.r, 0);
+  assert.equal(result.known, 3);
 });
