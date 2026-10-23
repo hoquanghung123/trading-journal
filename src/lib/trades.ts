@@ -7,11 +7,11 @@ export type TradeStatus = "Not Started" | "Opened" | "Closed";
 export type TradeOutcome = "Win" | "Loss" | "BE";
 
 export interface TradeOutcomeReview {
-  beTrigger?: string;
+  beTrigger?: string | string[];
   mfeBeforeExitR?: number;
   afterExitResult?: string;
-  psychologicalReason?: string;
-  executionErrors?: string;
+  psychologicalReason?: string | string[];
+  executionErrors?: string | string[];
 }
 
 export interface Trade {
