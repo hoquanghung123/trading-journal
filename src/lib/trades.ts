@@ -6,6 +6,14 @@ export type TradeStatus = "Not Started" | "Opened" | "Closed";
 
 export type TradeOutcome = "Win" | "Loss" | "BE";
 
+export interface TradeOutcomeReview {
+  beTrigger?: string;
+  mfeBeforeExitR?: number;
+  afterExitResult?: string;
+  psychologicalReason?: string;
+  executionErrors?: string;
+}
+
 export interface Trade {
   brokerData?: BrokerData;
   mt5InboxId?: string;

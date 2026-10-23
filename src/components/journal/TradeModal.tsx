@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { AnalysisTab } from "./AnalysisTab";
+import { TradeOutcomeReview } from "./TradeOutcomeReview";
 import { focusBiasEntry, navigateToPage } from "@/lib/nav-bus";
 import { usePlaybook } from "@/hooks/usePlaybook";
 import { toast } from "sonner";
@@ -742,6 +743,7 @@ export function TradeModal({ open, trade, onClose, onSave, onDelete }: Props) {
           {activeTab === "journal" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <SectionHeader title="Review & Feedback" />
+              <TradeOutcomeReview trade={t} onUpdate={update} />
               <RichEditor
                 value={t.notes ?? ""}
                 onChange={(html) => update({ notes: html })}
