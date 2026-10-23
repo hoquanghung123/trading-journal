@@ -1,3 +1,4 @@
+import { tradeWinRate } from "./trade-performance";
 import type { Trade } from "./trades";
 
 type TimelineTrade = Trade & { brokerData?: { rKnown: boolean } };
@@ -43,12 +44,11 @@ export function shiftTimelinePeriod(anchor: string, mode: "week" | "month", delt
 export function timelinePerformance(trades: TimelineTrade[]) {
   const closed = trades.filter((t) => t.status === "Closed");
   const known = closed.filter((t) => !t.brokerData || t.brokerData.rKnown || t.actualRr !== 0);
-  const wins = closed.filter((t) => t.actualRr > 0).length;
   return {
     r: known.reduce((s, t) => s + t.actualRr, 0),
     known: known.length,
     closed: closed.length,
     pnl: closed.reduce((s, t) => s + t.netPnl, 0),
-    winRate: closed.length ? (wins / closed.length) * 100 : null,
+    winRate: tradeWinRate(closed),
   };
 }

@@ -1,4 +1,5 @@
-import { computeOutcome, type Trade, type TradeStatus } from "@/lib/trades";
+import { tradeWinRate } from "./trade-performance";
+import { type Trade, type TradeStatus } from "@/lib/trades";
 import { getActiveKillzone, KILLZONE_NY } from "@/lib/journal";
 
 export type TradeLogView = "timeline" | "tape" | "ledger" | "tickets" | "killzone";
@@ -157,11 +158,10 @@ export function computeFilterPulse(trades: Trade[]): FilterPulse {
   const count = trades.length;
   if (!count) return { count: 0, pnl: 0, winRate: 0, avgR: 0, followed: 0 };
   const pnl = trades.reduce((s, t) => s + t.netPnl, 0);
-  const wins = trades.filter((t) => computeOutcome(t.actualRr, t.maxRr, t.netPnl, t.brokerData).label === "Win").length;
   const knownR = trades.filter(t => !t.brokerData || t.brokerData.rKnown || t.actualRr !== 0);
   const avgR = knownR.length ? knownR.reduce((s, t) => s + t.actualRr, 0) / knownR.length : 0;
   const followed = trades.filter((t) => t.complianceCheck).length;
-  return { count, pnl, winRate: (wins / count) * 100, avgR, followed };
+  return { count, pnl, winRate: tradeWinRate(trades) ?? 0, avgR, followed };
 }
 
 export const MTF_SLOTS: { key: keyof Trade; label: string }[] = [

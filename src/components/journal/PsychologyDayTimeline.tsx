@@ -1,3 +1,4 @@
+import { tradeWinRate } from "@/lib/trade-performance";
 import {
   X,
   Sunrise,
@@ -43,7 +44,7 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
   const tradeLogsById = new Map(logs.filter((l) => l.tradeId).map((l) => [l.tradeId as string, l]));
 
   const totalPnl = dayTrades.reduce((s, t) => s + (t.netPnl ?? 0), 0);
-  const wins = dayTrades.filter((t) => (t.netPnl ?? 0) > 0).length;
+  const winRate = tradeWinRate(dayTrades);
 
   const prettyDate = new Date(date + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "long",
@@ -94,7 +95,7 @@ export function PsychologyDayTimeline({ date, logs, trades, onClose }: Props) {
           <Stat label="Total Trades" value={String(dayTrades.length)} />
           <Stat
             label="Win Rate"
-            value={dayTrades.length ? `${Math.round((wins / dayTrades.length) * 100)}%` : "—"}
+            value={winRate === null ? "—" : `${Math.round(winRate)}%`}
           />
           <Stat
             label="Net P&L"
