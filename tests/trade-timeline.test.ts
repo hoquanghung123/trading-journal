@@ -32,6 +32,16 @@ test("performance excludes drafts, open trades, and unknown broker R; BE counts 
     { status: "Closed", actualRr: 0, netPnl: 0 },
     { status: "Closed", actualRr: 0, netPnl: 10, brokerData: { rKnown: false } },
   ] as Trade[]);
-  assert.deepEqual(result, { r: 1, known: 3, closed: 4, pnl: 60, winRate: 50 });
+  assert.deepEqual(result, { r: 1, known: 3, closed: 4, pnl: 60, winRate: 25 });
   assert.deepEqual(timelinePerformance([]), { r: 0, known: 0, closed: 0, pnl: 0, winRate: null });
+});
+
+test("zero Actual R stays BE in win rate despite positive or negative P&L", () => {
+  const result = timelinePerformance([
+    { status: "Closed", actualRr: 0, netPnl: -3 },
+    { status: "Closed", actualRr: 0, netPnl: -5, brokerData: { rKnown: false } },
+    { status: "Closed", actualRr: 0, netPnl: 4, brokerData: { rKnown: false } },
+  ] as Trade[]);
+  assert.equal(result.winRate, 0);
+  assert.equal(result.pnl, -4);
 });

@@ -191,9 +191,9 @@ export function computeOutcome(
   actualRr: number,
   _maxRr: number,
   _netPnl: number,
-  brokerData?: BrokerData,
+  _brokerData?: BrokerData,
 ): Outcome {
-  if (brokerData && !brokerData.rKnown && actualRr === 0) actualRr = _netPnl;
+  // Actual R is authoritative: zero remains BE even when fees make P&L negative.
   if (actualRr > 0) return { label: "Win", color: "green" };
   if (actualRr < 0) return { label: "Loss", color: "red" };
   return { label: "BE", color: "amber" };
